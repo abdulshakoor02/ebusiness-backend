@@ -1,0 +1,441 @@
+basePath: /api/v1
+definitions:
+  github_com_abdulshakoor02_goCrmBackend_internal_core_domain.Address:
+    properties:
+      city:
+        type: string
+      country:
+        type: string
+      state:
+        type: string
+      street:
+        type: string
+      zip_code:
+        type: string
+    type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_domain.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      role:
+        description: e.g., "admin", "user"
+        type: string
+      tenant_id:
+        description: Partition Key
+        type: string
+      updated_at:
+        type: string
+    type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateTenantRequest:
+    properties:
+      address:
+        $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_domain.Address'
+      admin_user:
+        $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateUserRequest'
+      email:
+        type: string
+      logo_url:
+        type: string
+      name:
+        type: string
+    type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateUserRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+    type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest:
+    properties:
+      filters:
+        additionalProperties: true
+        type: object
+      limit:
+        type: integer
+      offset:
+        type: integer
+    type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.LoginResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_domain.User'
+    type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateTenantRequest:
+    properties:
+      address:
+        $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_domain.Address'
+      email:
+        type: string
+      logo_url:
+        type: string
+      name:
+        type: string
+    type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateUserRequest:
+    properties:
+      name:
+        type: string
+      role:
+        type: string
+    type: object
+host: localhost:3000
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+  description: Multi-tenant CRM Backend API with Hexagonal Architecture.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: CRM Backend API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user and returns a JWT token
+      parameters:
+      - description: Login Credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      summary: User Login
+      tags:
+      - auth
+  /tenants:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new tenant and an initial admin user
+      parameters:
+      - description: Tenant Registration Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateTenantRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register a new tenant
+      tags:
+      - tenants
+  /tenants/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves detailed information about a specific tenant
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get a tenant by ID
+      tags:
+      - tenants
+    put:
+      consumes:
+      - application/json
+      description: Updates a tenant's information (name, email, logo, address)
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update Tenant Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateTenantRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Update a tenant
+      tags:
+      - tenants
+  /tenants/list:
+    post:
+      consumes:
+      - application/json
+      description: Retrieves a list of tenants with optional filtering and pagination
+      parameters:
+      - description: Filter Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: List tenants
+      tags:
+      - tenants
+  /users:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user within the current tenant (scope extracted from
+        JWT)
+      parameters:
+      - description: Create User Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Create a new user
+      tags:
+      - users
+  /users/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves detailed information about a specific user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get a user by ID
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Updates a user's name and/or role
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update User Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Update a user
+      tags:
+      - users
+  /users/list:
+    post:
+      consumes:
+      - application/json
+      description: Retrieves a list of users for the current tenant
+      parameters:
+      - description: Filter Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: List users
+      tags:
+      - users
+securityDefinitions:
+  Bearer:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

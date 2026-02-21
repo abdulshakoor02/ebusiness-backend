@@ -32,6 +32,22 @@ definitions:
       updated_at:
         type: string
     type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.AddPermissionRequest:
+    properties:
+      method:
+        type: string
+      path:
+        type: string
+      role:
+        type: string
+    type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.AssignRoleInheritanceRequest:
+    properties:
+      child_role:
+        type: string
+      parent_role:
+        type: string
+    type: object
   github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateTenantRequest:
     properties:
       address:
@@ -79,6 +95,15 @@ definitions:
         type: string
       user:
         $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_domain.User'
+    type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.RemovePermissionRequest:
+    properties:
+      method:
+        type: string
+      path:
+        type: string
+      role:
+        type: string
     type: object
   github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateTenantRequest:
     properties:
@@ -143,6 +168,157 @@ paths:
       summary: User Login
       tags:
       - auth
+  /permissions:
+    delete:
+      consumes:
+      - application/json
+      description: Removes an existing path and HTTP method permission from a role.
+      parameters:
+      - description: Remove Permission Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.RemovePermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Remove a permission from a role
+      tags:
+      - permissions
+    get:
+      description: Retrieves all existing permissions (policies) in the system.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get all permissions
+      tags:
+      - permissions
+    post:
+      consumes:
+      - application/json
+      description: Allows assigning a new path and HTTP method permission to a role.
+      parameters:
+      - description: Add Permission Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.AddPermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Add a permission to a role
+      tags:
+      - permissions
+  /permissions/my-permissions:
+    get:
+      description: Returns the permissions of the currently logged-in user based on
+        their role
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get current user permissions
+      tags:
+      - permissions
+  /permissions/roles/inherit:
+    get:
+      description: Retrieves all inherited roles (groupings) within the system.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get all role inheritances
+      tags:
+      - permissions
+    post:
+      consumes:
+      - application/json
+      description: Makes a child role inherit all permissions of a parent role.
+      parameters:
+      - description: Assign Role Inheritance Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.AssignRoleInheritanceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Assign role inheritance
+      tags:
+      - permissions
   /tenants:
     post:
       consumes:

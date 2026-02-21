@@ -17,6 +17,10 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/swagger"
+
+	casbinlib "github.com/casbin/casbin/v2"
+	mongodbadapter "github.com/casbin/mongodb-adapter/v3"
+	mongooptions "go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // @title CRM Backend API
@@ -61,12 +65,82 @@ func main() {
 	userService := services.NewUserService(userRepo)
 	authService := services.NewAuthService(userRepo, cfg)
 
-	// 6. Init Handlers
+	// 6. Init Casbin with MongoDB Adapter
+	mongoClientOption := mongooptions.Client().ApplyURI(cfg.MongoURI)
+	casbinAdapter, err := mongodbadapter.NewAdapterWithClientOption(mongoClientOption, cfg.DBName)
+	if err != nil {
+		slog.Error("Failed to initialize Casbin MongoDB adapter", "error", err)
+		panic(err)
+	}
+
+	enforcer, err := casbinlib.NewEnforcer("rbac_model.conf", casbinAdapter)
+	if err != nil {
+		slog.Error("Failed to initialize Casbin enforcer", "error", err)
+		panic(err)
+	}
+
+	// Load policies from MongoDB
+	if err := enforcer.LoadPolicy(); err != nil {
+		slog.Error("Failed to load Casbin policies", "error", err)
+		panic(err)
+	}
+
+	hasPolicies, _ := enforcer.HasPolicy("admin", "/api/v1/users", "POST")
+	if !hasPolicies {
+		slog.Info("Seeding default RBAC policies...")
+		// Admin permissions
+		enforcer.AddPolicy("admin", "/api/v1/tenants/:id", "GET")
+		enforcer.AddPolicy("admin", "/api/v1/tenants/:id", "PUT")
+		enforcer.AddPolicy("admin", "/api/v1/tenants/list", "POST")
+		enforcer.AddPolicy("admin", "/api/v1/users", "POST")
+		enforcer.AddPolicy("admin", "/api/v1/users/:id", "GET")
+		enforcer.AddPolicy("admin", "/api/v1/users/:id", "PUT")
+		enforcer.AddPolicy("admin", "/api/v1/users/list", "POST")
+
+		// Regular user permissions
+		enforcer.AddPolicy("user", "/api/v1/tenants/:id", "GET")
+		enforcer.AddPolicy("user", "/api/v1/users/:id", "GET")
+
+		// Role inheritance: superadmin inherits admin
+		enforcer.AddGroupingPolicy("superadmin", "admin")
+
+		// Save to MongoDB
+		if err := enforcer.SavePolicy(); err != nil {
+			slog.Error("Failed to save default policies", "error", err)
+			panic(err)
+		}
+		slog.Info("Default RBAC policies seeded to MongoDB")
+	}
+
+	// Seed permission endpoints for Admin if missing
+	hasPermissionPolicies, _ := enforcer.HasPolicy("admin", "/api/v1/permissions", "GET")
+	if !hasPermissionPolicies {
+		slog.Info("Seeding permission-management RBAC policies...")
+		enforcer.AddPolicy("admin", "/api/v1/permissions", "POST")
+		enforcer.AddPolicy("admin", "/api/v1/permissions", "DELETE")
+		enforcer.AddPolicy("admin", "/api/v1/permissions", "GET")
+		enforcer.AddPolicy("admin", "/api/v1/permissions/roles/inherit", "POST")
+		enforcer.AddPolicy("admin", "/api/v1/permissions/roles/inherit", "GET")
+		if err := enforcer.SavePolicy(); err != nil {
+			slog.Error("Failed to save permission endpoint policies", "error", err)
+			panic(err)
+		}
+		slog.Info("Permission management policies seeded to MongoDB")
+	}
+
+	slog.Info("Casbin RBAC enforcer initialized with MongoDB adapter")
+
+	// 7. Init Handlers
 	tenantHandler := handler.NewTenantHandler(tenantService)
 	userHandler := handler.NewUserHandler(userService)
 	authHandler := handler.NewAuthHandler(authService)
+	permissionService := services.NewPermissionService(enforcer)
+	permissionHandler := handler.NewPermissionHandler(permissionService)
 
-	// 7. Setup Fiber
+	// 8. Init Casbin Middleware
+	authz := middleware.NewCasbinMiddleware(enforcer)
+
+	// 9. Setup Fiber
 	app := fiber.New(fiber.Config{
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
@@ -80,15 +154,15 @@ func main() {
 		},
 	})
 
-	// Middleware
+	// Global Middleware
 	app.Use(recover.New())
-	app.Use(cors.New()) // Default CORS
+	app.Use(cors.New())
 	app.Use(middleware.RequestLogger())
 
 	// Swagger
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
-	// 8. Routes
+	// 10. Routes
 	api := app.Group("/api/v1")
 
 	// Public Routes
@@ -98,21 +172,31 @@ func main() {
 		return c.JSON(fiber.Map{"status": "ok"})
 	})
 
-	// Protected Routes
+	// Protected Routes (JWT Auth + RBAC)
 	protected := api.Group("/", middleware.Protected(cfg.JWTSecret))
 
-	// Tenant Management (Protected)
-	protected.Get("/tenants/:id", tenantHandler.GetTenant)
-	protected.Put("/tenants/:id", tenantHandler.UpdateTenant)
-	protected.Post("/tenants/list", tenantHandler.ListTenants)
+	// Permissions endpoint (protected but no RBAC check - any authenticated user can see their permissions)
+	protected.Get("/permissions/my-permissions", permissionHandler.GetPermissions)
 
-	// User Management (Protected)
-	protected.Post("/users", userHandler.CreateUser)
-	protected.Get("/users/:id", userHandler.GetUser)
-	protected.Put("/users/:id", userHandler.UpdateUser)
-	protected.Post("/users/list", userHandler.ListUsers)
+	// RBAC Management endpoints (Protected + RBAC) -> only admins can manage this
+	protected.Post("/permissions", authz.RoutePermission(), permissionHandler.AddPermission)
+	protected.Delete("/permissions", authz.RoutePermission(), permissionHandler.RemovePermission)
+	protected.Get("/permissions", authz.RoutePermission(), permissionHandler.GetAllPermissions)
+	protected.Post("/permissions/roles/inherit", authz.RoutePermission(), permissionHandler.AssignRoleInheritance)
+	protected.Get("/permissions/roles/inherit", authz.RoutePermission(), permissionHandler.GetRoleInheritances)
 
-	// 9. Start Server
+	// Tenant Management (Protected + RBAC)
+	protected.Get("/tenants/:id", authz.RoutePermission(), tenantHandler.GetTenant)
+	protected.Put("/tenants/:id", authz.RoutePermission(), tenantHandler.UpdateTenant)
+	protected.Post("/tenants/list", authz.RoutePermission(), tenantHandler.ListTenants)
+
+	// User Management (Protected + RBAC)
+	protected.Post("/users", authz.RoutePermission(), userHandler.CreateUser)
+	protected.Get("/users/:id", authz.RoutePermission(), userHandler.GetUser)
+	protected.Put("/users/:id", authz.RoutePermission(), userHandler.UpdateUser)
+	protected.Post("/users/list", authz.RoutePermission(), userHandler.ListUsers)
+
+	// 11. Start Server
 	slog.Info("Starting server", "port", cfg.ServerPort)
 	if err := app.Listen(":" + cfg.ServerPort); err != nil {
 		slog.Error("Server failed to start", "error", err)

@@ -67,3 +67,29 @@ type UserService interface {
 type AuthService interface {
 	Login(ctx context.Context, req LoginRequest) (*LoginResponse, error)
 }
+
+type AddPermissionRequest struct {
+	Role   string `json:"role"`
+	Path   string `json:"path"`
+	Method string `json:"method"`
+}
+
+type RemovePermissionRequest struct {
+	Role   string `json:"role"`
+	Path   string `json:"path"`
+	Method string `json:"method"`
+}
+
+type AssignRoleInheritanceRequest struct {
+	ChildRole  string `json:"child_role"`
+	ParentRole string `json:"parent_role"`
+}
+
+type PermissionService interface {
+	AddPermission(ctx context.Context, req AddPermissionRequest) error
+	RemovePermission(ctx context.Context, req RemovePermissionRequest) error
+	AssignRoleInheritance(ctx context.Context, req AssignRoleInheritanceRequest) error
+	GetAllPermissions(ctx context.Context) ([][]string, error)
+	GetRoleInheritances(ctx context.Context) ([][]string, error)
+	CheckPermission(ctx context.Context, role, obj, act string) bool
+}

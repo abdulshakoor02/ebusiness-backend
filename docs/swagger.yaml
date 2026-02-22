@@ -50,6 +50,55 @@ definitions:
       parent_role:
         type: string
     type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadAppointmentRequest:
+    properties:
+      description:
+        type: string
+      end_time:
+        type: string
+      start_time:
+        type: string
+      status:
+        description: using string representation for JSON decoding convenience
+        type: string
+      title:
+        type: string
+    type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadCategoryRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadCommentRequest:
+    properties:
+      content:
+        type: string
+    type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadRequest:
+    properties:
+      assigned_to:
+        type: string
+      category_id:
+        type: string
+      company:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      phone:
+        type: string
+      source:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+    type: object
   github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateTenantRequest:
     properties:
       address:
@@ -107,6 +156,54 @@ definitions:
       path:
         type: string
       role:
+        type: string
+    type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadAppointmentRequest:
+    properties:
+      description:
+        type: string
+      end_time:
+        type: string
+      start_time:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+    type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadCategoryRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadCommentRequest:
+    properties:
+      content:
+        type: string
+    type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadRequest:
+    properties:
+      assigned_to:
+        type: string
+      category_id:
+        type: string
+      company:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      phone:
+        type: string
+      source:
+        type: string
+      status:
+        type: string
+      title:
         type: string
     type: object
   github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateTenantRequest:
@@ -176,6 +273,778 @@ paths:
       summary: User Login
       tags:
       - auth
+  /lead-categories:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new lead category associated with the current tenant
+      parameters:
+      - description: Create Lead Category Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Create a new lead category
+      tags:
+      - lead-categories
+  /lead-categories/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes an existing lead category's details
+      parameters:
+      - description: Lead Category ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Delete a lead category
+      tags:
+      - lead-categories
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a specific lead category belonging to the current tenant
+      parameters:
+      - description: Lead Category ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get a lead category by ID
+      tags:
+      - lead-categories
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing lead category's details
+      parameters:
+      - description: Lead Category ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update Lead Category Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Update a lead category
+      tags:
+      - lead-categories
+  /lead-categories/list:
+    post:
+      consumes:
+      - application/json
+      description: Retrieves a paginated list of lead categories based on filters
+      parameters:
+      - description: Filter Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: List lead categories
+      tags:
+      - lead-categories
+  /leads:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new lead associated with the current tenant
+      parameters:
+      - description: Create Lead Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Create a new lead
+      tags:
+      - leads
+  /leads/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a specific lead belonging to the current tenant
+      parameters:
+      - description: Lead ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get a lead by ID
+      tags:
+      - leads
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing lead's details
+      parameters:
+      - description: Lead ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update Lead Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Update a lead
+      tags:
+      - leads
+  /leads/{lead_id}/appointments:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new lead appointment associated with a specific lead
+      parameters:
+      - description: Lead ID
+        in: path
+        name: lead_id
+        required: true
+        type: string
+      - description: Create Lead Appointment Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadAppointmentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Schedule a lead appointment
+      tags:
+      - lead-appointments
+  /leads/{lead_id}/appointments/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes an existing lead appointment (only by organizer)
+      parameters:
+      - description: Lead ID
+        in: path
+        name: lead_id
+        required: true
+        type: string
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Delete a lead appointment
+      tags:
+      - lead-appointments
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a specific lead appointment
+      parameters:
+      - description: Lead ID
+        in: path
+        name: lead_id
+        required: true
+        type: string
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get a lead appointment by ID
+      tags:
+      - lead-appointments
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing lead appointment (only by organizer)
+      parameters:
+      - description: Lead ID
+        in: path
+        name: lead_id
+        required: true
+        type: string
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update Lead Appointment Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadAppointmentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Update a lead appointment
+      tags:
+      - lead-appointments
+  /leads/{lead_id}/appointments/list:
+    post:
+      consumes:
+      - application/json
+      description: Retrieves a paginated list of lead appointments for a specific
+        lead
+      parameters:
+      - description: Lead ID
+        in: path
+        name: lead_id
+        required: true
+        type: string
+      - description: Filter Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: List lead appointments
+      tags:
+      - lead-appointments
+  /leads/{lead_id}/comments:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new lead comment associated with a specific lead
+      parameters:
+      - description: Lead ID
+        in: path
+        name: lead_id
+        required: true
+        type: string
+      - description: Create Lead Comment Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadCommentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Add comment to a lead
+      tags:
+      - lead-comments
+  /leads/{lead_id}/comments/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes an existing lead comment (only by author)
+      parameters:
+      - description: Lead ID
+        in: path
+        name: lead_id
+        required: true
+        type: string
+      - description: Comment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Delete a lead comment
+      tags:
+      - lead-comments
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a specific lead comment
+      parameters:
+      - description: Lead ID
+        in: path
+        name: lead_id
+        required: true
+        type: string
+      - description: Comment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get a lead comment by ID
+      tags:
+      - lead-comments
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing lead comment's content (only by author)
+      parameters:
+      - description: Lead ID
+        in: path
+        name: lead_id
+        required: true
+        type: string
+      - description: Comment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update Lead Comment Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadCommentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Update a lead comment
+      tags:
+      - lead-comments
+  /leads/{lead_id}/comments/list:
+    post:
+      consumes:
+      - application/json
+      description: Retrieves a paginated list of lead comments for a specific lead
+      parameters:
+      - description: Lead ID
+        in: path
+        name: lead_id
+        required: true
+        type: string
+      - description: Filter Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: List lead comments
+      tags:
+      - lead-comments
+  /leads/list:
+    post:
+      consumes:
+      - application/json
+      description: Retrieves a paginated list of leads based on filters
+      parameters:
+      - description: Filter Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: List leads
+      tags:
+      - leads
   /permissions:
     delete:
       consumes:

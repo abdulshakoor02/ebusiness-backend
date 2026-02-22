@@ -18,6 +18,11 @@ func RunMigrations(ctx context.Context, db *mongo.Database) error {
 		return err
 	}
 
+	if err := ensureLeadIndexes(ctx, db.Collection("leads")); err != nil {
+		slog.Error("Failed to apply lead indexes", "error", err)
+		return err
+	}
+
 	slog.Info("Database migrations completed successfully")
 	return nil
 }
@@ -28,17 +33,38 @@ func ensureUserIndexes(ctx context.Context, collection *mongo.Collection) error 
 	// though it's best to handle data explicitly if this is a production application
 	indexes := []mongo.IndexModel{
 		{
-			Keys: bson.D{{Key: "email", Value: 1}},
+			Keys: bson.D{{Key: "tenant_id", Value: 1}, {Key: "email", Value: 1}},
 			Options: options.Index().
 				SetUnique(true).
-				SetName("unique_email"),
+				SetName("unique_tenant_email"),
 		},
 		{
-			Keys: bson.D{{Key: "mobile", Value: 1}},
+			Keys: bson.D{{Key: "tenant_id", Value: 1}, {Key: "mobile", Value: 1}},
 			Options: options.Index().
 				SetUnique(true).
-				SetName("unique_mobile").
+				SetName("unique_tenant_mobile").
 				SetSparse(true), // sparse allows multiple docs without a mobile field (e.g. during dev transitions)
+		},
+	}
+
+	_, err := collection.Indexes().CreateMany(ctx, indexes)
+	return err
+}
+
+func ensureLeadIndexes(ctx context.Context, collection *mongo.Collection) error {
+	indexes := []mongo.IndexModel{
+		{
+			Keys: bson.D{{Key: "tenant_id", Value: 1}, {Key: "email", Value: 1}},
+			Options: options.Index().
+				SetUnique(true).
+				SetName("unique_tenant_email"),
+		},
+		{
+			Keys: bson.D{{Key: "tenant_id", Value: 1}, {Key: "phone", Value: 1}},
+			Options: options.Index().
+				SetUnique(true).
+				SetName("unique_tenant_phone").
+				SetSparse(true), // allows partial updates with missing phone numbers
 		},
 	}
 

@@ -335,7 +335,318 @@ All protected endpoints require an Authorization header with a Bearer token:
 
 ---
 
-## 5. System
+## 5. Leads
+
+### Create Lead
+**Endpoint:** `POST /leads`
+**Auth Required:** Yes (RBAC Enforced)
+
+**Request:**
+```json
+{
+  "assigned_to": "60b8f...",
+  "first_name": "Alice",
+  "last_name": "Johnson",
+  "company": "Tech Innovations",
+  "title": "CTO",
+  "email": "alice@techinnovations.com",
+  "phone": "+1987654321",
+  "status": "New",
+  "source": "Website"
+}
+```
+
+**Response (201 Created):**
+(Returns the created Lead object)
+
+### Get Lead by ID
+**Endpoint:** `GET /leads/:id`
+**Auth Required:** Yes (RBAC Enforced)
+
+**Response (200 OK):**
+(Returns the Lead object)
+
+### Update Lead
+**Endpoint:** `PUT /leads/:id`
+**Auth Required:** Yes (RBAC Enforced)
+
+**Request (Partial update supported):**
+```json
+{
+  "status": "Contacted"
+}
+```
+
+**Response (200 OK):**
+(Returns the updated Lead object)
+
+### List Leads
+**Endpoint:** `POST /leads/list`
+**Auth Required:** Yes (RBAC Enforced)
+
+**Request:**
+```json
+{
+  "filters": {
+    "status": "New"
+  },
+  "offset": 0,
+  "limit": 10
+}
+```
+
+**Response (200 OK):**
+(Returns paginated leads)
+
+---
+
+## 6. Lead Categories
+
+### Create Lead Category
+**Endpoint:** `POST /lead-categories`
+**Auth Required:** Yes (RBAC Enforced)
+
+**Request:**
+```json
+{
+  "name": "High Priority",
+  "description": "Leads that need immediate follow-up"
+}
+```
+
+**Response (201 Created):**
+(Returns the created LeadCategory object)
+
+### Get Lead Category by ID
+**Endpoint:** `GET /lead-categories/:id`
+**Auth Required:** Yes (RBAC Enforced)
+
+**Response (200 OK):**
+(Returns the LeadCategory object)
+
+### Update Lead Category
+**Endpoint:** `PUT /lead-categories/:id`
+**Auth Required:** Yes (RBAC Enforced)
+
+**Request:**
+```json
+{
+  "name": "Urgent Priority",
+  "description": "Requires contact within 2 hours"
+}
+```
+
+**Response (200 OK):**
+(Returns the updated LeadCategory object)
+
+### Delete Lead Category
+**Endpoint:** `DELETE /lead-categories/:id`
+**Auth Required:** Yes (RBAC Enforced)
+
+**Response (200 OK):**
+```json
+{
+  "message": "Lead category deleted successfully"
+}
+```
+
+**Response (400 Bad Request):** (If category is in use by leads)
+```json
+{
+  "error": "Cannot delete category currently in use by leads"
+}
+```
+
+### List Lead Categories
+**Endpoint:** `POST /lead-categories/list`
+**Auth Required:** Yes (RBAC Enforced)
+
+**Request:**
+```json
+{
+  "filters": {},
+  "offset": 0,
+  "limit": 10
+}
+```
+
+**Response (200 OK):**
+(Returns paginated lead categories)
+
+---
+
+## 7. Lead Comments
+
+### Add Comment to Lead
+**Endpoint:** `POST /leads/:lead_id/comments`
+**Auth Required:** Yes (RBAC Enforced)
+
+**Request:**
+```json
+{
+  "content": "Had a great phone screen with Alice. She's ready to sign."
+}
+```
+
+**Response (201 Created):**
+(Returns the created LeadComment object containing author_id)
+
+### Get Lead Comment by ID
+**Endpoint:** `GET /leads/:lead_id/comments/:id`
+**Auth Required:** Yes (RBAC Enforced)
+
+**Response (200 OK):**
+(Returns the LeadComment object)
+
+### Update Lead Comment
+**Endpoint:** `PUT /leads/:lead_id/comments/:id`
+**Auth Required:** Yes (RBAC Enforced - only original author or admin)
+
+**Request:**
+```json
+{
+  "content": "Updated details: Alice will sign next week."
+}
+```
+
+**Response (200 OK):**
+(Returns the updated LeadComment object)
+
+### Delete Lead Comment
+**Endpoint:** `DELETE /leads/:lead_id/comments/:id`
+**Auth Required:** Yes (RBAC Enforced - only original author or admin)
+
+**Response (200 OK):**
+```json
+{
+  "message": "Comment deleted successfully"
+}
+```
+
+### List Lead Comments
+**Endpoint:** `POST /leads/:lead_id/comments/list`
+**Auth Required:** Yes (RBAC Enforced)
+
+**Request:**
+```json
+{
+  "filters": {},
+  "offset": 0,
+  "limit": 50
+}
+```
+
+**Response (200 OK):**
+(Returns paginated lead comments belonging to specific lead_id)
+
+---
+
+## 8. Lead Appointments
+
+### Schedule Appointment with Lead
+**Endpoint:** `POST /leads/:lead_id/appointments`
+**Auth Required:** Yes (RBAC Enforced)
+
+**Request:**
+```json
+{
+  "title": "Initial Demo Call",
+  "description": "Walkthrough of core CRM features with Alice",
+  "start_time": "2024-05-15T14:30:00Z",
+  "end_time": "2024-05-15T15:00:00Z",
+  "status": "scheduled"
+}
+```
+
+**Response (201 Created):**
+(Returns the created LeadAppointment object containing organizer_id)
+
+### Get Lead Appointment by ID
+**Endpoint:** `GET /leads/:lead_id/appointments/:id`
+**Auth Required:** Yes (RBAC Enforced)
+
+**Response (200 OK):**
+(Returns the LeadAppointment object)
+
+### Update Lead Appointment
+**Endpoint:** `PUT /leads/:lead_id/appointments/:id`
+**Auth Required:** Yes (RBAC Enforced)
+
+**Request:**
+```json
+{
+  "status": "completed"
+}
+```
+
+**Response (200 OK):**
+(Returns the updated LeadAppointment object)
+
+### Delete Lead Appointment
+**Endpoint:** `DELETE /leads/:lead_id/appointments/:id`
+**Auth Required:** Yes (RBAC Enforced)
+
+**Response (200 OK):**
+```json
+{
+  "message": "Appointment deleted successfully"
+}
+```
+
+### List Lead Appointments
+**Endpoint:** `POST /leads/:lead_id/appointments/list`
+**Auth Required:** Yes (RBAC Enforced)
+
+**Request:**
+```json
+{
+  "filters": {},
+  "offset": 0,
+  "limit": 50
+}
+```
+
+**Response (200 OK):**
+(Returns paginated lead appointments belonging to specific lead_id)
+
+---
+
+## 9. System
+**Auth Required:** Yes (RBAC Enforced)
+
+**Response (200 OK):**
+```json
+{
+  "message": "Lead category deleted successfully"
+}
+```
+
+**Response (400 Bad Request):** (If category is in use by leads)
+```json
+{
+  "error": "Cannot delete category currently in use by leads"
+}
+```
+
+### List Lead Categories
+**Endpoint:** `POST /lead-categories/list`
+**Auth Required:** Yes (RBAC Enforced)
+
+**Request:**
+```json
+{
+  "filters": {},
+  "offset": 0,
+  "limit": 10
+}
+```
+
+**Response (200 OK):**
+(Returns paginated lead categories)
+
+---
+
+## 7. System
 
 ### System Health Check
 **Endpoint:** `GET /health`

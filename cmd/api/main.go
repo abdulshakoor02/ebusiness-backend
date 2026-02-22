@@ -63,11 +63,19 @@ func main() {
 	// 4. Init Repositories
 	tenantRepo := storage.NewMongoTenantRepository(db)
 	userRepo := storage.NewMongoUserRepository(db)
+	leadRepo := storage.NewMongoLeadRepository(db)
+	leadCategoryRepo := storage.NewMongoLeadCategoryRepository(db)
+	leadCommentRepo := storage.NewMongoLeadCommentRepository(db)
+	leadAppointmentRepo := storage.NewMongoLeadAppointmentRepository(db)
 
 	// 5. Init Services
 	tenantService := services.NewTenantService(tenantRepo, userRepo)
 	userService := services.NewUserService(userRepo)
 	authService := services.NewAuthService(userRepo, cfg)
+	leadService := services.NewLeadService(leadRepo)
+	leadCategoryService := services.NewLeadCategoryService(leadCategoryRepo)
+	leadCommentService := services.NewLeadCommentService(leadCommentRepo, leadRepo)
+	leadAppointmentService := services.NewLeadAppointmentService(leadAppointmentRepo, leadRepo)
 
 	// 6. Init Casbin with MongoDB Adapter
 	mongoClientOption := mongooptions.Client().ApplyURI(cfg.MongoURI)
@@ -101,9 +109,55 @@ func main() {
 		enforcer.AddPolicy("admin", "/api/v1/users/:id", "PUT")
 		enforcer.AddPolicy("admin", "/api/v1/users/list", "POST")
 
+		// Lead permissions (Admin & Users)
+		enforcer.AddPolicy("admin", "/api/v1/leads", "POST")
+		enforcer.AddPolicy("admin", "/api/v1/leads/:id", "GET")
+		enforcer.AddPolicy("admin", "/api/v1/leads/:id", "PUT")
+		enforcer.AddPolicy("admin", "/api/v1/leads/list", "POST")
+
+		// Lead Category permissions (Admin only write, Admin/User read)
+		enforcer.AddPolicy("admin", "/api/v1/lead-categories", "POST")
+		enforcer.AddPolicy("admin", "/api/v1/lead-categories/:id", "GET")
+		enforcer.AddPolicy("admin", "/api/v1/lead-categories/:id", "PUT")
+		enforcer.AddPolicy("admin", "/api/v1/lead-categories/:id", "DELETE")
+		enforcer.AddPolicy("admin", "/api/v1/lead-categories/list", "POST")
+
+		// Lead Comment permissions (Admin and User full layout)
+		enforcer.AddPolicy("admin", "/api/v1/leads/:lead_id/comments", "POST")
+		enforcer.AddPolicy("admin", "/api/v1/leads/:lead_id/comments/:id", "GET")
+		enforcer.AddPolicy("admin", "/api/v1/leads/:lead_id/comments/:id", "PUT")
+		enforcer.AddPolicy("admin", "/api/v1/leads/:lead_id/comments/:id", "DELETE")
+		enforcer.AddPolicy("admin", "/api/v1/leads/:lead_id/comments/list", "POST")
+
+		// Lead Appointment permissions
+		enforcer.AddPolicy("admin", "/api/v1/leads/:lead_id/appointments", "POST")
+		enforcer.AddPolicy("admin", "/api/v1/leads/:lead_id/appointments/:id", "GET")
+		enforcer.AddPolicy("admin", "/api/v1/leads/:lead_id/appointments/:id", "PUT")
+		enforcer.AddPolicy("admin", "/api/v1/leads/:lead_id/appointments/:id", "DELETE")
+		enforcer.AddPolicy("admin", "/api/v1/leads/:lead_id/appointments/list", "POST")
+
 		// Regular user permissions
 		enforcer.AddPolicy("user", "/api/v1/tenants/:id", "GET")
 		enforcer.AddPolicy("user", "/api/v1/users/:id", "GET")
+		enforcer.AddPolicy("user", "/api/v1/leads", "POST")
+		enforcer.AddPolicy("user", "/api/v1/leads/:id", "GET")
+		enforcer.AddPolicy("user", "/api/v1/leads/:id", "PUT")
+		enforcer.AddPolicy("user", "/api/v1/leads/list", "POST")
+
+		enforcer.AddPolicy("user", "/api/v1/lead-categories/:id", "GET")
+		enforcer.AddPolicy("user", "/api/v1/lead-categories/list", "POST")
+
+		enforcer.AddPolicy("user", "/api/v1/leads/:lead_id/comments", "POST")
+		enforcer.AddPolicy("user", "/api/v1/leads/:lead_id/comments/:id", "GET")
+		enforcer.AddPolicy("user", "/api/v1/leads/:lead_id/comments/:id", "PUT")
+		enforcer.AddPolicy("user", "/api/v1/leads/:lead_id/comments/:id", "DELETE")
+		enforcer.AddPolicy("user", "/api/v1/leads/:lead_id/comments/list", "POST")
+
+		enforcer.AddPolicy("user", "/api/v1/leads/:lead_id/appointments", "POST")
+		enforcer.AddPolicy("user", "/api/v1/leads/:lead_id/appointments/:id", "GET")
+		enforcer.AddPolicy("user", "/api/v1/leads/:lead_id/appointments/:id", "PUT")
+		enforcer.AddPolicy("user", "/api/v1/leads/:lead_id/appointments/:id", "DELETE")
+		enforcer.AddPolicy("user", "/api/v1/leads/:lead_id/appointments/list", "POST")
 
 		// Role inheritance: superadmin inherits admin
 		enforcer.AddGroupingPolicy("superadmin", "admin")
@@ -140,6 +194,10 @@ func main() {
 	authHandler := handler.NewAuthHandler(authService)
 	permissionService := services.NewPermissionService(enforcer)
 	permissionHandler := handler.NewPermissionHandler(permissionService)
+	leadHandler := handler.NewLeadHandler(leadService)
+	leadCategoryHandler := handler.NewLeadCategoryHandler(leadCategoryService)
+	leadCommentHandler := handler.NewLeadCommentHandler(leadCommentService)
+	leadAppointmentHandler := handler.NewLeadAppointmentHandler(leadAppointmentService)
 
 	// 8. Init Casbin Middleware
 	authz := middleware.NewCasbinMiddleware(enforcer)
@@ -199,6 +257,33 @@ func main() {
 	protected.Get("/users/:id", authz.RoutePermission(), userHandler.GetUser)
 	protected.Put("/users/:id", authz.RoutePermission(), userHandler.UpdateUser)
 	protected.Post("/users/list", authz.RoutePermission(), userHandler.ListUsers)
+
+	// Lead Management (Protected + RBAC)
+	protected.Post("/leads", authz.RoutePermission(), leadHandler.CreateLead)
+	protected.Get("/leads/:id", authz.RoutePermission(), leadHandler.GetLead)
+	protected.Put("/leads/:id", authz.RoutePermission(), leadHandler.UpdateLead)
+	protected.Post("/leads/list", authz.RoutePermission(), leadHandler.ListLeads)
+
+	// Lead Categories (Protected + RBAC)
+	protected.Post("/lead-categories", authz.RoutePermission(), leadCategoryHandler.CreateLeadCategory)
+	protected.Get("/lead-categories/:id", authz.RoutePermission(), leadCategoryHandler.GetLeadCategory)
+	protected.Put("/lead-categories/:id", authz.RoutePermission(), leadCategoryHandler.UpdateLeadCategory)
+	protected.Delete("/lead-categories/:id", authz.RoutePermission(), leadCategoryHandler.DeleteLeadCategory)
+	protected.Post("/lead-categories/list", authz.RoutePermission(), leadCategoryHandler.ListLeadCategories)
+
+	// Lead Comments (Protected + RBAC)
+	protected.Post("/leads/:lead_id/comments", authz.RoutePermission(), leadCommentHandler.CreateLeadComment)
+	protected.Get("/leads/:lead_id/comments/:id", authz.RoutePermission(), leadCommentHandler.GetLeadComment)
+	protected.Put("/leads/:lead_id/comments/:id", authz.RoutePermission(), leadCommentHandler.UpdateLeadComment)
+	protected.Delete("/leads/:lead_id/comments/:id", authz.RoutePermission(), leadCommentHandler.DeleteLeadComment)
+	protected.Post("/leads/:lead_id/comments/list", authz.RoutePermission(), leadCommentHandler.ListLeadComments)
+
+	// Lead Appointments
+	protected.Post("/leads/:lead_id/appointments", authz.RoutePermission(), leadAppointmentHandler.CreateLeadAppointment)
+	protected.Get("/leads/:lead_id/appointments/:id", authz.RoutePermission(), leadAppointmentHandler.GetLeadAppointment)
+	protected.Put("/leads/:lead_id/appointments/:id", authz.RoutePermission(), leadAppointmentHandler.UpdateLeadAppointment)
+	protected.Delete("/leads/:lead_id/appointments/:id", authz.RoutePermission(), leadAppointmentHandler.DeleteLeadAppointment)
+	protected.Post("/leads/:lead_id/appointments/list", authz.RoutePermission(), leadAppointmentHandler.ListLeadAppointments)
 
 	// 11. Start Server
 	slog.Info("Starting server", "port", cfg.ServerPort)

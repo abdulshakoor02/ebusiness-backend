@@ -2,6 +2,7 @@ package ports
 
 import (
 	"context"
+	"time"
 
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/domain"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -95,4 +96,95 @@ type PermissionService interface {
 	GetAllPermissions(ctx context.Context) ([][]string, error)
 	GetRoleInheritances(ctx context.Context) ([][]string, error)
 	CheckPermission(ctx context.Context, role, obj, act string) bool
+}
+
+type CreateLeadRequest struct {
+	CategoryID string `json:"category_id,omitempty"`
+	AssignedTo string `json:"assigned_to,omitempty"`
+	FirstName  string `json:"first_name"`
+	LastName   string `json:"last_name"`
+	Company    string `json:"company"`
+	Title      string `json:"title"`
+	Email      string `json:"email"`
+	Phone      string `json:"phone"`
+	Status     string `json:"status"`
+	Source     string `json:"source"`
+}
+
+type UpdateLeadRequest struct {
+	CategoryID string `json:"category_id,omitempty"`
+	AssignedTo string `json:"assigned_to,omitempty"`
+	FirstName  string `json:"first_name,omitempty"`
+	LastName   string `json:"last_name,omitempty"`
+	Company    string `json:"company,omitempty"`
+	Title      string `json:"title,omitempty"`
+	Email      string `json:"email,omitempty"`
+	Phone      string `json:"phone,omitempty"`
+	Status     string `json:"status,omitempty"`
+	Source     string `json:"source,omitempty"`
+}
+
+type LeadService interface {
+	CreateLead(ctx context.Context, req CreateLeadRequest) (*domain.Lead, error)
+	GetLead(ctx context.Context, id primitive.ObjectID) (*domain.Lead, error)
+	UpdateLead(ctx context.Context, id primitive.ObjectID, req UpdateLeadRequest) (*domain.Lead, error)
+	ListLeads(ctx context.Context, req FilterRequest) ([]*domain.Lead, int64, error)
+}
+
+type CreateLeadCategoryRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type UpdateLeadCategoryRequest struct {
+	Name        string `json:"name,omitempty"`
+	Description string `json:"description,omitempty"`
+}
+
+type LeadCategoryService interface {
+	CreateLeadCategory(ctx context.Context, req CreateLeadCategoryRequest) (*domain.LeadCategory, error)
+	GetLeadCategory(ctx context.Context, id primitive.ObjectID) (*domain.LeadCategory, error)
+	UpdateLeadCategory(ctx context.Context, id primitive.ObjectID, req UpdateLeadCategoryRequest) (*domain.LeadCategory, error)
+	DeleteLeadCategory(ctx context.Context, id primitive.ObjectID) error
+	ListLeadCategories(ctx context.Context, req FilterRequest) ([]*domain.LeadCategory, int64, error)
+}
+
+type CreateLeadCommentRequest struct {
+	Content string `json:"content"`
+}
+
+type UpdateLeadCommentRequest struct {
+	Content string `json:"content"`
+}
+
+type LeadCommentService interface {
+	CreateLeadComment(ctx context.Context, leadID primitive.ObjectID, req CreateLeadCommentRequest) (*domain.LeadComment, error)
+	GetLeadComment(ctx context.Context, id primitive.ObjectID) (*domain.LeadComment, error)
+	UpdateLeadComment(ctx context.Context, id primitive.ObjectID, req UpdateLeadCommentRequest) (*domain.LeadComment, error)
+	DeleteLeadComment(ctx context.Context, id primitive.ObjectID) error
+	ListLeadComments(ctx context.Context, leadID primitive.ObjectID, req FilterRequest) ([]*domain.LeadComment, int64, error)
+}
+
+type CreateLeadAppointmentRequest struct {
+	Title       string    `json:"title"`
+	Description string    `json:"description,omitempty"`
+	StartTime   time.Time `json:"start_time"`
+	EndTime     time.Time `json:"end_time"`
+	Status      string    `json:"status"` // using string representation for JSON decoding convenience
+}
+
+type UpdateLeadAppointmentRequest struct {
+	Title       string    `json:"title,omitempty"`
+	Description string    `json:"description,omitempty"`
+	StartTime   time.Time `json:"start_time,omitempty"`
+	EndTime     time.Time `json:"end_time,omitempty"`
+	Status      string    `json:"status,omitempty"`
+}
+
+type LeadAppointmentService interface {
+	CreateLeadAppointment(ctx context.Context, leadID primitive.ObjectID, req CreateLeadAppointmentRequest) (*domain.LeadAppointment, error)
+	GetLeadAppointment(ctx context.Context, id primitive.ObjectID) (*domain.LeadAppointment, error)
+	UpdateLeadAppointment(ctx context.Context, id primitive.ObjectID, req UpdateLeadAppointmentRequest) (*domain.LeadAppointment, error)
+	DeleteLeadAppointment(ctx context.Context, id primitive.ObjectID) error
+	ListLeadAppointments(ctx context.Context, leadID primitive.ObjectID, req FilterRequest) ([]*domain.LeadAppointment, int64, error)
 }

@@ -779,6 +779,9 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "mobile": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -844,6 +847,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "email": {
+                    "type": "string"
+                },
+                "mobile": {
                     "type": "string"
                 },
                 "name": {
@@ -928,6 +934,12 @@ const docTemplate = `{
         "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateUserRequest": {
             "type": "object",
             "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "mobile": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },

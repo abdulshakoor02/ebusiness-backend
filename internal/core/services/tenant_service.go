@@ -43,10 +43,10 @@ func (s *TenantService) RegisterTenant(ctx context.Context, req ports.CreateTena
 		tenant.ID,
 		req.AdminUser.Name,
 		req.AdminUser.Email,
+		req.AdminUser.Mobile,
 		hashedPassword,
-		"admin",
+		"admin", // First user is always admin
 	)
-
 	// Since we don't have a Tenant Context yet for this new user creation,
 	// the repo implementation must ensure it uses the user.TenantID if provided,
 	// or we manually handle it.

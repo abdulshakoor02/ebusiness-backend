@@ -56,6 +56,10 @@ func main() {
 
 	db := mongoClient.Database(cfg.DBName)
 
+	if err := database.RunMigrations(context.Background(), db); err != nil {
+		slog.Error("Failed to run migrations", "error", err)
+	}
+
 	// 4. Init Repositories
 	tenantRepo := storage.NewMongoTenantRepository(db)
 	userRepo := storage.NewMongoUserRepository(db)

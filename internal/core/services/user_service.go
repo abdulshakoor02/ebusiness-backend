@@ -35,6 +35,7 @@ func (s *UserService) CreateUser(ctx context.Context, req ports.CreateUserReques
 		tenantID,
 		req.Name,
 		req.Email,
+		req.Mobile,
 		hashedPassword,
 		req.Role,
 	)
@@ -62,6 +63,12 @@ func (s *UserService) UpdateUser(ctx context.Context, id primitive.ObjectID, req
 
 	if req.Name != "" {
 		user.Name = req.Name
+	}
+	if req.Email != "" {
+		user.Email = req.Email
+	}
+	if req.Mobile != "" {
+		user.Mobile = req.Mobile
 	}
 	if req.Role != "" {
 		user.Role = req.Role

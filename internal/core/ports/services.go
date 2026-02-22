@@ -25,13 +25,16 @@ type UpdateTenantRequest struct {
 type CreateUserRequest struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`
+	Mobile   string `json:"mobile"`
 	Password string `json:"password"`
 	Role     string `json:"role"`
 }
 
 type UpdateUserRequest struct {
-	Name string `json:"name"`
-	Role string `json:"role"`
+	Name   string `json:"name"`
+	Email  string `json:"email"`
+	Mobile string `json:"mobile"`
+	Role   string `json:"role"`
 }
 
 type LoginRequest struct {

@@ -149,6 +149,8 @@ func (r *MongoUserRepository) Update(ctx context.Context, user *domain.User) err
 	update := bson.M{
 		"$set": bson.M{
 			"name":       user.Name,
+			"email":      user.Email,
+			"mobile":     user.Mobile,
 			"role":       user.Role,
 			"updated_at": time.Now(),
 		},

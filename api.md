@@ -30,6 +30,7 @@ All protected endpoints require an Authorization header with a Bearer token:
     "tenant_id": "60a7e...",
     "name": "Admin User",
     "email": "user@example.com",
+    "mobile": "+1234567890",
     "role": "admin",
     "created_at": "2026-02-15T12:00:00Z",
     "updated_at": "2026-02-15T12:00:00Z"
@@ -61,6 +62,7 @@ All protected endpoints require an Authorization header with a Bearer token:
   "admin_user": {
     "name": "Jane Doe",
     "email": "jane@acmecorp.com",
+    "mobile": "+1234567890",
     "password": "strongpassword123",
     "role": "admin"
   }
@@ -73,6 +75,13 @@ All protected endpoints require an Authorization header with a Bearer token:
   "tenant_id": "60a7e...",
   "user_id": "60b8f...",
   "message": "Tenant created successfully"
+}
+```
+
+**Response (409 Conflict):**
+```json
+{
+  "error": "Email or mobile already exists"
 }
 ```
 
@@ -157,12 +166,20 @@ All protected endpoints require an Authorization header with a Bearer token:
 {
   "name": "John Smith",
   "email": "john@acmecorp.com",
+  "mobile": "+1987654321",
   "password": "securepassword123",
   "role": "user"
 }
 ```
 
 **Response (201 Created):** (Returns the created User object, excluding the password hash)
+
+**Response (409 Conflict):**
+```json
+{
+  "error": "Email or mobile already exists"
+}
+```
 
 ### Get User by ID
 **Endpoint:** `GET /users/:id`
@@ -178,6 +195,8 @@ All protected endpoints require an Authorization header with a Bearer token:
 ```json
 {
   "name": "John Smith Updated",
+  "email": "john.updated@acmecorp.com",
+  "mobile": "+1555555555",
   "role": "manager"
 }
 ```

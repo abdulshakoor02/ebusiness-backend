@@ -7,6 +7,7 @@ import (
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/ports"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type UserHandler struct {
@@ -41,6 +42,9 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	user, err := h.service.CreateUser(ctx, req)
 	if err != nil {
 		slog.Error("Failed to create user", "error", err)
+		if mongo.IsDuplicateKeyError(err) {
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "Email or mobile already exists"})
+		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 

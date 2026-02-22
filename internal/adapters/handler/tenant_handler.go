@@ -6,6 +6,7 @@ import (
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/ports"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type TenantHandler struct {
@@ -36,6 +37,9 @@ func (h *TenantHandler) RegisterTenant(c *fiber.Ctx) error {
 	tenant, user, err := h.service.RegisterTenant(c.Context(), req)
 	if err != nil {
 		slog.Error("Failed to register tenant", "error", err)
+		if mongo.IsDuplicateKeyError(err) {
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "Email or mobile already exists"})
+		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 

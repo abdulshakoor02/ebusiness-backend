@@ -34,7 +34,6 @@ func (s *LeadService) CreateLead(ctx context.Context, req ports.CreateLeadReques
 		req.Email,
 		req.Phone,
 		req.Status,
-		req.Source,
 	)
 
 	if req.AssignedTo != "" {
@@ -51,6 +50,14 @@ func (s *LeadService) CreateLead(ctx context.Context, req ports.CreateLeadReques
 			return nil, errors.New("invalid category_id form")
 		}
 		lead.CategoryID = categoryID
+	}
+
+	if req.SourceID != "" {
+		sourceID, err := primitive.ObjectIDFromHex(req.SourceID)
+		if err != nil {
+			return nil, errors.New("invalid source_id format")
+		}
+		lead.SourceID = sourceID
 	}
 
 	if err := s.leadRepo.Create(ctx, lead); err != nil {
@@ -91,9 +98,6 @@ func (s *LeadService) UpdateLead(ctx context.Context, id primitive.ObjectID, req
 	if req.Status != "" {
 		lead.Status = req.Status
 	}
-	if req.Source != "" {
-		lead.Source = req.Source
-	}
 
 	if req.AssignedTo != "" {
 		assignedToID, err := primitive.ObjectIDFromHex(req.AssignedTo)
@@ -109,6 +113,14 @@ func (s *LeadService) UpdateLead(ctx context.Context, id primitive.ObjectID, req
 			return nil, errors.New("invalid category_id format")
 		}
 		lead.CategoryID = categoryID
+	}
+
+	if req.SourceID != "" {
+		sourceID, err := primitive.ObjectIDFromHex(req.SourceID)
+		if err != nil {
+			return nil, errors.New("invalid source_id format")
+		}
+		lead.SourceID = sourceID
 	}
 
 	if err := s.leadRepo.Update(ctx, lead); err != nil {

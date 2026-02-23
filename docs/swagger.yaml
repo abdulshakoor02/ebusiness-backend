@@ -92,12 +92,21 @@ definitions:
         type: string
       phone:
         type: string
-      source:
+      source_id:
         type: string
       status:
         type: string
       title:
         type: string
+    type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadSourceRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    required:
+    - name
     type: object
   github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateTenantRequest:
     properties:
@@ -199,11 +208,18 @@ definitions:
         type: string
       phone:
         type: string
-      source:
+      source_id:
         type: string
       status:
         type: string
       title:
+        type: string
+    type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadSourceRequest:
+    properties:
+      description:
+        type: string
+      name:
         type: string
     type: object
   github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateTenantRequest:
@@ -459,6 +475,190 @@ paths:
       summary: List lead categories
       tags:
       - lead-categories
+  /lead-sources:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new lead source category/tag associated with the current
+        tenant
+      parameters:
+      - description: Create Lead Source Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadSourceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Create a new lead source
+      tags:
+      - lead-sources
+  /lead-sources/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes an existing lead source
+      parameters:
+      - description: Lead Source ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Delete a lead source
+      tags:
+      - lead-sources
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a specific lead source belonging to the current tenant
+      parameters:
+      - description: Lead Source ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get a lead source by ID
+      tags:
+      - lead-sources
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing lead source's details
+      parameters:
+      - description: Lead Source ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update Lead Source Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadSourceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Update a lead source
+      tags:
+      - lead-sources
+  /lead-sources/list:
+    post:
+      consumes:
+      - application/json
+      description: Retrieves a paginated list of lead sources based on filters
+      parameters:
+      - description: Filter Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: List lead sources
+      tags:
+      - lead-sources
   /leads:
     post:
       consumes:

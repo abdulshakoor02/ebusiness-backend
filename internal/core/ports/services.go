@@ -100,6 +100,7 @@ type PermissionService interface {
 
 type CreateLeadRequest struct {
 	CategoryID string `json:"category_id,omitempty"`
+	SourceID   string `json:"source_id,omitempty"`
 	AssignedTo string `json:"assigned_to,omitempty"`
 	FirstName  string `json:"first_name"`
 	LastName   string `json:"last_name"`
@@ -108,11 +109,11 @@ type CreateLeadRequest struct {
 	Email      string `json:"email"`
 	Phone      string `json:"phone"`
 	Status     string `json:"status"`
-	Source     string `json:"source"`
 }
 
 type UpdateLeadRequest struct {
 	CategoryID string `json:"category_id,omitempty"`
+	SourceID   string `json:"source_id,omitempty"`
 	AssignedTo string `json:"assigned_to,omitempty"`
 	FirstName  string `json:"first_name,omitempty"`
 	LastName   string `json:"last_name,omitempty"`
@@ -121,7 +122,6 @@ type UpdateLeadRequest struct {
 	Email      string `json:"email,omitempty"`
 	Phone      string `json:"phone,omitempty"`
 	Status     string `json:"status,omitempty"`
-	Source     string `json:"source,omitempty"`
 }
 
 type LeadService interface {
@@ -147,6 +147,24 @@ type LeadCategoryService interface {
 	UpdateLeadCategory(ctx context.Context, id primitive.ObjectID, req UpdateLeadCategoryRequest) (*domain.LeadCategory, error)
 	DeleteLeadCategory(ctx context.Context, id primitive.ObjectID) error
 	ListLeadCategories(ctx context.Context, req FilterRequest) ([]*domain.LeadCategory, int64, error)
+}
+
+type CreateLeadSourceRequest struct {
+	Name        string `json:"name" binding:"required"`
+	Description string `json:"description"`
+}
+
+type UpdateLeadSourceRequest struct {
+	Name        string `json:"name,omitempty"`
+	Description string `json:"description,omitempty"`
+}
+
+type LeadSourceService interface {
+	CreateLeadSource(ctx context.Context, req CreateLeadSourceRequest) (*domain.LeadSource, error)
+	GetLeadSource(ctx context.Context, id primitive.ObjectID) (*domain.LeadSource, error)
+	UpdateLeadSource(ctx context.Context, id primitive.ObjectID, req UpdateLeadSourceRequest) (*domain.LeadSource, error)
+	DeleteLeadSource(ctx context.Context, id primitive.ObjectID) error
+	ListLeadSources(ctx context.Context, req FilterRequest) ([]*domain.LeadSource, int64, error)
 }
 
 type CreateLeadCommentRequest struct {

@@ -52,3 +52,11 @@ type LeadAppointmentRepository interface {
 	Update(ctx context.Context, appointment *domain.LeadAppointment) error
 	Delete(ctx context.Context, id primitive.ObjectID) error
 }
+
+type LeadSourceRepository interface {
+	Create(ctx context.Context, source *domain.LeadSource) error
+	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.LeadSource, error)
+	List(ctx context.Context, filter interface{}, offset, limit int64) ([]*domain.LeadSource, int64, error)
+	Update(ctx context.Context, source *domain.LeadSource) error
+	Delete(ctx context.Context, id primitive.ObjectID) error
+}

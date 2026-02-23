@@ -65,6 +65,7 @@ func main() {
 	userRepo := storage.NewMongoUserRepository(db)
 	leadRepo := storage.NewMongoLeadRepository(db)
 	leadCategoryRepo := storage.NewMongoLeadCategoryRepository(db)
+	leadSourceRepo := storage.NewMongoLeadSourceRepository(db)
 	leadCommentRepo := storage.NewMongoLeadCommentRepository(db)
 	leadAppointmentRepo := storage.NewMongoLeadAppointmentRepository(db)
 
@@ -74,6 +75,7 @@ func main() {
 	authService := services.NewAuthService(userRepo, cfg)
 	leadService := services.NewLeadService(leadRepo)
 	leadCategoryService := services.NewLeadCategoryService(leadCategoryRepo)
+	leadSourceService := services.NewLeadSourceService(leadSourceRepo)
 	leadCommentService := services.NewLeadCommentService(leadCommentRepo, leadRepo)
 	leadAppointmentService := services.NewLeadAppointmentService(leadAppointmentRepo, leadRepo)
 
@@ -122,6 +124,13 @@ func main() {
 		enforcer.AddPolicy("admin", "/api/v1/lead-categories/:id", "DELETE")
 		enforcer.AddPolicy("admin", "/api/v1/lead-categories/list", "POST")
 
+		// Lead Source permissions (Admin only write, Admin/User read)
+		enforcer.AddPolicy("admin", "/api/v1/lead-sources", "POST")
+		enforcer.AddPolicy("admin", "/api/v1/lead-sources/:id", "GET")
+		enforcer.AddPolicy("admin", "/api/v1/lead-sources/:id", "PUT")
+		enforcer.AddPolicy("admin", "/api/v1/lead-sources/:id", "DELETE")
+		enforcer.AddPolicy("admin", "/api/v1/lead-sources/list", "POST")
+
 		// Lead Comment permissions (Admin and User full layout)
 		enforcer.AddPolicy("admin", "/api/v1/leads/:lead_id/comments", "POST")
 		enforcer.AddPolicy("admin", "/api/v1/leads/:lead_id/comments/:id", "GET")
@@ -146,6 +155,9 @@ func main() {
 
 		enforcer.AddPolicy("user", "/api/v1/lead-categories/:id", "GET")
 		enforcer.AddPolicy("user", "/api/v1/lead-categories/list", "POST")
+
+		enforcer.AddPolicy("user", "/api/v1/lead-sources/:id", "GET")
+		enforcer.AddPolicy("user", "/api/v1/lead-sources/list", "POST")
 
 		enforcer.AddPolicy("user", "/api/v1/leads/:lead_id/comments", "POST")
 		enforcer.AddPolicy("user", "/api/v1/leads/:lead_id/comments/:id", "GET")
@@ -196,6 +208,7 @@ func main() {
 	permissionHandler := handler.NewPermissionHandler(permissionService)
 	leadHandler := handler.NewLeadHandler(leadService)
 	leadCategoryHandler := handler.NewLeadCategoryHandler(leadCategoryService)
+	leadSourceHandler := handler.NewLeadSourceHandler(leadSourceService)
 	leadCommentHandler := handler.NewLeadCommentHandler(leadCommentService)
 	leadAppointmentHandler := handler.NewLeadAppointmentHandler(leadAppointmentService)
 
@@ -270,6 +283,13 @@ func main() {
 	protected.Put("/lead-categories/:id", authz.RoutePermission(), leadCategoryHandler.UpdateLeadCategory)
 	protected.Delete("/lead-categories/:id", authz.RoutePermission(), leadCategoryHandler.DeleteLeadCategory)
 	protected.Post("/lead-categories/list", authz.RoutePermission(), leadCategoryHandler.ListLeadCategories)
+
+	// Lead Sources (Protected + RBAC)
+	protected.Post("/lead-sources", authz.RoutePermission(), leadSourceHandler.CreateLeadSource)
+	protected.Get("/lead-sources/:id", authz.RoutePermission(), leadSourceHandler.GetLeadSource)
+	protected.Put("/lead-sources/:id", authz.RoutePermission(), leadSourceHandler.UpdateLeadSource)
+	protected.Delete("/lead-sources/:id", authz.RoutePermission(), leadSourceHandler.DeleteLeadSource)
+	protected.Post("/lead-sources/list", authz.RoutePermission(), leadSourceHandler.ListLeadSources)
 
 	// Lead Comments (Protected + RBAC)
 	protected.Post("/leads/:lead_id/comments", authz.RoutePermission(), leadCommentHandler.CreateLeadComment)

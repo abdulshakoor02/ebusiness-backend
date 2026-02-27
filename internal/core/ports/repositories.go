@@ -60,3 +60,13 @@ type LeadSourceRepository interface {
 	Update(ctx context.Context, source *domain.LeadSource) error
 	Delete(ctx context.Context, id primitive.ObjectID) error
 }
+
+type PermissionRuleRepository interface {
+	Create(ctx context.Context, rule *domain.PermissionRule) error
+	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.PermissionRule, error)
+	GetByResourceAndAction(ctx context.Context, resource, action string) (*domain.PermissionRule, error)
+	ListAll(ctx context.Context) ([]*domain.PermissionRule, error)
+	ListByResource(ctx context.Context, resource string) ([]*domain.PermissionRule, error)
+	Update(ctx context.Context, rule *domain.PermissionRule) error
+	Delete(ctx context.Context, id primitive.ObjectID) error
+}

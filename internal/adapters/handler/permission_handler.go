@@ -5,6 +5,7 @@ import (
 
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/ports"
 	"github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type PermissionHandler struct {
@@ -161,5 +162,120 @@ func (h *PermissionHandler) GetRoleInheritances(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"data": inheritances,
+	})
+}
+
+// GetAvailableRules godoc
+// @Summary      Get available permission rules grouped by resource
+// @Description  Returns all available permission rules organized by resource with human-readable labels
+// @Tags         permissions
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Security     Bearer
+// @Router       /permissions/available-rules [get]
+func (h *PermissionHandler) GetAvailableRules(c *fiber.Ctx) error {
+	groups, err := h.service.GetAvailableRulesGrouped(c.Context())
+	if err != nil {
+		slog.Error("Failed to fetch available rules", "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"resources": groups,
+	})
+}
+
+// CreatePermissionRule godoc
+// @Summary      Create a new permission rule
+// @Description  Creates a custom permission rule that can be frontend-only or endpoint-based
+// @Tags         permissions
+// @Accept       json
+// @Produce      json
+// @Param        request body ports.CreatePermissionRuleRequest true "Create Permission Rule Request"
+// @Success      201  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Security     Bearer
+// @Router       /permissions/rules [post]
+func (h *PermissionHandler) CreatePermissionRule(c *fiber.Ctx) error {
+	var req ports.CreatePermissionRuleRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	rule, err := h.service.CreatePermissionRule(c.Context(), req)
+	if err != nil {
+		slog.Error("Failed to create permission rule", "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"message": "Permission rule created successfully",
+		"data":    rule,
+	})
+}
+
+// UpdatePermissionRule godoc
+// @Summary      Update a permission rule
+// @Description  Updates an existing custom permission rule (system rules can only update labels)
+// @Tags         permissions
+// @Accept       json
+// @Produce      json
+// @Param        id path string true "Rule ID"
+// @Param        request body ports.UpdatePermissionRuleRequest true "Update Permission Rule Request"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Security     Bearer
+// @Router       /permissions/rules/{id} [put]
+func (h *PermissionHandler) UpdatePermissionRule(c *fiber.Ctx) error {
+	id := c.Params("id")
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid rule ID"})
+	}
+
+	var req ports.UpdatePermissionRuleRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	rule, err := h.service.UpdatePermissionRule(c.Context(), objectID, req)
+	if err != nil {
+		slog.Error("Failed to update permission rule", "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Permission rule updated successfully",
+		"data":    rule,
+	})
+}
+
+// DeletePermissionRule godoc
+// @Summary      Delete a permission rule
+// @Description  Deletes a custom permission rule (system rules cannot be deleted)
+// @Tags         permissions
+// @Produce      json
+// @Param        id path string true "Rule ID"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Security     Bearer
+// @Router       /permissions/rules/{id} [delete]
+func (h *PermissionHandler) DeletePermissionRule(c *fiber.Ctx) error {
+	id := c.Params("id")
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid rule ID"})
+	}
+
+	if err := h.service.DeletePermissionRule(c.Context(), objectID); err != nil {
+		slog.Error("Failed to delete permission rule", "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Permission rule deleted successfully",
 	})
 }

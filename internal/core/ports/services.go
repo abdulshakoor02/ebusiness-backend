@@ -89,6 +89,24 @@ type AssignRoleInheritanceRequest struct {
 	ParentRole string `json:"parent_role"`
 }
 
+type CreatePermissionRuleRequest struct {
+	Resource      string `json:"resource"`
+	ResourceLabel string `json:"resource_label"`
+	Action        string `json:"action"`
+	ActionLabel   string `json:"action_label"`
+	Path          string `json:"path"`
+	Method        string `json:"method"`
+	Description   string `json:"description"`
+}
+
+type UpdatePermissionRuleRequest struct {
+	ResourceLabel string `json:"resource_label,omitempty"`
+	ActionLabel   string `json:"action_label,omitempty"`
+	Path          string `json:"path,omitempty"`
+	Method        string `json:"method,omitempty"`
+	Description   string `json:"description,omitempty"`
+}
+
 type PermissionService interface {
 	AddPermission(ctx context.Context, req AddPermissionRequest) error
 	RemovePermission(ctx context.Context, req RemovePermissionRequest) error
@@ -96,6 +114,13 @@ type PermissionService interface {
 	GetAllPermissions(ctx context.Context) ([][]string, error)
 	GetRoleInheritances(ctx context.Context) ([][]string, error)
 	CheckPermission(ctx context.Context, role, obj, act string) bool
+
+	// Permission Rule Management
+	CreatePermissionRule(ctx context.Context, req CreatePermissionRuleRequest) (*domain.PermissionRule, error)
+	UpdatePermissionRule(ctx context.Context, id primitive.ObjectID, req UpdatePermissionRuleRequest) (*domain.PermissionRule, error)
+	DeletePermissionRule(ctx context.Context, id primitive.ObjectID) error
+	GetPermissionRuleByID(ctx context.Context, id primitive.ObjectID) (*domain.PermissionRule, error)
+	GetAvailableRulesGrouped(ctx context.Context) ([]domain.PermissionRuleGroup, error)
 }
 
 type CreateLeadRequest struct {

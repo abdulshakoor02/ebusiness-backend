@@ -200,11 +200,14 @@ func main() {
 
 	slog.Info("Casbin RBAC enforcer initialized with MongoDB adapter")
 
-	// 7. Init Handlers
+	// 7. Init Repositories for Permission Rules
+	permissionRuleRepo := storage.NewMongoPermissionRuleRepository(db)
+
+	// 8. Init Handlers
 	tenantHandler := handler.NewTenantHandler(tenantService)
 	userHandler := handler.NewUserHandler(userService)
 	authHandler := handler.NewAuthHandler(authService)
-	permissionService := services.NewPermissionService(enforcer)
+	permissionService := services.NewPermissionService(enforcer, permissionRuleRepo)
 	permissionHandler := handler.NewPermissionHandler(permissionService)
 	leadHandler := handler.NewLeadHandler(leadService)
 	leadCategoryHandler := handler.NewLeadCategoryHandler(leadCategoryService)
@@ -259,6 +262,12 @@ func main() {
 	protected.Get("/permissions", authz.RoutePermission(), permissionHandler.GetAllPermissions)
 	protected.Post("/permissions/roles/inherit", authz.RoutePermission(), permissionHandler.AssignRoleInheritance)
 	protected.Get("/permissions/roles/inherit", authz.RoutePermission(), permissionHandler.GetRoleInheritances)
+
+	// Permission Rules Management
+	protected.Get("/permissions/available-rules", authz.RoutePermission(), permissionHandler.GetAvailableRules)
+	protected.Post("/permissions/rules", authz.RoutePermission(), permissionHandler.CreatePermissionRule)
+	protected.Put("/permissions/rules/:id", authz.RoutePermission(), permissionHandler.UpdatePermissionRule)
+	protected.Delete("/permissions/rules/:id", authz.RoutePermission(), permissionHandler.DeletePermissionRule)
 
 	// Tenant Management (Protected + RBAC)
 	protected.Get("/tenants/:id", authz.RoutePermission(), tenantHandler.GetTenant)

@@ -3,17 +3,24 @@ package services
 import (
 	"context"
 	"errors"
+	"time"
 
+	"github.com/abdulshakoor02/goCrmBackend/internal/core/domain"
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/ports"
 	"github.com/casbin/casbin/v2"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type PermissionService struct {
 	enforcer *casbin.Enforcer
+	repo     ports.PermissionRuleRepository
 }
 
-func NewPermissionService(enforcer *casbin.Enforcer) *PermissionService {
-	return &PermissionService{enforcer: enforcer}
+func NewPermissionService(enforcer *casbin.Enforcer, repo ports.PermissionRuleRepository) *PermissionService {
+	return &PermissionService{
+		enforcer: enforcer,
+		repo:     repo,
+	}
 }
 
 func (s *PermissionService) AddPermission(ctx context.Context, req ports.AddPermissionRequest) error {
@@ -62,12 +69,10 @@ func (s *PermissionService) AssignRoleInheritance(ctx context.Context, req ports
 }
 
 func (s *PermissionService) GetAllPermissions(ctx context.Context) ([][]string, error) {
-	// Returns a 2D string slice of all 'p' rules
 	return s.enforcer.GetPolicy()
 }
 
 func (s *PermissionService) GetRoleInheritances(ctx context.Context) ([][]string, error) {
-	// Returns a 2D string slice of all 'g' rules
 	return s.enforcer.GetGroupingPolicy()
 }
 
@@ -77,4 +82,102 @@ func (s *PermissionService) CheckPermission(ctx context.Context, role, obj, act 
 		return false
 	}
 	return ok
+}
+
+func (s *PermissionService) CreatePermissionRule(ctx context.Context, req ports.CreatePermissionRuleRequest) (*domain.PermissionRule, error) {
+	if req.Resource == "" || req.Action == "" {
+		return nil, errors.New("resource and action are required")
+	}
+
+	existing, _ := s.repo.GetByResourceAndAction(ctx, req.Resource, req.Action)
+	if existing != nil {
+		return nil, errors.New("permission rule already exists for this resource and action")
+	}
+
+	rule := domain.NewPermissionRule(
+		req.Resource,
+		req.ResourceLabel,
+		req.Action,
+		req.ActionLabel,
+		req.Path,
+		req.Method,
+		req.Description,
+		false, // Custom rules are not system rules
+	)
+
+	if err := s.repo.Create(ctx, rule); err != nil {
+		return nil, err
+	}
+
+	return rule, nil
+}
+
+func (s *PermissionService) UpdatePermissionRule(ctx context.Context, id primitive.ObjectID, req ports.UpdatePermissionRuleRequest) (*domain.PermissionRule, error) {
+	rule, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Only allow updating labels, path, method, and description
+	if req.ResourceLabel != "" {
+		rule.ResourceLabel = req.ResourceLabel
+	}
+	if req.ActionLabel != "" {
+		rule.ActionLabel = req.ActionLabel
+	}
+	if req.Path != "" {
+		rule.Path = req.Path
+	}
+	if req.Method != "" {
+		rule.Method = req.Method
+	}
+	if req.Description != "" {
+		rule.Description = req.Description
+	}
+	rule.UpdatedAt = time.Now()
+
+	if err := s.repo.Update(ctx, rule); err != nil {
+		return nil, err
+	}
+
+	return rule, nil
+}
+
+func (s *PermissionService) DeletePermissionRule(ctx context.Context, id primitive.ObjectID) error {
+	return s.repo.Delete(ctx, id)
+}
+
+func (s *PermissionService) GetPermissionRuleByID(ctx context.Context, id primitive.ObjectID) (*domain.PermissionRule, error) {
+	return s.repo.GetByID(ctx, id)
+}
+
+func (s *PermissionService) GetAvailableRulesGrouped(ctx context.Context) ([]domain.PermissionRuleGroup, error) {
+	rules, err := s.repo.ListAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Group rules by resource
+	resourceMap := make(map[string]*domain.PermissionRuleGroup)
+
+	for _, rule := range rules {
+		group, exists := resourceMap[rule.Resource]
+		if !exists {
+			group = &domain.PermissionRuleGroup{
+				Resource: rule.Resource,
+				Label:    rule.ResourceLabel,
+				Rules:    []domain.PermissionRule{},
+			}
+			resourceMap[rule.Resource] = group
+		}
+		group.Rules = append(group.Rules, *rule)
+	}
+
+	// Convert map to slice
+	groups := make([]domain.PermissionRuleGroup, 0, len(resourceMap))
+	for _, group := range resourceMap {
+		groups = append(groups, *group)
+	}
+
+	return groups, nil
 }

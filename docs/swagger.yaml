@@ -108,6 +108,23 @@ definitions:
     required:
     - name
     type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreatePermissionRuleRequest:
+    properties:
+      action:
+        type: string
+      action_label:
+        type: string
+      description:
+        type: string
+      method:
+        type: string
+      path:
+        type: string
+      resource:
+        type: string
+      resource_label:
+        type: string
+    type: object
   github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateTenantRequest:
     properties:
       address:
@@ -220,6 +237,19 @@ definitions:
       description:
         type: string
       name:
+        type: string
+    type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdatePermissionRuleRequest:
+    properties:
+      action_label:
+        type: string
+      description:
+        type: string
+      method:
+        type: string
+      path:
+        type: string
+      resource_label:
         type: string
     type: object
   github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateTenantRequest:
@@ -1329,6 +1359,23 @@ paths:
       summary: Add a permission to a role
       tags:
       - permissions
+  /permissions/available-rules:
+    get:
+      description: Returns all available permission rules organized by resource with
+        human-readable labels
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get available permission rules grouped by resource
+      tags:
+      - permissions
   /permissions/my-permissions:
     get:
       description: Returns the permissions of the currently logged-in user based on
@@ -1394,6 +1441,113 @@ paths:
       security:
       - Bearer: []
       summary: Assign role inheritance
+      tags:
+      - permissions
+  /permissions/rules:
+    post:
+      consumes:
+      - application/json
+      description: Creates a custom permission rule that can be frontend-only or endpoint-based
+      parameters:
+      - description: Create Permission Rule Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreatePermissionRuleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Create a new permission rule
+      tags:
+      - permissions
+  /permissions/rules/{id}:
+    delete:
+      description: Deletes a custom permission rule (system rules cannot be deleted)
+      parameters:
+      - description: Rule ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Delete a permission rule
+      tags:
+      - permissions
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing custom permission rule (system rules can only
+        update labels)
+      parameters:
+      - description: Rule ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update Permission Rule Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdatePermissionRuleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Update a permission rule
       tags:
       - permissions
   /tenants:

@@ -333,6 +333,189 @@ All protected endpoints require an Authorization header with a Bearer token:
 }
 ```
 
+### Get Available Permission Rules
+**Endpoint:** `GET /permissions/available-rules`
+**Auth Required:** Yes (RBAC Enforced - Admin only)
+*Returns all available permission rules organized by resource with human-readable labels for frontend dropdowns.*
+
+**Response (200 OK):**
+```json
+{
+  "resources": [
+    {
+      "resource": "tenants",
+      "label": "Tenant Management",
+      "rules": [
+        {
+          "id": "60a7e...",
+          "resource": "tenants",
+          "resource_label": "Tenant Management",
+          "action": "view",
+          "action_label": "View Tenant Details",
+          "path": "/api/v1/tenants/:id",
+          "method": "GET",
+          "description": "View tenant information",
+          "is_system": true,
+          "created_at": "2026-02-27T10:00:00Z",
+          "updated_at": "2026-02-27T10:00:00Z"
+        },
+        {
+          "id": "60a7f...",
+          "resource": "tenants",
+          "resource_label": "Tenant Management",
+          "action": "update",
+          "action_label": "Update Tenant",
+          "path": "/api/v1/tenants/:id",
+          "method": "PUT",
+          "description": "Update tenant information",
+          "is_system": true,
+          "created_at": "2026-02-27T10:00:00Z",
+          "updated_at": "2026-02-27T10:00:00Z"
+        }
+      ]
+    },
+    {
+      "resource": "users",
+      "label": "User Management",
+      "rules": [
+        {
+          "id": "60a8e...",
+          "resource": "users",
+          "resource_label": "User Management",
+          "action": "create",
+          "action_label": "Create User",
+          "path": "/api/v1/users",
+          "method": "POST",
+          "description": "Create a new user",
+          "is_system": true,
+          "created_at": "2026-02-27T10:00:00Z",
+          "updated_at": "2026-02-27T10:00:00Z"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Create Permission Rule
+**Endpoint:** `POST /permissions/rules`
+**Auth Required:** Yes (RBAC Enforced - Admin only)
+*Creates a custom permission rule that can be endpoint-based or frontend-only (empty path/method).*
+
+**Request:**
+```json
+{
+  "resource": "custom-dashboard",
+  "resource_label": "Custom Dashboard",
+  "action": "access",
+  "action_label": "Access Dashboard",
+  "path": "",
+  "method": "",
+  "description": "Access to custom analytics dashboard"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "message": "Permission rule created successfully",
+  "data": {
+    "id": "60b9c...",
+    "resource": "custom-dashboard",
+    "resource_label": "Custom Dashboard",
+    "action": "access",
+    "action_label": "Access Dashboard",
+    "path": "",
+    "method": "",
+    "description": "Access to custom analytics dashboard",
+    "is_system": false,
+    "created_at": "2026-02-27T12:00:00Z",
+    "updated_at": "2026-02-27T12:00:00Z"
+  }
+}
+```
+
+**Response (400 Bad Request):**
+```json
+{
+  "error": "resource and action are required"
+}
+```
+
+**Response (409 Conflict):**
+```json
+{
+  "error": "permission rule already exists for this resource and action"
+}
+```
+
+### Update Permission Rule
+**Endpoint:** `PUT /permissions/rules/:id`
+**Auth Required:** Yes (RBAC Enforced - Admin only)
+*Updates an existing permission rule. System rules can only have labels/description updated. Custom rules can update all fields.*
+
+**Request:**
+```json
+{
+  "resource_label": "Updated Dashboard",
+  "action_label": "Access Analytics Dashboard",
+  "description": "Updated description"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "message": "Permission rule updated successfully",
+  "data": {
+    "id": "60b9c...",
+    "resource": "custom-dashboard",
+    "resource_label": "Updated Dashboard",
+    "action": "access",
+    "action_label": "Access Analytics Dashboard",
+    "path": "",
+    "method": "",
+    "description": "Updated description",
+    "is_system": false,
+    "created_at": "2026-02-27T12:00:00Z",
+    "updated_at": "2026-02-27T12:30:00Z"
+  }
+}
+```
+
+**Response (400 Bad Request):**
+```json
+{
+  "error": "Invalid rule ID"
+}
+```
+
+### Delete Permission Rule
+**Endpoint:** `DELETE /permissions/rules/:id`
+**Auth Required:** Yes (RBAC Enforced - Admin only)
+*Deletes a custom permission rule. System rules cannot be deleted.*
+
+**Response (200 OK):**
+```json
+{
+  "message": "Permission rule deleted successfully"
+}
+```
+
+**Response (400 Bad Request):**
+```json
+{
+  "error": "Invalid rule ID"
+}
+```
+
+**Response (500 Internal Server Error):**
+```json
+{
+  "error": "cannot delete system permission rules"
+}
+```
+
 ---
 
 ## 5. Leads

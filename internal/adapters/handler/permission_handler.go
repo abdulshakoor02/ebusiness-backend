@@ -18,7 +18,7 @@ func NewPermissionHandler(service ports.PermissionService) *PermissionHandler {
 
 // GetPermissions godoc
 // @Summary      Get current user permissions
-// @Description  Returns the permissions of the currently logged-in user based on their role
+// @Description  Returns all permissions for the currently logged-in user dynamically based on available permission rules
 // @Tags         permissions
 // @Produce      json
 // @Success      200  {object}  map[string]interface{}
@@ -30,15 +30,11 @@ func (h *PermissionHandler) GetPermissions(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Role not found in context"})
 	}
 
-	// Define all permission checks the frontend needs
-	permissions := fiber.Map{
-		"can_view_tenant":   h.service.CheckPermission(c.Context(), role, "/api/v1/tenants/:id", "GET"),
-		"can_update_tenant": h.service.CheckPermission(c.Context(), role, "/api/v1/tenants/:id", "PUT"),
-		"can_list_tenants":  h.service.CheckPermission(c.Context(), role, "/api/v1/tenants/list", "POST"),
-		"can_create_user":   h.service.CheckPermission(c.Context(), role, "/api/v1/users", "POST"),
-		"can_view_user":     h.service.CheckPermission(c.Context(), role, "/api/v1/users/:id", "GET"),
-		"can_update_user":   h.service.CheckPermission(c.Context(), role, "/api/v1/users/:id", "PUT"),
-		"can_list_users":    h.service.CheckPermission(c.Context(), role, "/api/v1/users/list", "POST"),
+	// Dynamically get all permissions for the user's role
+	permissions, err := h.service.GetAllPermissionsForRole(c.Context(), role)
+	if err != nil {
+		slog.Error("Failed to fetch permissions for role", "role", role, "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch permissions"})
 	}
 
 	return c.JSON(fiber.Map{

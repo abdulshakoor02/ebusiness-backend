@@ -7,6 +7,33 @@ All protected endpoints require an Authorization header with a Bearer token:
 
 ---
 
+## Role-Based Access Control (RBAC)
+
+The system uses hierarchical roles with Casbin for policy enforcement:
+
+**Role Hierarchy:**
+```
+superadmin (inherits all admin permissions)
+    └── admin (full system access)
+        └── user (limited access)
+```
+
+**Role Permissions Summary:**
+
+| Role | Permissions |
+|------|-------------|
+| **superadmin** | Inherits all admin permissions |
+| **admin** | Full CRUD on tenants, users, leads, lead-categories, lead-sources, lead-comments, lead-appointments, and permission management |
+| **user** | View/update own tenant, view own user, full access to leads/comments/appointments, read-only access to categories/sources |
+
+**Auth Requirements Legend:**
+- **No Auth** - Public endpoint, no authentication required
+- **JWT Auth** - Requires valid JWT token
+- **JWT + RBAC: Admin** - Requires JWT + admin role
+- **JWT + RBAC: All** - Requires JWT + any role (admin or user)
+
+---
+
 ## 1. Authentication
 
 ### User Login
@@ -87,7 +114,8 @@ All protected endpoints require an Authorization header with a Bearer token:
 
 ### Get Tenant by ID
 **Endpoint:** `GET /tenants/:id`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: All (Admin & User)
+*Users can only view their own tenant.*
 
 **Response (200 OK):**
 ```json
@@ -103,14 +131,14 @@ All protected endpoints require an Authorization header with a Bearer token:
     "country": "USA",
     "zip_code": "94105"
   },
-  "created_at": "...",
-  "updated_at": "..."
+  "created_at": "2026-02-15T10:00:00Z",
+  "updated_at": "2026-02-15T10:00:00Z"
 }
 ```
 
 ### Update Tenant
 **Endpoint:** `PUT /tenants/:id`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: Admin only
 
 **Request:** (All fields are optional)
 ```json
@@ -123,11 +151,28 @@ All protected endpoints require an Authorization header with a Bearer token:
 }
 ```
 
-**Response (200 OK):** (Returns the updated Tenant object)
+**Response (200 OK):**
+```json
+{
+  "id": "60a7e...",
+  "name": "Acme Corporation Inc",
+  "email": "admin@acmecorp.com",
+  "logo_url": "https://example.com/newlogo.png",
+  "address": {
+    "street": "123 Tech Lane",
+    "city": "San Jose",
+    "state": "CA",
+    "country": "USA",
+    "zip_code": "94105"
+  },
+  "created_at": "2026-02-15T10:00:00Z",
+  "updated_at": "2026-02-15T14:30:00Z"
+}
+```
 
 ### List Tenants
 **Endpoint:** `POST /tenants/list`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: Admin only
 
 **Request:**
 ```json
@@ -159,7 +204,7 @@ All protected endpoints require an Authorization header with a Bearer token:
 
 ### Create a User
 **Endpoint:** `POST /users`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: Admin only
 
 **Request:**
 ```json
@@ -172,7 +217,19 @@ All protected endpoints require an Authorization header with a Bearer token:
 }
 ```
 
-**Response (201 Created):** (Returns the created User object, excluding the password hash)
+**Response (201 Created):**
+```json
+{
+  "id": "60b8f...",
+  "tenant_id": "60a7e...",
+  "name": "John Smith",
+  "email": "john@acmecorp.com",
+  "mobile": "+1987654321",
+  "role": "user",
+  "created_at": "2026-02-15T12:00:00Z",
+  "updated_at": "2026-02-15T12:00:00Z"
+}
+```
 
 **Response (409 Conflict):**
 ```json
@@ -183,13 +240,26 @@ All protected endpoints require an Authorization header with a Bearer token:
 
 ### Get User by ID
 **Endpoint:** `GET /users/:id`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: All (Admin & User)
+*Users can only view their own user profile.*
 
-**Response (200 OK):** (Returns the User object)
+**Response (200 OK):**
+```json
+{
+  "id": "60b8f...",
+  "tenant_id": "60a7e...",
+  "name": "John Smith",
+  "email": "john@acmecorp.com",
+  "mobile": "+1987654321",
+  "role": "user",
+  "created_at": "2026-02-15T12:00:00Z",
+  "updated_at": "2026-02-15T12:00:00Z"
+}
+```
 
 ### Update User
 **Endpoint:** `PUT /users/:id`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: Admin only
 
 **Request:** (All fields are optional)
 ```json
@@ -201,11 +271,23 @@ All protected endpoints require an Authorization header with a Bearer token:
 }
 ```
 
-**Response (200 OK):** (Returns the updated User object)
+**Response (200 OK):**
+```json
+{
+  "id": "60b8f...",
+  "tenant_id": "60a7e...",
+  "name": "John Smith Updated",
+  "email": "john.updated@acmecorp.com",
+  "mobile": "+1555555555",
+  "role": "manager",
+  "created_at": "2026-02-15T12:00:00Z",
+  "updated_at": "2026-02-15T14:30:00Z"
+}
+```
 
 ### List Users
 **Endpoint:** `POST /users/list`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: Admin only
 
 **Request:**
 ```json
@@ -522,7 +604,7 @@ All protected endpoints require an Authorization header with a Bearer token:
 
 ### Create Lead
 **Endpoint:** `POST /leads`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: All (Admin & User)
 
 **Request:**
 ```json
@@ -541,18 +623,52 @@ All protected endpoints require an Authorization header with a Bearer token:
 ```
 
 **Response (201 Created):**
-(Returns the created Lead object)
+```json
+{
+  "id": "60c9g...",
+  "tenant_id": "60a7e...",
+  "assigned_to": "60b8f...",
+  "category_id": "60b8f...",
+  "source_id": "60b8f...",
+  "first_name": "Alice",
+  "last_name": "Johnson",
+  "company": "Tech Innovations",
+  "title": "CTO",
+  "email": "alice@techinnovations.com",
+  "phone": "+1987654321",
+  "status": "New",
+  "created_at": "2026-02-15T12:00:00Z",
+  "updated_at": "2026-02-15T12:00:00Z"
+}
+```
 
 ### Get Lead by ID
 **Endpoint:** `GET /leads/:id`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: All (Admin & User)
 
 **Response (200 OK):**
-(Returns the Lead object)
+```json
+{
+  "id": "60c9g...",
+  "tenant_id": "60a7e...",
+  "assigned_to": "60b8f...",
+  "category_id": "60b8f...",
+  "source_id": "60b8f...",
+  "first_name": "Alice",
+  "last_name": "Johnson",
+  "company": "Tech Innovations",
+  "title": "CTO",
+  "email": "alice@techinnovations.com",
+  "phone": "+1987654321",
+  "status": "New",
+  "created_at": "2026-02-15T12:00:00Z",
+  "updated_at": "2026-02-15T12:00:00Z"
+}
+```
 
 ### Update Lead
 **Endpoint:** `PUT /leads/:id`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: All (Admin & User)
 
 **Request (Partial update supported):**
 ```json
@@ -564,11 +680,28 @@ All protected endpoints require an Authorization header with a Bearer token:
 ```
 
 **Response (200 OK):**
-(Returns the updated Lead object)
+```json
+{
+  "id": "60c9g...",
+  "tenant_id": "60a7e...",
+  "assigned_to": "60b8f...",
+  "category_id": "60b8f...",
+  "source_id": "60b8f...",
+  "first_name": "Alice",
+  "last_name": "Johnson",
+  "company": "Tech Innovations",
+  "title": "CTO",
+  "email": "alice@techinnovations.com",
+  "phone": "+1987654321",
+  "status": "Contacted",
+  "created_at": "2026-02-15T12:00:00Z",
+  "updated_at": "2026-02-15T14:30:00Z"
+}
+```
 
 ### List Leads
 **Endpoint:** `POST /leads/list`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: All (Admin & User)
 
 **Request:**
 ```json
@@ -590,7 +723,7 @@ All protected endpoints require an Authorization header with a Bearer token:
 
 ### Create Lead Category
 **Endpoint:** `POST /lead-categories`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: Admin only
 
 **Request:**
 ```json
@@ -601,18 +734,36 @@ All protected endpoints require an Authorization header with a Bearer token:
 ```
 
 **Response (201 Created):**
-(Returns the created LeadCategory object)
+```json
+{
+  "id": "60d0h...",
+  "tenant_id": "60a7e...",
+  "name": "High Priority",
+  "description": "Leads that need immediate follow-up",
+  "created_at": "2026-02-15T12:00:00Z",
+  "updated_at": "2026-02-15T12:00:00Z"
+}
+```
 
 ### Get Lead Category by ID
 **Endpoint:** `GET /lead-categories/:id`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: All (Admin & User)
 
 **Response (200 OK):**
-(Returns the LeadCategory object)
+```json
+{
+  "id": "60d0h...",
+  "tenant_id": "60a7e...",
+  "name": "High Priority",
+  "description": "Leads that need immediate follow-up",
+  "created_at": "2026-02-15T12:00:00Z",
+  "updated_at": "2026-02-15T12:00:00Z"
+}
+```
 
 ### Update Lead Category
 **Endpoint:** `PUT /lead-categories/:id`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: Admin only
 
 **Request:**
 ```json
@@ -623,11 +774,20 @@ All protected endpoints require an Authorization header with a Bearer token:
 ```
 
 **Response (200 OK):**
-(Returns the updated LeadCategory object)
+```json
+{
+  "id": "60d0h...",
+  "tenant_id": "60a7e...",
+  "name": "Urgent Priority",
+  "description": "Requires contact within 2 hours",
+  "created_at": "2026-02-15T12:00:00Z",
+  "updated_at": "2026-02-15T14:30:00Z"
+}
+```
 
 ### Delete Lead Category
 **Endpoint:** `DELETE /lead-categories/:id`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: Admin only
 
 **Response (200 OK):**
 ```json
@@ -645,7 +805,7 @@ All protected endpoints require an Authorization header with a Bearer token:
 
 ### List Lead Categories
 **Endpoint:** `POST /lead-categories/list`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: All (Admin & User)
 
 **Request:**
 ```json
@@ -657,7 +817,23 @@ All protected endpoints require an Authorization header with a Bearer token:
 ```
 
 **Response (200 OK):**
-(Returns paginated lead categories)
+```json
+{
+  "data": [
+    {
+      "id": "60d0h...",
+      "tenant_id": "60a7e...",
+      "name": "High Priority",
+      "description": "Leads that need immediate follow-up",
+      "created_at": "2026-02-15T12:00:00Z",
+      "updated_at": "2026-02-15T12:00:00Z"
+    }
+  ],
+  "total": 1,
+  "offset": 0,
+  "limit": 10
+}
+```
 
 ---
 
@@ -665,7 +841,7 @@ All protected endpoints require an Authorization header with a Bearer token:
 
 ### Add Comment to Lead
 **Endpoint:** `POST /leads/:lead_id/comments`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: All (Admin & User)
 
 **Request:**
 ```json
@@ -675,18 +851,39 @@ All protected endpoints require an Authorization header with a Bearer token:
 ```
 
 **Response (201 Created):**
-(Returns the created LeadComment object containing author_id)
+```json
+{
+  "id": "60e1i...",
+  "tenant_id": "60a7e...",
+  "lead_id": "60c9g...",
+  "author_id": "60b8f...",
+  "content": "Had a great phone screen with Alice. She's ready to sign.",
+  "created_at": "2026-02-15T12:00:00Z",
+  "updated_at": "2026-02-15T12:00:00Z"
+}
+```
 
 ### Get Lead Comment by ID
 **Endpoint:** `GET /leads/:lead_id/comments/:id`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: All (Admin & User)
 
 **Response (200 OK):**
-(Returns the LeadComment object)
+```json
+{
+  "id": "60e1i...",
+  "tenant_id": "60a7e...",
+  "lead_id": "60c9g...",
+  "author_id": "60b8f...",
+  "content": "Had a great phone screen with Alice. She's ready to sign.",
+  "created_at": "2026-02-15T12:00:00Z",
+  "updated_at": "2026-02-15T12:00:00Z"
+}
+```
 
 ### Update Lead Comment
 **Endpoint:** `PUT /leads/:lead_id/comments/:id`
-**Auth Required:** Yes (RBAC Enforced - only original author or admin)
+**Auth Required:** JWT + RBAC: All (Admin & User)
+*Note: Users can only update their own comments. Admins can update any comment.*
 
 **Request:**
 ```json
@@ -696,11 +893,22 @@ All protected endpoints require an Authorization header with a Bearer token:
 ```
 
 **Response (200 OK):**
-(Returns the updated LeadComment object)
+```json
+{
+  "id": "60e1i...",
+  "tenant_id": "60a7e...",
+  "lead_id": "60c9g...",
+  "author_id": "60b8f...",
+  "content": "Updated details: Alice will sign next week.",
+  "created_at": "2026-02-15T12:00:00Z",
+  "updated_at": "2026-02-15T14:30:00Z"
+}
+```
 
 ### Delete Lead Comment
 **Endpoint:** `DELETE /leads/:lead_id/comments/:id`
-**Auth Required:** Yes (RBAC Enforced - only original author or admin)
+**Auth Required:** JWT + RBAC: All (Admin & User)
+*Note: Users can only delete their own comments. Admins can delete any comment.*
 
 **Response (200 OK):**
 ```json
@@ -711,7 +919,7 @@ All protected endpoints require an Authorization header with a Bearer token:
 
 ### List Lead Comments
 **Endpoint:** `POST /leads/:lead_id/comments/list`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: All (Admin & User)
 
 **Request:**
 ```json
@@ -723,7 +931,24 @@ All protected endpoints require an Authorization header with a Bearer token:
 ```
 
 **Response (200 OK):**
-(Returns paginated lead comments belonging to specific lead_id)
+```json
+{
+  "data": [
+    {
+      "id": "60e1i...",
+      "tenant_id": "60a7e...",
+      "lead_id": "60c9g...",
+      "author_id": "60b8f...",
+      "content": "Had a great phone screen with Alice. She's ready to sign.",
+      "created_at": "2026-02-15T12:00:00Z",
+      "updated_at": "2026-02-15T12:00:00Z"
+    }
+  ],
+  "total": 1,
+  "offset": 0,
+  "limit": 50
+}
+```
 
 ---
 
@@ -731,7 +956,7 @@ All protected endpoints require an Authorization header with a Bearer token:
 
 ### Schedule Appointment with Lead
 **Endpoint:** `POST /leads/:lead_id/appointments`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: All (Admin & User)
 
 **Request:**
 ```json
@@ -745,18 +970,47 @@ All protected endpoints require an Authorization header with a Bearer token:
 ```
 
 **Response (201 Created):**
-(Returns the created LeadAppointment object containing organizer_id)
+```json
+{
+  "id": "60f2j...",
+  "tenant_id": "60a7e...",
+  "lead_id": "60c9g...",
+  "organizer_id": "60b8f...",
+  "title": "Initial Demo Call",
+  "description": "Walkthrough of core CRM features with Alice",
+  "start_time": "2024-05-15T14:30:00Z",
+  "end_time": "2024-05-15T15:00:00Z",
+  "status": "scheduled",
+  "created_at": "2026-02-15T12:00:00Z",
+  "updated_at": "2026-02-15T12:00:00Z"
+}
+```
 
 ### Get Lead Appointment by ID
 **Endpoint:** `GET /leads/:lead_id/appointments/:id`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: All (Admin & User)
 
 **Response (200 OK):**
-(Returns the LeadAppointment object)
+```json
+{
+  "id": "60f2j...",
+  "tenant_id": "60a7e...",
+  "lead_id": "60c9g...",
+  "organizer_id": "60b8f...",
+  "title": "Initial Demo Call",
+  "description": "Walkthrough of core CRM features with Alice",
+  "start_time": "2024-05-15T14:30:00Z",
+  "end_time": "2024-05-15T15:00:00Z",
+  "status": "scheduled",
+  "created_at": "2026-02-15T12:00:00Z",
+  "updated_at": "2026-02-15T12:00:00Z"
+}
+```
 
 ### Update Lead Appointment
 **Endpoint:** `PUT /leads/:lead_id/appointments/:id`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: All (Admin & User)
+*Note: Users can only update appointments they organized. Admins can update any appointment.*
 
 **Request:**
 ```json
@@ -766,11 +1020,26 @@ All protected endpoints require an Authorization header with a Bearer token:
 ```
 
 **Response (200 OK):**
-(Returns the updated LeadAppointment object)
+```json
+{
+  "id": "60f2j...",
+  "tenant_id": "60a7e...",
+  "lead_id": "60c9g...",
+  "organizer_id": "60b8f...",
+  "title": "Initial Demo Call",
+  "description": "Walkthrough of core CRM features with Alice",
+  "start_time": "2024-05-15T14:30:00Z",
+  "end_time": "2024-05-15T15:00:00Z",
+  "status": "completed",
+  "created_at": "2026-02-15T12:00:00Z",
+  "updated_at": "2026-02-15T14:30:00Z"
+}
+```
 
 ### Delete Lead Appointment
 **Endpoint:** `DELETE /leads/:lead_id/appointments/:id`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: All (Admin & User)
+*Note: Users can only delete appointments they organized. Admins can delete any appointment.*
 
 **Response (200 OK):**
 ```json
@@ -781,7 +1050,7 @@ All protected endpoints require an Authorization header with a Bearer token:
 
 ### List Lead Appointments
 **Endpoint:** `POST /leads/:lead_id/appointments/list`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: All (Admin & User)
 
 **Request:**
 ```json
@@ -793,7 +1062,28 @@ All protected endpoints require an Authorization header with a Bearer token:
 ```
 
 **Response (200 OK):**
-(Returns paginated lead appointments belonging to specific lead_id)
+```json
+{
+  "data": [
+    {
+      "id": "60f2j...",
+      "tenant_id": "60a7e...",
+      "lead_id": "60c9g...",
+      "organizer_id": "60b8f...",
+      "title": "Initial Demo Call",
+      "description": "Walkthrough of core CRM features with Alice",
+      "start_time": "2024-05-15T14:30:00Z",
+      "end_time": "2024-05-15T15:00:00Z",
+      "status": "scheduled",
+      "created_at": "2026-02-15T12:00:00Z",
+      "updated_at": "2026-02-15T12:00:00Z"
+    }
+  ],
+  "total": 1,
+  "offset": 0,
+  "limit": 50
+}
+```
 
 ---
 
@@ -801,7 +1091,7 @@ All protected endpoints require an Authorization header with a Bearer token:
 
 ### Create Lead Source
 **Endpoint:** `POST /lead-sources`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: Admin only
 
 **Request:**
 ```json
@@ -812,18 +1102,36 @@ All protected endpoints require an Authorization header with a Bearer token:
 ```
 
 **Response (201 Created):**
-(Returns the created LeadSource object)
+```json
+{
+  "id": "60g3k...",
+  "tenant_id": "60a7e...",
+  "name": "Website",
+  "description": "Leads originating from the company website",
+  "created_at": "2026-02-15T12:00:00Z",
+  "updated_at": "2026-02-15T12:00:00Z"
+}
+```
 
 ### Get Lead Source by ID
 **Endpoint:** `GET /lead-sources/:id`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: All (Admin & User)
 
 **Response (200 OK):**
-(Returns the LeadSource object)
+```json
+{
+  "id": "60g3k...",
+  "tenant_id": "60a7e...",
+  "name": "Website",
+  "description": "Leads originating from the company website",
+  "created_at": "2026-02-15T12:00:00Z",
+  "updated_at": "2026-02-15T12:00:00Z"
+}
+```
 
 ### Update Lead Source
 **Endpoint:** `PUT /lead-sources/:id`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: Admin only
 
 **Request:**
 ```json
@@ -833,11 +1141,20 @@ All protected endpoints require an Authorization header with a Bearer token:
 ```
 
 **Response (200 OK):**
-(Returns the updated LeadSource object)
+```json
+{
+  "id": "60g3k...",
+  "tenant_id": "60a7e...",
+  "name": "Website",
+  "description": "Leads originating from organic website traffic",
+  "created_at": "2026-02-15T12:00:00Z",
+  "updated_at": "2026-02-15T14:30:00Z"
+}
+```
 
 ### Delete Lead Source
 **Endpoint:** `DELETE /lead-sources/:id`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: Admin only
 
 **Response (200 OK):**
 ```json
@@ -848,7 +1165,7 @@ All protected endpoints require an Authorization header with a Bearer token:
 
 ### List Lead Sources
 **Endpoint:** `POST /lead-sources/list`
-**Auth Required:** Yes (RBAC Enforced)
+**Auth Required:** JWT + RBAC: All (Admin & User)
 
 **Request:**
 ```json
@@ -860,7 +1177,23 @@ All protected endpoints require an Authorization header with a Bearer token:
 ```
 
 **Response (200 OK):**
-(Returns paginated lead sources)
+```json
+{
+  "data": [
+    {
+      "id": "60g3k...",
+      "tenant_id": "60a7e...",
+      "name": "Website",
+      "description": "Leads originating from the company website",
+      "created_at": "2026-02-15T12:00:00Z",
+      "updated_at": "2026-02-15T12:00:00Z"
+    }
+  ],
+  "total": 1,
+  "offset": 0,
+  "limit": 10
+}
+```
 
 ---
 

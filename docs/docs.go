@@ -1679,7 +1679,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "Returns the permissions of the currently logged-in user based on their role",
+                "description": "Returns all permissions for the currently logged-in user dynamically based on available permission rules",
                 "produces": [
                     "application/json"
                 ],

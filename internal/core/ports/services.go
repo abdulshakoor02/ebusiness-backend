@@ -121,6 +121,9 @@ type PermissionService interface {
 	DeletePermissionRule(ctx context.Context, id primitive.ObjectID) error
 	GetPermissionRuleByID(ctx context.Context, id primitive.ObjectID) (*domain.PermissionRule, error)
 	GetAvailableRulesGrouped(ctx context.Context) ([]domain.PermissionRuleGroup, error)
+
+	// Dynamic Permission Checking
+	GetAllPermissionsForRole(ctx context.Context, role string) (map[string]bool, error)
 }
 
 type CreateLeadRequest struct {

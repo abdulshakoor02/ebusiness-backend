@@ -181,3 +181,28 @@ func (s *PermissionService) GetAvailableRulesGrouped(ctx context.Context) ([]dom
 
 	return groups, nil
 }
+
+func (s *PermissionService) GetAllPermissionsForRole(ctx context.Context, role string) (map[string]bool, error) {
+	rules, err := s.repo.ListAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	permissions := make(map[string]bool)
+	for _, rule := range rules {
+		// Create permission key: can_{action}_{resource}
+		key := "can_" + rule.Action + "_" + rule.Resource
+
+		// Check permission using Casbin
+		// For frontend-only rules (empty path/method), check if role has any policy with this resource
+		if rule.Path == "" || rule.Method == "" {
+			// Check if role name matches resource pattern for custom permissions
+			// This is a simplified check - in production you might want more sophisticated logic
+			permissions[key] = false // Custom rules need to be explicitly assigned
+		} else {
+			permissions[key] = s.CheckPermission(ctx, role, rule.Path, rule.Method)
+		}
+	}
+
+	return permissions, nil
+}

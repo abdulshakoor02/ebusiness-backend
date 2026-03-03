@@ -50,6 +50,13 @@ definitions:
       parent_role:
         type: string
     type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.BulkUpdateRolePermissionsRequest:
+    properties:
+      permissions:
+        items:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.RolePermission'
+        type: array
+    type: object
   github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadAppointmentRequest:
     properties:
       description:
@@ -182,6 +189,33 @@ definitions:
       path:
         type: string
       role:
+        type: string
+    type: object
+  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.RolePermission:
+    properties:
+      action:
+        type: string
+      action_label:
+        type: string
+      assigned:
+        type: boolean
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      is_system:
+        type: boolean
+      method:
+        type: string
+      path:
+        type: string
+      resource:
+        type: string
+      resource_label:
+        type: string
+      updated_at:
         type: string
     type: object
   github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadAppointmentRequest:
@@ -1391,6 +1425,84 @@ paths:
       security:
       - Bearer: []
       summary: Get current user permissions
+      tags:
+      - permissions
+  /permissions/roles:
+    get:
+      description: Retrieves all available roles in the system.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get all roles
+      tags:
+      - permissions
+  /permissions/roles/{role}:
+    get:
+      description: Returns all permission rules grouped by resource, including a boolean
+        indicating if the specified role is assigned each rule.
+      parameters:
+      - description: Role Name
+        in: path
+        name: role
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get all available permissions mapped to a specific role
+      tags:
+      - permissions
+  /permissions/roles/{role}/bulk:
+    post:
+      description: Synchronizes a role's permissions by adding or removing rules based
+        on the provided assigned status.
+      parameters:
+      - description: Role Name
+        in: path
+        name: role
+        required: true
+        type: string
+      - description: Bulk Update Permissions Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.BulkUpdateRolePermissionsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Bulk update permissions for a role
       tags:
       - permissions
   /permissions/roles/inherit:

@@ -107,6 +107,21 @@ type UpdatePermissionRuleRequest struct {
 	Description   string `json:"description,omitempty"`
 }
 
+type RolePermission struct {
+	domain.PermissionRule
+	Assigned bool `json:"assigned"`
+}
+
+type RolePermissionGroup struct {
+	Resource string           `json:"resource"`
+	Label    string           `json:"label"`
+	Rules    []RolePermission `json:"rules"`
+}
+
+type BulkUpdateRolePermissionsRequest struct {
+	Permissions []RolePermission `json:"permissions"`
+}
+
 type PermissionService interface {
 	AddPermission(ctx context.Context, req AddPermissionRequest) error
 	RemovePermission(ctx context.Context, req RemovePermissionRequest) error
@@ -122,8 +137,15 @@ type PermissionService interface {
 	GetPermissionRuleByID(ctx context.Context, id primitive.ObjectID) (*domain.PermissionRule, error)
 	GetAvailableRulesGrouped(ctx context.Context) ([]domain.PermissionRuleGroup, error)
 
+	// UI-Friendly Role Permissions
+	GetPermissionsForRoleGrouped(ctx context.Context, role string) ([]RolePermissionGroup, error)
+	BulkUpdateRolePermissions(ctx context.Context, role string, req BulkUpdateRolePermissionsRequest) error
+
 	// Dynamic Permission Checking
 	GetAllPermissionsForRole(ctx context.Context, role string) (map[string]bool, error)
+
+	// Role Management
+	GetAllRoles(ctx context.Context) ([]string, error)
 }
 
 type CreateLeadRequest struct {

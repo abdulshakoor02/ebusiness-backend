@@ -367,6 +367,80 @@ superadmin (inherits all admin permissions)
 }
 ```
 
+### Get All Roles
+**Endpoint:** `GET /permissions/roles`
+**Auth Required:** Yes (RBAC Enforced - Admin only)
+*Retrieves all available roles in the system.*
+
+**Response (200 OK):**
+```json
+{
+  "data": ["admin", "user", "superadmin"]
+}
+```
+
+### Get Role Permissions (UI Grouped)
+**Endpoint:** `GET /permissions/roles/:role`
+**Auth Required:** Yes (RBAC Enforced - Admin only)
+*Retrieves all available rules in the system dynamically grouped by resource, alongside an 'assigned' boolean reflecting if this role possesses the rule.*
+
+**Response (200 OK):**
+```json
+{
+  "role": "manager",
+  "resources": [
+    {
+      "resource": "users",
+      "label": "User Management",
+      "rules": [
+        {
+          "id": "60a7e...",
+          "resource": "users",
+          "resource_label": "User Management",
+          "action": "create",
+          "action_label": "Create User",
+          "path": "/api/v1/users",
+          "method": "POST",
+          "description": "Allows creating new users",
+          "is_system": true,
+          "assigned": true
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Bulk Update Role Permissions
+**Endpoint:** `POST /permissions/roles/:role/bulk`
+**Auth Required:** Yes (RBAC Enforced - Admin only)
+*Allows the UI to send an array of permission state changes to synchronize a role's total access matrix simultaneously.*
+
+**Request:**
+```json
+{
+  "permissions": [
+    {
+      "path": "/api/v1/users",
+      "method": "POST",
+      "assigned": true
+    },
+    {
+      "path": "/api/v1/leads",
+      "method": "DELETE",
+      "assigned": false
+    }
+  ]
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "message": "Role permissions synchronized successfully"
+}
+```
+
 ### Get All Rules / Policies
 **Endpoint:** `GET /permissions`
 **Auth Required:** Yes (RBAC Enforced - Admin only)

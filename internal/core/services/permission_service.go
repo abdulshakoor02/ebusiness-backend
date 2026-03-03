@@ -206,3 +206,85 @@ func (s *PermissionService) GetAllPermissionsForRole(ctx context.Context, role s
 
 	return permissions, nil
 }
+
+func (s *PermissionService) GetPermissionsForRoleGrouped(ctx context.Context, role string) ([]ports.RolePermissionGroup, error) {
+	rules, err := s.repo.ListAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Group rules by resource
+	resourceMap := make(map[string]*ports.RolePermissionGroup)
+
+	for _, rule := range rules {
+		group, exists := resourceMap[rule.Resource]
+		if !exists {
+			group = &ports.RolePermissionGroup{
+				Resource: rule.Resource,
+				Label:    rule.ResourceLabel,
+				Rules:    []ports.RolePermission{},
+			}
+			resourceMap[rule.Resource] = group
+		}
+
+		// Determine if the rule is assigned to the role
+		isAssigned := false
+		if rule.Path != "" && rule.Method != "" {
+			isAssigned = s.CheckPermission(ctx, role, rule.Path, rule.Method)
+		}
+
+		rolePerm := ports.RolePermission{
+			PermissionRule: *rule,
+			Assigned:       isAssigned,
+		}
+
+		group.Rules = append(group.Rules, rolePerm)
+	}
+
+	// Convert map to slice
+	groups := make([]ports.RolePermissionGroup, 0, len(resourceMap))
+	for _, group := range resourceMap {
+		groups = append(groups, *group)
+	}
+
+	return groups, nil
+}
+
+func (s *PermissionService) BulkUpdateRolePermissions(ctx context.Context, role string, req ports.BulkUpdateRolePermissionsRequest) error {
+	if role == "" {
+		return errors.New("role is required")
+	}
+
+	// Iterate over desired permissions and sync with Casbin
+	for _, perm := range req.Permissions {
+		// Only deal with API/Path based rules for Casbin
+		if perm.Path == "" || perm.Method == "" {
+			continue
+		}
+
+		if perm.Assigned {
+			// AddPolicy is idempotent
+			_, err := s.enforcer.AddPolicy(role, perm.Path, perm.Method)
+			if err != nil {
+				return err
+			}
+		} else {
+			// RemovePolicy is idempotent safely returning false
+			_, err := s.enforcer.RemovePolicy(role, perm.Path, perm.Method)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// Persist the synced policies to MongoDB
+	if err := s.enforcer.SavePolicy(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *PermissionService) GetAllRoles(ctx context.Context) ([]string, error) {
+	return s.enforcer.GetAllSubjects()
+}

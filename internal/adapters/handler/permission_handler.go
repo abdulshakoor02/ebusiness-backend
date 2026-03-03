@@ -141,6 +141,26 @@ func (h *PermissionHandler) GetAllPermissions(c *fiber.Ctx) error {
 	})
 }
 
+// GetAllRoles godoc
+// @Summary      Get all roles
+// @Description  Retrieves all available roles in the system.
+// @Tags         permissions
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Security     Bearer
+// @Router       /permissions/roles [get]
+func (h *PermissionHandler) GetAllRoles(c *fiber.Ctx) error {
+	roles, err := h.service.GetAllRoles(c.Context())
+	if err != nil {
+		slog.Error("Failed to fetch roles", "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"data": roles,
+	})
+}
+
 // GetRoleInheritances godoc
 // @Summary      Get all role inheritances
 // @Description  Retrieves all inherited roles (groupings) within the system.
@@ -273,5 +293,65 @@ func (h *PermissionHandler) DeletePermissionRule(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"message": "Permission rule deleted successfully",
+	})
+}
+
+// GetRolePermissions godoc
+// @Summary      Get all available permissions mapped to a specific role
+// @Description  Returns all permission rules grouped by resource, including a boolean indicating if the specified role is assigned each rule.
+// @Tags         permissions
+// @Produce      json
+// @Param        role path string true "Role Name"
+// @Success      200  {object}  map[string]interface{}
+// @Security     Bearer
+// @Router       /permissions/roles/{role} [get]
+func (h *PermissionHandler) GetRolePermissions(c *fiber.Ctx) error {
+	role := c.Params("role")
+	if role == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Role parameter is required"})
+	}
+
+	groups, err := h.service.GetPermissionsForRoleGrouped(c.Context(), role)
+	if err != nil {
+		slog.Error("Failed to fetch permissions for role", "role", role, "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"role":      role,
+		"resources": groups,
+	})
+}
+
+// BulkUpdateRolePermissions godoc
+// @Summary      Bulk update permissions for a role
+// @Description  Synchronizes a role's permissions by adding or removing rules based on the provided assigned status.
+// @Tags         permissions
+// @Produce      json
+// @Param        role path string true "Role Name"
+// @Param        request body ports.BulkUpdateRolePermissionsRequest true "Bulk Update Permissions Request"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Security     Bearer
+// @Router       /permissions/roles/{role}/bulk [post]
+func (h *PermissionHandler) BulkUpdateRolePermissions(c *fiber.Ctx) error {
+	role := c.Params("role")
+	if role == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Role parameter is required"})
+	}
+
+	var req ports.BulkUpdateRolePermissionsRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	if err := h.service.BulkUpdateRolePermissions(c.Context(), role, req); err != nil {
+		slog.Error("Failed to bulk update permissions for role", "role", role, "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Role permissions synchronized successfully",
 	})
 }

@@ -191,6 +191,7 @@ func main() {
 		enforcer.AddPolicy("admin", "/api/v1/permissions", "GET")
 		enforcer.AddPolicy("admin", "/api/v1/permissions/roles/inherit", "POST")
 		enforcer.AddPolicy("admin", "/api/v1/permissions/roles/inherit", "GET")
+		enforcer.AddPolicy("admin", "/api/v1/permissions/roles", "GET")
 		if err := enforcer.SavePolicy(); err != nil {
 			slog.Error("Failed to save permission endpoint policies", "error", err)
 			panic(err)
@@ -268,6 +269,11 @@ func main() {
 	protected.Post("/permissions/rules", authz.RoutePermission(), permissionHandler.CreatePermissionRule)
 	protected.Put("/permissions/rules/:id", authz.RoutePermission(), permissionHandler.UpdatePermissionRule)
 	protected.Delete("/permissions/rules/:id", authz.RoutePermission(), permissionHandler.DeletePermissionRule)
+
+	// UI-Friendly Role Permissions
+	protected.Get("/permissions/roles", authz.RoutePermission(), permissionHandler.GetAllRoles)
+	protected.Get("/permissions/roles/:role", authz.RoutePermission(), permissionHandler.GetRolePermissions)
+	protected.Post("/permissions/roles/:role/bulk", authz.RoutePermission(), permissionHandler.BulkUpdateRolePermissions)
 
 	// Tenant Management (Protected + RBAC)
 	protected.Get("/tenants/:id", authz.RoutePermission(), tenantHandler.GetTenant)

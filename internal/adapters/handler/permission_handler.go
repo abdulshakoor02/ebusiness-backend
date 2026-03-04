@@ -4,6 +4,7 @@ import (
 	"log/slog"
 
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/ports"
+	"github.com/abdulshakoor02/goCrmBackend/pkg/middleware"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -219,10 +220,16 @@ func (h *PermissionHandler) CreatePermissionRule(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
+	slog.Debug("CreatePermissionRule request", "resource", req.Resource, "action", req.Action, "scope_type", req.ScopeType, "filter_field", req.FilterField)
+
 	rule, err := h.service.CreatePermissionRule(c.Context(), req)
 	if err != nil {
-		slog.Error("Failed to create permission rule", "error", err)
+		slog.Error("Failed to create permission rule", "error", err, "resource", req.Resource, "action", req.Action)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if err := middleware.ReloadScopeConfig(h.service); err != nil {
+		slog.Warn("Failed to reload scope config after creating permission rule", "error", err)
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
@@ -262,6 +269,10 @@ func (h *PermissionHandler) UpdatePermissionRule(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	if err := middleware.ReloadScopeConfig(h.service); err != nil {
+		slog.Warn("Failed to reload scope config after updating permission rule", "error", err)
+	}
+
 	return c.JSON(fiber.Map{
 		"message": "Permission rule updated successfully",
 		"data":    rule,
@@ -289,6 +300,10 @@ func (h *PermissionHandler) DeletePermissionRule(c *fiber.Ctx) error {
 	if err := h.service.DeletePermissionRule(c.Context(), objectID); err != nil {
 		slog.Error("Failed to delete permission rule", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if err := middleware.ReloadScopeConfig(h.service); err != nil {
+		slog.Warn("Failed to reload scope config after deleting permission rule", "error", err)
 	}
 
 	return c.JSON(fiber.Map{
@@ -353,5 +368,23 @@ func (h *PermissionHandler) BulkUpdateRolePermissions(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"message": "Role permissions synchronized successfully",
+	})
+}
+
+func (h *PermissionHandler) DebugGetRolePermissions(c *fiber.Ctx) error {
+	role := c.Params("role")
+	if role == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Role parameter is required"})
+	}
+
+	perms, err := h.service.DebugGetRolePermissionsFromDB(c.Context(), role)
+	if err != nil {
+		slog.Error("Failed to debug fetch permissions for role", "role", role, "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"role":        role,
+		"permissions": perms,
 	})
 }

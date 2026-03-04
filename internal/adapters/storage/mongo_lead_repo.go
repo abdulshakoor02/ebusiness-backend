@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/domain"
+	"github.com/abdulshakoor02/goCrmBackend/pkg/middleware"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -58,6 +59,18 @@ func (r *MongoLeadRepository) List(ctx context.Context, filter interface{}, offs
 	if f, ok := filter.(map[string]interface{}); ok {
 		for k, v := range f {
 			query[k] = v
+		}
+	}
+
+	scopeFilter := middleware.GetScopeFilter(ctx)
+	slog.Debug("Lead List - Scope filter", "scope_type", scopeFilter.ScopeType, "self_user_id", scopeFilter.SelfUserID, "filter_field", scopeFilter.FilterField)
+	if scopeFilter.ScopeType == "self" && scopeFilter.SelfUserID != "" && scopeFilter.FilterField != "" && !scopeFilter.IsSystemAdmin {
+		userOID, err := primitive.ObjectIDFromHex(scopeFilter.SelfUserID)
+		if err == nil {
+			query[scopeFilter.FilterField] = userOID
+			slog.Debug("Lead List - Added scope filter", "filter_field", scopeFilter.FilterField, "user_id", scopeFilter.SelfUserID)
+		} else {
+			slog.Warn("Lead List - Invalid user ID for scope filter", "user_id", scopeFilter.SelfUserID, "error", err)
 		}
 	}
 

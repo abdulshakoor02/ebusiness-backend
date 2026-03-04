@@ -73,15 +73,13 @@ type AuthService interface {
 }
 
 type AddPermissionRequest struct {
-	Role   string `json:"role"`
-	Path   string `json:"path"`
-	Method string `json:"method"`
+	Role             string             `json:"role"`
+	PermissionRuleID primitive.ObjectID `json:"permission_rule_id"`
 }
 
 type RemovePermissionRequest struct {
-	Role   string `json:"role"`
-	Path   string `json:"path"`
-	Method string `json:"method"`
+	Role             string             `json:"role"`
+	PermissionRuleID primitive.ObjectID `json:"permission_rule_id"`
 }
 
 type AssignRoleInheritanceRequest struct {
@@ -97,6 +95,8 @@ type CreatePermissionRuleRequest struct {
 	Path          string `json:"path"`
 	Method        string `json:"method"`
 	Description   string `json:"description"`
+	ScopeType     string `json:"scope_type"`
+	FilterField   string `json:"filter_field"`
 }
 
 type UpdatePermissionRuleRequest struct {
@@ -105,6 +105,8 @@ type UpdatePermissionRuleRequest struct {
 	Path          string `json:"path,omitempty"`
 	Method        string `json:"method,omitempty"`
 	Description   string `json:"description,omitempty"`
+	ScopeType     string `json:"scope_type,omitempty"`
+	FilterField   string `json:"filter_field,omitempty"`
 }
 
 type RolePermission struct {
@@ -120,6 +122,12 @@ type RolePermissionGroup struct {
 
 type BulkUpdateRolePermissionsRequest struct {
 	Permissions []RolePermission `json:"permissions"`
+}
+
+type BulkPermissionItem struct {
+	Path     string `json:"path"`
+	Method   string `json:"method"`
+	Assigned bool   `json:"assigned"`
 }
 
 type PermissionService interface {
@@ -146,6 +154,12 @@ type PermissionService interface {
 
 	// Role Management
 	GetAllRoles(ctx context.Context) ([]string, error)
+
+	// Raw permission rules for scope configuration
+	GetAllPermissionRules(ctx context.Context) ([]*domain.PermissionRule, error)
+
+	// Debug - bypass cache
+	DebugGetRolePermissionsFromDB(ctx context.Context, role string) ([]*domain.RolePermission, error)
 }
 
 type CreateLeadRequest struct {

@@ -3,54 +3,57 @@ package services
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/domain"
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/ports"
-	"github.com/casbin/casbin/v2"
+	"github.com/abdulshakoor02/goCrmBackend/pkg/middleware"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type PermissionService struct {
-	enforcer *casbin.Enforcer
-	repo     ports.PermissionRuleRepository
+	permissionRuleRepo ports.PermissionRuleRepository
+	rolePermissionRepo ports.RolePermissionRepository
 }
 
-func NewPermissionService(enforcer *casbin.Enforcer, repo ports.PermissionRuleRepository) *PermissionService {
+func NewPermissionService(permissionRuleRepo ports.PermissionRuleRepository, rolePermissionRepo ports.RolePermissionRepository) *PermissionService {
 	return &PermissionService{
-		enforcer: enforcer,
-		repo:     repo,
+		permissionRuleRepo: permissionRuleRepo,
+		rolePermissionRepo: rolePermissionRepo,
 	}
 }
 
 func (s *PermissionService) AddPermission(ctx context.Context, req ports.AddPermissionRequest) error {
-	if req.Role == "" || req.Path == "" || req.Method == "" {
-		return errors.New("role, path, and method are required")
+	if req.Role == "" || req.PermissionRuleID.IsZero() {
+		return errors.New("role and permission_rule_id are required")
 	}
 
-	success, err := s.enforcer.AddPolicy(req.Role, req.Path, req.Method)
+	hasPermission, err := s.rolePermissionRepo.HasPermissionByRuleID(ctx, req.Role, req.PermissionRuleID)
 	if err != nil {
 		return err
 	}
-	if !success {
-		return errors.New("policy already exists")
+	if hasPermission {
+		return errors.New("permission already exists")
 	}
-	return nil
+
+	return s.rolePermissionRepo.Assign(ctx, req.Role, req.PermissionRuleID)
 }
 
 func (s *PermissionService) RemovePermission(ctx context.Context, req ports.RemovePermissionRequest) error {
-	if req.Role == "" || req.Path == "" || req.Method == "" {
-		return errors.New("role, path, and method are required")
+	if req.Role == "" || req.PermissionRuleID.IsZero() {
+		return errors.New("role and permission_rule_id are required")
 	}
 
-	success, err := s.enforcer.RemovePolicy(req.Role, req.Path, req.Method)
+	hasPermission, err := s.rolePermissionRepo.HasPermissionByRuleID(ctx, req.Role, req.PermissionRuleID)
 	if err != nil {
 		return err
 	}
-	if !success {
-		return errors.New("policy not found")
+	if !hasPermission {
+		return errors.New("permission not found")
 	}
-	return nil
+
+	return s.rolePermissionRepo.Remove(ctx, req.Role, req.PermissionRuleID)
 }
 
 func (s *PermissionService) AssignRoleInheritance(ctx context.Context, req ports.AssignRoleInheritanceRequest) error {
@@ -58,27 +61,39 @@ func (s *PermissionService) AssignRoleInheritance(ctx context.Context, req ports
 		return errors.New("child_role and parent_role are required")
 	}
 
-	success, err := s.enforcer.AddGroupingPolicy(req.ChildRole, req.ParentRole)
-	if err != nil {
-		return err
-	}
-	if !success {
-		return errors.New("inheritance already exists")
-	}
-	return nil
+	return s.rolePermissionRepo.AssignInheritance(ctx, req.ChildRole, req.ParentRole)
 }
 
 func (s *PermissionService) GetAllPermissions(ctx context.Context) ([][]string, error) {
-	return s.enforcer.GetPolicy()
+	rules, err := s.rolePermissionRepo.GetPermissionRulesForInheritedRoles(ctx, "admin")
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([][]string, 0, len(rules))
+	for _, r := range rules {
+		result = append(result, []string{"admin", r.Path, r.Method})
+	}
+	return result, nil
 }
 
 func (s *PermissionService) GetRoleInheritances(ctx context.Context) ([][]string, error) {
-	return s.enforcer.GetGroupingPolicy()
+	inheritances, err := s.rolePermissionRepo.GetRoleInheritances(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([][]string, 0, len(inheritances))
+	for _, i := range inheritances {
+		result = append(result, []string{i.ChildRole, i.ParentRole})
+	}
+	return result, nil
 }
 
-func (s *PermissionService) CheckPermission(ctx context.Context, role, obj, act string) bool {
-	ok, err := s.enforcer.Enforce(role, obj, act)
+func (s *PermissionService) CheckPermission(ctx context.Context, role, path, method string) bool {
+	ok, err := s.rolePermissionRepo.CheckPermissionByPathMethod(ctx, role, path, method)
 	if err != nil {
+		slog.Error("CheckPermission error", "error", err)
 		return false
 	}
 	return ok
@@ -89,10 +104,18 @@ func (s *PermissionService) CreatePermissionRule(ctx context.Context, req ports.
 		return nil, errors.New("resource and action are required")
 	}
 
-	existing, _ := s.repo.GetByResourceAndAction(ctx, req.Resource, req.Action)
+	existing, _ := s.permissionRuleRepo.GetByResourceAndAction(ctx, req.Resource, req.Action)
 	if existing != nil {
+		slog.Debug("Permission rule already exists", "resource", req.Resource, "action", req.Action, "existing_rule", existing)
 		return nil, errors.New("permission rule already exists for this resource and action")
 	}
+
+	scopeType := req.ScopeType
+	if scopeType == "" {
+		scopeType = "none"
+	}
+
+	slog.Debug("Creating permission rule", "resource", req.Resource, "action", req.Action, "scope_type", scopeType, "filter_field", req.FilterField)
 
 	rule := domain.NewPermissionRule(
 		req.Resource,
@@ -102,23 +125,28 @@ func (s *PermissionService) CreatePermissionRule(ctx context.Context, req ports.
 		req.Path,
 		req.Method,
 		req.Description,
-		false, // Custom rules are not system rules
+		false,
+		scopeType,
+		req.FilterField,
 	)
 
-	if err := s.repo.Create(ctx, rule); err != nil {
+	if err := s.permissionRuleRepo.Create(ctx, rule); err != nil {
 		return nil, err
 	}
+
+	// Invalidate caches and reload scope config since rules changed
+	s.rolePermissionRepo.InvalidateAllCache()
+	s.reloadScopeConfig()
 
 	return rule, nil
 }
 
 func (s *PermissionService) UpdatePermissionRule(ctx context.Context, id primitive.ObjectID, req ports.UpdatePermissionRuleRequest) (*domain.PermissionRule, error) {
-	rule, err := s.repo.GetByID(ctx, id)
+	rule, err := s.permissionRuleRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	// Only allow updating labels, path, method, and description
 	if req.ResourceLabel != "" {
 		rule.ResourceLabel = req.ResourceLabel
 	}
@@ -134,32 +162,56 @@ func (s *PermissionService) UpdatePermissionRule(ctx context.Context, id primiti
 	if req.Description != "" {
 		rule.Description = req.Description
 	}
+	if req.ScopeType != "" {
+		rule.ScopeType = req.ScopeType
+	}
+	if req.FilterField != "" {
+		rule.FilterField = req.FilterField
+	}
 	rule.UpdatedAt = time.Now()
 
-	if err := s.repo.Update(ctx, rule); err != nil {
+	if err := s.permissionRuleRepo.Update(ctx, rule); err != nil {
 		return nil, err
 	}
+
+	// Invalidate caches and reload scope config since rules changed
+	s.rolePermissionRepo.InvalidateAllCache()
+	s.reloadScopeConfig()
 
 	return rule, nil
 }
 
 func (s *PermissionService) DeletePermissionRule(ctx context.Context, id primitive.ObjectID) error {
-	return s.repo.Delete(ctx, id)
+	err := s.permissionRuleRepo.Delete(ctx, id)
+	if err == nil {
+		// Invalidate caches and reload scope config since rules changed
+		s.rolePermissionRepo.InvalidateAllCache()
+		s.reloadScopeConfig()
+	}
+	return err
+}
+
+// reloadScopeConfig refreshes the middleware scope config from the current permission rules
+func (s *PermissionService) reloadScopeConfig() {
+	rules, err := s.permissionRuleRepo.ListAll(context.Background())
+	if err != nil {
+		slog.Error("Failed to reload scope config after rule change", "error", err)
+		return
+	}
+	middleware.ReloadScopeConfigFromRules(rules)
 }
 
 func (s *PermissionService) GetPermissionRuleByID(ctx context.Context, id primitive.ObjectID) (*domain.PermissionRule, error) {
-	return s.repo.GetByID(ctx, id)
+	return s.permissionRuleRepo.GetByID(ctx, id)
 }
 
 func (s *PermissionService) GetAvailableRulesGrouped(ctx context.Context) ([]domain.PermissionRuleGroup, error) {
-	rules, err := s.repo.ListAll(ctx)
+	rules, err := s.permissionRuleRepo.ListAll(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Group rules by resource
 	resourceMap := make(map[string]*domain.PermissionRuleGroup)
-
 	for _, rule := range rules {
 		group, exists := resourceMap[rule.Resource]
 		if !exists {
@@ -173,7 +225,6 @@ func (s *PermissionService) GetAvailableRulesGrouped(ctx context.Context) ([]dom
 		group.Rules = append(group.Rules, *rule)
 	}
 
-	// Convert map to slice
 	groups := make([]domain.PermissionRuleGroup, 0, len(resourceMap))
 	for _, group := range resourceMap {
 		groups = append(groups, *group)
@@ -183,39 +234,51 @@ func (s *PermissionService) GetAvailableRulesGrouped(ctx context.Context) ([]dom
 }
 
 func (s *PermissionService) GetAllPermissionsForRole(ctx context.Context, role string) (map[string]bool, error) {
-	rules, err := s.repo.ListAll(ctx)
+	rules, err := s.permissionRuleRepo.ListAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get all assigned permission rule IDs for this role (including inherited)
+	assignedRuleIDs, err := s.rolePermissionRepo.GetInheritedPermissions(ctx, role)
 	if err != nil {
 		return nil, err
 	}
 
 	permissions := make(map[string]bool)
 	for _, rule := range rules {
-		// Create permission key: can_{action}_{resource}
 		key := "can_" + rule.Action + "_" + rule.Resource
-
-		// Check permission using Casbin
-		// For frontend-only rules (empty path/method), check if role has any policy with this resource
-		if rule.Path == "" || rule.Method == "" {
-			// Check if role name matches resource pattern for custom permissions
-			// This is a simplified check - in production you might want more sophisticated logic
-			permissions[key] = false // Custom rules need to be explicitly assigned
-		} else {
-			permissions[key] = s.CheckPermission(ctx, role, rule.Path, rule.Method)
-		}
+		permissions[key] = assignedRuleIDs[rule.ID]
 	}
 
 	return permissions, nil
 }
 
 func (s *PermissionService) GetPermissionsForRoleGrouped(ctx context.Context, role string) ([]ports.RolePermissionGroup, error) {
-	rules, err := s.repo.ListAll(ctx)
+	rules, err := s.permissionRuleRepo.ListAll(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Group rules by resource
-	resourceMap := make(map[string]*ports.RolePermissionGroup)
+	// Get all assigned permission rule IDs for this role (including inherited)
+	assignedRuleIDs, err := s.rolePermissionRepo.GetInheritedPermissions(ctx, role)
+	if err != nil {
+		return nil, err
+	}
 
+	// Debug: log the raw DB state
+	directPerms, _ := s.rolePermissionRepo.GetByRole(ctx, role)
+	slog.Debug("GetPermissionsForRoleGrouped - direct role_permissions from DB",
+		"role", role,
+		"direct_count", len(directPerms))
+	for _, dp := range directPerms {
+		slog.Debug("  direct permission", "rule_id", dp.PermissionRuleID.Hex())
+	}
+	slog.Debug("GetPermissionsForRoleGrouped - resolved assigned IDs (incl. inherited)",
+		"role", role,
+		"total_assigned", len(assignedRuleIDs))
+
+	resourceMap := make(map[string]*ports.RolePermissionGroup)
 	for _, rule := range rules {
 		group, exists := resourceMap[rule.Resource]
 		if !exists {
@@ -227,21 +290,14 @@ func (s *PermissionService) GetPermissionsForRoleGrouped(ctx context.Context, ro
 			resourceMap[rule.Resource] = group
 		}
 
-		// Determine if the rule is assigned to the role
-		isAssigned := false
-		if rule.Path != "" && rule.Method != "" {
-			isAssigned = s.CheckPermission(ctx, role, rule.Path, rule.Method)
-		}
-
 		rolePerm := ports.RolePermission{
 			PermissionRule: *rule,
-			Assigned:       isAssigned,
+			Assigned:       assignedRuleIDs[rule.ID],
 		}
 
 		group.Rules = append(group.Rules, rolePerm)
 	}
 
-	// Convert map to slice
 	groups := make([]ports.RolePermissionGroup, 0, len(resourceMap))
 	for _, group := range resourceMap {
 		groups = append(groups, *group)
@@ -255,36 +311,48 @@ func (s *PermissionService) BulkUpdateRolePermissions(ctx context.Context, role 
 		return errors.New("role is required")
 	}
 
-	// Iterate over desired permissions and sync with Casbin
 	for _, perm := range req.Permissions {
-		// Only deal with API/Path based rules for Casbin
-		if perm.Path == "" || perm.Method == "" {
+		if perm.ID.IsZero() {
 			continue
 		}
 
 		if perm.Assigned {
-			// AddPolicy is idempotent
-			_, err := s.enforcer.AddPolicy(role, perm.Path, perm.Method)
-			if err != nil {
-				return err
+			if err := s.rolePermissionRepo.Assign(ctx, role, perm.ID); err != nil {
+				slog.Error("Failed to assign permission", "role", role, "permission_rule_id", perm.ID, "error", err)
 			}
 		} else {
-			// RemovePolicy is idempotent safely returning false
-			_, err := s.enforcer.RemovePolicy(role, perm.Path, perm.Method)
-			if err != nil {
-				return err
+			if err := s.rolePermissionRepo.Remove(ctx, role, perm.ID); err != nil {
+				slog.Error("Failed to remove permission", "role", role, "permission_rule_id", perm.ID, "error", err)
 			}
 		}
-	}
-
-	// Persist the synced policies to MongoDB
-	if err := s.enforcer.SavePolicy(); err != nil {
-		return err
 	}
 
 	return nil
 }
 
 func (s *PermissionService) GetAllRoles(ctx context.Context) ([]string, error) {
-	return s.enforcer.GetAllSubjects()
+	permissions, err := s.rolePermissionRepo.GetAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	roleSet := make(map[string]bool)
+	for _, p := range permissions {
+		roleSet[p.Role] = true
+	}
+
+	roles := make([]string, 0, len(roleSet))
+	for role := range roleSet {
+		roles = append(roles, role)
+	}
+
+	return roles, nil
+}
+
+func (s *PermissionService) GetAllPermissionRules(ctx context.Context) ([]*domain.PermissionRule, error) {
+	return s.permissionRuleRepo.ListAll(ctx)
+}
+
+func (s *PermissionService) DebugGetRolePermissionsFromDB(ctx context.Context, role string) ([]*domain.RolePermission, error) {
+	return s.rolePermissionRepo.GetByRole(ctx, role)
 }

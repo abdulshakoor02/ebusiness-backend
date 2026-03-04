@@ -6,6 +6,7 @@ import (
 
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/domain"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -27,6 +28,20 @@ func RunMigrations(ctx context.Context, db *mongo.Database) error {
 	if err := seedPermissionRules(ctx, db.Collection("permission_rules")); err != nil {
 		slog.Error("Failed to seed permission rules", "error", err)
 		return err
+	}
+
+	if err := seedRolePermissions(ctx, db.Collection("role_permissions"), db.Collection("permission_rules")); err != nil {
+		slog.Error("Failed to seed role permissions", "error", err)
+		return err
+	}
+
+	if err := seedRoleInheritances(ctx, db.Collection("role_inheritances")); err != nil {
+		slog.Error("Failed to seed role inheritances", "error", err)
+		return err
+	}
+
+	if err := createRolePermissionsWithRulesView(ctx, db); err != nil {
+		slog.Warn("Failed to create role_permissions_with_rules view (may already exist)", "error", err)
 	}
 
 	slog.Info("Database migrations completed successfully")
@@ -112,6 +127,11 @@ func seedPermissionRules(ctx context.Context, collection *mongo.Collection) erro
 		*domain.NewPermissionRule("leads", "Lead Management", "update", "Update Lead", "/api/v1/leads/:id", "PUT", "Update lead information", true),
 		*domain.NewPermissionRule("leads", "Lead Management", "list", "List Leads", "/api/v1/leads/list", "POST", "List all leads", true),
 
+		// Lead Management - Own Scope (for user role)
+		*domain.NewPermissionRule("leads", "Lead Management", "list_own", "List Own Leads", "/api/v1/leads/list", "POST", "List leads assigned to self", true, "self", "assigned_to"),
+		*domain.NewPermissionRule("leads", "Lead Management", "view_own", "View Own Lead", "/api/v1/leads/:id", "GET", "View leads assigned to self", true, "self", "assigned_to"),
+		*domain.NewPermissionRule("leads", "Lead Management", "update_own", "Update Own Lead", "/api/v1/leads/:id", "PUT", "Update leads assigned to self", true, "self", "assigned_to"),
+
 		// Lead Category Management
 		*domain.NewPermissionRule("lead-categories", "Lead Categories", "create", "Create Category", "/api/v1/lead-categories", "POST", "Create a lead category", true),
 		*domain.NewPermissionRule("lead-categories", "Lead Categories", "view", "View Category", "/api/v1/lead-categories/:id", "GET", "View category details", true),
@@ -133,6 +153,9 @@ func seedPermissionRules(ctx context.Context, collection *mongo.Collection) erro
 		*domain.NewPermissionRule("lead-comments", "Lead Comments", "delete", "Delete Comment", "/api/v1/leads/:lead_id/comments/:id", "DELETE", "Delete comment", true),
 		*domain.NewPermissionRule("lead-comments", "Lead Comments", "list", "List Comments", "/api/v1/leads/:lead_id/comments/list", "POST", "List all comments", true),
 
+		// Lead Comment Management - Own Scope (for user role)
+		*domain.NewPermissionRule("lead-comments", "Lead Comments", "list_own", "List Own Comments", "/api/v1/leads/:lead_id/comments/list", "POST", "List comments by self", true, "self", "created_by"),
+
 		// Lead Appointment Management
 		*domain.NewPermissionRule("lead-appointments", "Lead Appointments", "create", "Create Appointment", "/api/v1/leads/:lead_id/appointments", "POST", "Schedule appointment", true),
 		*domain.NewPermissionRule("lead-appointments", "Lead Appointments", "view", "View Appointment", "/api/v1/leads/:lead_id/appointments/:id", "GET", "View appointment details", true),
@@ -140,13 +163,22 @@ func seedPermissionRules(ctx context.Context, collection *mongo.Collection) erro
 		*domain.NewPermissionRule("lead-appointments", "Lead Appointments", "delete", "Delete Appointment", "/api/v1/leads/:lead_id/appointments/:id", "DELETE", "Cancel appointment", true),
 		*domain.NewPermissionRule("lead-appointments", "Lead Appointments", "list", "List Appointments", "/api/v1/leads/:lead_id/appointments/list", "POST", "List all appointments", true),
 
+		// Lead Appointment Management - Own Scope (for user role)
+		*domain.NewPermissionRule("lead-appointments", "Lead Appointments", "list_own", "List Own Appointments", "/api/v1/leads/:lead_id/appointments/list", "POST", "List appointments by self", true, "self", "created_by"),
+
 		// Permission Management
 		*domain.NewPermissionRule("permissions", "Permission Management", "manage", "Manage Permissions", "/api/v1/permissions", "*", "Full permission management access", true),
 		*domain.NewPermissionRule("permissions", "Permission Management", "view", "View Permissions", "/api/v1/permissions", "GET", "View all permissions", true),
 		*domain.NewPermissionRule("permissions", "Permission Management", "create", "Create Permission", "/api/v1/permissions", "POST", "Create new permission", true),
 		*domain.NewPermissionRule("permissions", "Permission Management", "delete", "Delete Permission", "/api/v1/permissions", "DELETE", "Remove permission", true),
 		*domain.NewPermissionRule("permissions", "Permission Management", "manage-rules", "Manage Rules", "/api/v1/permissions/rules", "*", "Manage permission rules", true),
+		*domain.NewPermissionRule("permissions", "Permission Management", "view-rules", "View Rules", "/api/v1/permissions/rules", "GET", "View permission rules", true),
 		*domain.NewPermissionRule("permissions", "Permission Management", "inherit-roles", "Manage Role Inheritance", "/api/v1/permissions/roles/inherit", "*", "Manage role inheritance", true),
+		*domain.NewPermissionRule("permissions", "Permission Management", "view-roles", "View Roles", "/api/v1/permissions/roles", "GET", "View all roles and their permissions", true),
+		*domain.NewPermissionRule("permissions", "Permission Management", "bulk-update-roles", "Bulk Update Roles", "/api/v1/permissions/roles", "POST", "Bulk update role permissions", true),
+
+		// Permission Rules Management endpoints for admin
+		*domain.NewPermissionRule("permissions", "Permission Management", "available-rules", "View Available Rules", "/api/v1/permissions/available-rules", "GET", "View available permission rules", true),
 	}
 
 	docs := make([]interface{}, len(rules))
@@ -160,5 +192,198 @@ func seedPermissionRules(ctx context.Context, collection *mongo.Collection) erro
 	}
 
 	slog.Info("System permission rules seeded successfully", "count", len(rules))
+	return nil
+}
+
+func seedRolePermissions(ctx context.Context, rolePermsCollection, permRulesCollection *mongo.Collection) error {
+	count, err := rolePermsCollection.CountDocuments(ctx, bson.M{})
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		slog.Info("Role permissions already seeded, skipping")
+		return nil
+	}
+
+	// Build lookup by resource+action (unique per rule, unlike path+method which can have duplicates)
+	type ruleKey struct {
+		resource string
+		action   string
+	}
+	ruleIDMap := make(map[ruleKey]primitive.ObjectID)
+
+	cursor, err := permRulesCollection.Find(ctx, bson.M{})
+	if err != nil {
+		return err
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var rule domain.PermissionRule
+		if err := cursor.Decode(&rule); err != nil {
+			return err
+		}
+		ruleIDMap[ruleKey{resource: rule.Resource, action: rule.Action}] = rule.ID
+	}
+
+	permissions := []struct {
+		role     string
+		resource string
+		action   string
+	}{
+		// Admin permissions (unscoped — admin sees all data)
+		{role: "admin", resource: "tenants", action: "view"},
+		{role: "admin", resource: "tenants", action: "update"},
+		{role: "admin", resource: "tenants", action: "list"},
+		{role: "admin", resource: "users", action: "create"},
+		{role: "admin", resource: "users", action: "view"},
+		{role: "admin", resource: "users", action: "update"},
+		{role: "admin", resource: "users", action: "list"},
+		{role: "admin", resource: "leads", action: "create"},
+		{role: "admin", resource: "leads", action: "view"},
+		{role: "admin", resource: "leads", action: "update"},
+		{role: "admin", resource: "leads", action: "list"},
+		{role: "admin", resource: "lead-categories", action: "create"},
+		{role: "admin", resource: "lead-categories", action: "view"},
+		{role: "admin", resource: "lead-categories", action: "update"},
+		{role: "admin", resource: "lead-categories", action: "delete"},
+		{role: "admin", resource: "lead-categories", action: "list"},
+		{role: "admin", resource: "lead-sources", action: "create"},
+		{role: "admin", resource: "lead-sources", action: "view"},
+		{role: "admin", resource: "lead-sources", action: "update"},
+		{role: "admin", resource: "lead-sources", action: "delete"},
+		{role: "admin", resource: "lead-sources", action: "list"},
+		{role: "admin", resource: "lead-comments", action: "create"},
+		{role: "admin", resource: "lead-comments", action: "view"},
+		{role: "admin", resource: "lead-comments", action: "update"},
+		{role: "admin", resource: "lead-comments", action: "delete"},
+		{role: "admin", resource: "lead-comments", action: "list"},
+		{role: "admin", resource: "lead-appointments", action: "create"},
+		{role: "admin", resource: "lead-appointments", action: "view"},
+		{role: "admin", resource: "lead-appointments", action: "update"},
+		{role: "admin", resource: "lead-appointments", action: "delete"},
+		{role: "admin", resource: "lead-appointments", action: "list"},
+
+		// User permissions (scoped — user sees only own data where applicable)
+		{role: "user", resource: "tenants", action: "view"},
+		{role: "user", resource: "users", action: "view"},
+		{role: "user", resource: "leads", action: "create"},
+		{role: "user", resource: "leads", action: "view_own"},
+		{role: "user", resource: "leads", action: "update_own"},
+		{role: "user", resource: "leads", action: "list_own"},
+		{role: "user", resource: "lead-categories", action: "view"},
+		{role: "user", resource: "lead-categories", action: "list"},
+		{role: "user", resource: "lead-sources", action: "view"},
+		{role: "user", resource: "lead-sources", action: "list"},
+		{role: "user", resource: "lead-comments", action: "create"},
+		{role: "user", resource: "lead-comments", action: "view"},
+		{role: "user", resource: "lead-comments", action: "update"},
+		{role: "user", resource: "lead-comments", action: "delete"},
+		{role: "user", resource: "lead-comments", action: "list_own"},
+		{role: "user", resource: "lead-appointments", action: "create"},
+		{role: "user", resource: "lead-appointments", action: "view"},
+		{role: "user", resource: "lead-appointments", action: "update"},
+		{role: "user", resource: "lead-appointments", action: "delete"},
+		{role: "user", resource: "lead-appointments", action: "list_own"},
+
+		// Permission management (admin only)
+		{role: "admin", resource: "permissions", action: "view"},
+		{role: "admin", resource: "permissions", action: "create"},
+		{role: "admin", resource: "permissions", action: "delete"},
+		{role: "admin", resource: "permissions", action: "manage"},
+		{role: "admin", resource: "permissions", action: "manage-rules"},
+		{role: "admin", resource: "permissions", action: "view-rules"},
+		{role: "admin", resource: "permissions", action: "inherit-roles"},
+		{role: "admin", resource: "permissions", action: "view-roles"},
+		{role: "admin", resource: "permissions", action: "bulk-update-roles"},
+		{role: "admin", resource: "permissions", action: "available-rules"},
+	}
+
+	var docs []interface{}
+	for _, p := range permissions {
+		ruleID, ok := ruleIDMap[ruleKey{resource: p.resource, action: p.action}]
+		if !ok {
+			slog.Warn("Permission rule not found for seeding", "resource", p.resource, "action", p.action)
+			continue
+		}
+		docs = append(docs, domain.NewRolePermission(p.role, ruleID))
+	}
+
+	if len(docs) == 0 {
+		slog.Warn("No role permissions to seed")
+		return nil
+	}
+
+	_, err = rolePermsCollection.InsertMany(ctx, docs)
+	if err != nil {
+		return err
+	}
+
+	slog.Info("Role permissions seeded successfully", "count", len(docs))
+	return nil
+}
+
+func seedRoleInheritances(ctx context.Context, collection *mongo.Collection) error {
+	count, err := collection.CountDocuments(ctx, bson.M{})
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		slog.Info("Role inheritances already seeded, skipping")
+		return nil
+	}
+
+	inheritances := []*domain.RoleInheritance{
+		{ChildRole: "superadmin", ParentRole: "admin"},
+	}
+
+	docs := make([]interface{}, len(inheritances))
+	for i, iObj := range inheritances {
+		docs[i] = iObj
+	}
+
+	_, err = collection.InsertMany(ctx, docs)
+	if err != nil {
+		return err
+	}
+
+	slog.Info("Role inheritances seeded successfully", "count", len(inheritances))
+	return nil
+}
+
+func createRolePermissionsWithRulesView(ctx context.Context, db *mongo.Database) error {
+	viewName := "role_permissions_with_rules"
+
+	pipeline := mongo.Pipeline{
+		{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: "permission_rules"},
+			{Key: "localField", Value: "permission_rule_id"},
+			{Key: "foreignField", Value: "_id"},
+			{Key: "as", Value: "permission_rule"},
+		}}},
+		{{Key: "$unwind", Value: bson.D{
+			{Key: "path", Value: "$permission_rule"},
+			{Key: "preserveNullAndEmptyArrays", Value: true},
+		}}},
+		{{Key: "$project", Value: bson.D{
+			{Key: "_id", Value: 1},
+			{Key: "role", Value: 1},
+			{Key: "created_at", Value: 1},
+			{Key: "path", Value: "$permission_rule.path"},
+			{Key: "method", Value: "$permission_rule.method"},
+			{Key: "resource", Value: "$permission_rule.resource"},
+			{Key: "action", Value: "$permission_rule.action"},
+			{Key: "scope_type", Value: "$permission_rule.scope_type"},
+			{Key: "filter_field", Value: "$permission_rule.filter_field"},
+		}}},
+	}
+
+	err := db.CreateView(ctx, viewName, "role_permissions", pipeline)
+	if err != nil {
+		slog.Debug("View creation info", "error", err)
+		return err
+	}
+
+	slog.Info("Created role_permissions_with_rules view")
 	return nil
 }

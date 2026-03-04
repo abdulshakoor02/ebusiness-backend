@@ -7,9 +7,62 @@ All protected endpoints require an Authorization header with a Bearer token:
 
 ---
 
+## API ID Reference Guide (Important for Frontend)
+
+This section explains all the IDs used in the API and where they come from:
+
+### ID Types and Their Sources
+
+| ID Field | Type | Description | Where to Get It |
+|----------|------|-------------|-----------------|
+| `id` | MongoDB ObjectID | Unique document identifier | Returned in `_id` or `id` field from any GET request |
+| `tenant_id` | MongoDB ObjectID | Tenant/organization ID | From login response or user's `tenant_id` |
+| `user_id` | MongoDB ObjectID | User identifier | From login response or from `/users/:id` endpoint |
+| `role` | String | User role (admin/user/superadmin) | From login response |
+| `permission_rule_id` | MongoDB ObjectID | Reference to a permission rule | From `/permissions/available-rules` endpoint |
+| `rule_id` | MongoDB ObjectID | Same as `permission_rule_id` | From `/permissions/available-rules` endpoint |
+
+### Common Workflows for Frontend
+
+#### 1. Getting Available Permission Rules (for building UI)
+```
+GET /permissions/available-rules
+```
+**Response:** Returns list of all permission rules with their `id` (permission_rule_id).
+Use this to:
+- Build the permissions management UI
+- Populate dropdowns for selecting permissions
+- Show available actions for each resource
+
+#### 2. Assigning Permissions to a Role
+```
+POST /permissions/roles/:role/bulk
+```
+**Request body:**
+```json
+{
+  "permissions": [
+    {
+      "id": "507f1f77bcf86cd799439011",  // ← permission_rule_id from /permissions/available-rules
+      "assigned": true
+    }
+  ]
+}
+```
+
+#### 3. Managing Entities (Leads, Categories, etc.)
+All entity endpoints use the same ID pattern:
+- **Create:** POST returns `{ "id": "...", ... }` - save this for updates/deletes
+- **Read:** GET `/:id` - use the ID from create or list response
+- **Update:** PUT `/:id` - use the ID from create or list response  
+- **Delete:** DELETE `/:id` - use the ID from create or list response
+- **List:** POST `/list` returns items with `id` field in each object
+
+---
+
 ## Role-Based Access Control (RBAC)
 
-The system uses hierarchical roles with Casbin for policy enforcement:
+The system uses custom RBAC with MongoDB-based permission storage:
 
 **Role Hierarchy:**
 ```
@@ -17,6 +70,11 @@ superadmin (inherits all admin permissions)
     └── admin (full system access)
         └── user (limited access)
 ```
+
+**Collections:**
+- `permission_rules` - Defines available permissions (path, method, scope_type, filter_field)
+- `role_permissions` - Maps roles to permission_rule_id (references permission_rules)
+- `role_inheritances` - Defines role inheritance relationships
 
 **Role Permissions Summary:**
 
@@ -31,6 +89,50 @@ superadmin (inherits all admin permissions)
 - **JWT Auth** - Requires valid JWT token
 - **JWT + RBAC: Admin** - Requires JWT + admin role
 - **JWT + RBAC: All** - Requires JWT + any role (admin or user)
+
+### Data Scoping (Row-Level Security)
+
+The system supports **row-level security** via permission rules. Each permission rule can have a `scope_type` that controls data access:
+
+| Scope Type | Description | Example Use Case |
+|------------|-------------|------------------|
+| `none` | No filtering - user sees all data within tenant | Admin sees all leads |
+| `self` | Filters to current user's records only | User sees only their assigned leads |
+| `group` | Filters to user's team/group (future) | Manager sees their team's leads |
+
+**How it works:**
+1. Admin assigns a permission rule with `scope_type: "self"` to a role (e.g., `list_own`)
+2. When user calls the endpoint, middleware checks the permission's scope config
+3. Repository automatically filters records where `filter_field` matches user's ID
+
+> **Frontend Note:** When fetching `/permissions/available-rules`, look for rules with:
+> - `action` ending in `_own` (e.g., `list_own`, `view_own`, `update_own`)
+> - `scope_type: "self"` 
+> - `filter_field`: the field name to filter by (e.g., `assigned_to`, `created_by`)
+>
+> These represent permissions that should only show the user's own data.
+
+**Example - Available scoped rules from `/permissions/available-rules`:**
+```json
+{
+  "resource": "leads",
+  "action": "list_own",
+  "scope_type": "self",
+  "filter_field": "assigned_to"
+}
+```
+
+**Example - Assigning own-scope permission via bulk update:**
+```json
+{
+  "permissions": [
+    {
+      "id": "60a7e...123",  // permission_rule_id from /permissions/available-rules
+      "assigned": true
+    }
+  ]
+}
+```
 
 ---
 
@@ -335,8 +437,7 @@ superadmin (inherits all admin permissions)
 ```json
 {
   "role": "manager",
-  "path": "/api/v1/users",
-  "method": "POST"
+  "permission_rule_id": "507f1f77bcf86cd799439011"
 }
 ```
 
@@ -355,8 +456,7 @@ superadmin (inherits all admin permissions)
 ```json
 {
   "role": "manager",
-  "path": "/api/v1/users",
-  "method": "POST"
+  "permission_rule_id": "507f1f77bcf86cd799439011"
 }
 ```
 
@@ -384,17 +484,19 @@ superadmin (inherits all admin permissions)
 **Auth Required:** Yes (RBAC Enforced - Admin only)
 *Retrieves all available rules in the system dynamically grouped by resource, alongside an 'assigned' boolean reflecting if this role possesses the rule.*
 
+> **Frontend Tip:** Use this to show current permissions for a role in your admin UI. The `assigned: true` indicates the role already has that permission.
+
 **Response (200 OK):**
 ```json
 {
-  "role": "manager",
+  "role": "admin",
   "resources": [
     {
       "resource": "users",
       "label": "User Management",
       "rules": [
         {
-          "id": "60a7e...",
+          "id": "60a7e...",          // ← permission_rule_id
           "resource": "users",
           "resource_label": "User Management",
           "action": "create",
@@ -403,7 +505,23 @@ superadmin (inherits all admin permissions)
           "method": "POST",
           "description": "Allows creating new users",
           "is_system": true,
-          "assigned": true
+          "scope_type": "none",
+          "filter_field": "",
+          "assigned": true            // ← true = permission is assigned to this role
+        },
+        {
+          "id": "60a7f...",
+          "resource": "leads",
+          "resource_label": "Lead Management",
+          "action": "list_own",
+          "action_label": "List Own Leads",
+          "path": "/api/v1/leads/list",
+          "method": "POST",
+          "description": "List leads assigned to self",
+          "is_system": true,
+          "scope_type": "self",       // ← scoping type
+          "filter_field": "assigned_to", // ← field to filter by
+          "assigned": false          // ← false = permission not assigned
         }
       ]
     }
@@ -414,25 +532,46 @@ superadmin (inherits all admin permissions)
 ### Bulk Update Role Permissions
 **Endpoint:** `POST /permissions/roles/:role/bulk`
 **Auth Required:** Yes (RBAC Enforced - Admin only)
-*Allows the UI to send an array of permission state changes to synchronize a role's total access matrix simultaneously.*
+*Allows adding or removing multiple permissions for a role in a single request. Set `assigned: true` to add a permission, or `assigned: false` to remove it.*
+
+> **How to use:** 
+> 1. First call `GET /permissions/available-rules` to get all available permission rules
+> 2. Extract the `id` field from each rule - this is the `permission_rule_id`
+> 3. Use that `id` in the `permissions` array below
+> 4. Set `assigned: true` to grant the permission, or `assigned: false` to revoke
 
 **Request:**
 ```json
 {
   "permissions": [
     {
-      "path": "/api/v1/users",
-      "method": "POST",
-      "assigned": true
+      "id": "507f1f77bcf86cd799439011",  // ← permission_rule_id from /permissions/available-rules
+      "resource": "users",
+      "action": "create",
+      "assigned": true                   // ← true = grant, false = revoke
     },
     {
-      "path": "/api/v1/leads",
-      "method": "DELETE",
-      "assigned": false
+      "id": "507f1f77bcf86cd799439012",  // ← another permission_rule_id
+      "resource": "leads",
+      "action": "delete",
+      "assigned": false                  // ← remove this permission
     }
   ]
 }
 ```
+
+| Field | Description |
+|-------|-------------|
+| `id` | Permission rule ID from `/permissions/available-rules` |
+| `resource` | Resource name (e.g., "users", "leads") |
+| `action` | Action name (e.g., "create", "list", "list_own") |
+| `assigned` | `true` = add permission, `false` = remove |
+
+| Field | Description |
+|-------|-------------|
+| `path` | API endpoint path (e.g., `/api/v1/leads/list`) |
+| `method` | HTTP method (GET, POST, PUT, DELETE, or `*` for wildcard) |
+| `assigned` | `true` = add permission, `false` = remove permission |
 
 **Response (200 OK):**
 ```json
@@ -494,6 +633,8 @@ superadmin (inherits all admin permissions)
 **Auth Required:** Yes (RBAC Enforced - Admin only)
 *Returns all available permission rules organized by resource with human-readable labels for frontend dropdowns.*
 
+> **Frontend Tip:** Use this endpoint to build your permissions management UI. The `id` field in each rule is the `permission_rule_id` you need when assigning permissions via bulk update.
+
 **Response (200 OK):**
 ```json
 {
@@ -503,7 +644,7 @@ superadmin (inherits all admin permissions)
       "label": "Tenant Management",
       "rules": [
         {
-          "id": "60a7e...",
+          "id": "60a7e...",  // ← This is permission_rule_id - use this when assigning permissions
           "resource": "tenants",
           "resource_label": "Tenant Management",
           "action": "view",
@@ -512,38 +653,23 @@ superadmin (inherits all admin permissions)
           "method": "GET",
           "description": "View tenant information",
           "is_system": true,
+          "scope_type": "none",
+          "filter_field": "",
           "created_at": "2026-02-27T10:00:00Z",
           "updated_at": "2026-02-27T10:00:00Z"
         },
         {
-          "id": "60a7f...",
-          "resource": "tenants",
-          "resource_label": "Tenant Management",
-          "action": "update",
-          "action_label": "Update Tenant",
-          "path": "/api/v1/tenants/:id",
-          "method": "PUT",
-          "description": "Update tenant information",
-          "is_system": true,
-          "created_at": "2026-02-27T10:00:00Z",
-          "updated_at": "2026-02-27T10:00:00Z"
-        }
-      ]
-    },
-    {
-      "resource": "users",
-      "label": "User Management",
-      "rules": [
-        {
-          "id": "60a8e...",
-          "resource": "users",
-          "resource_label": "User Management",
-          "action": "create",
-          "action_label": "Create User",
-          "path": "/api/v1/users",
+          "id": "60a7f...",  // ← permission_rule_id for "list_own" - includes scope_type
+          "resource": "leads",
+          "resource_label": "Lead Management",
+          "action": "list_own",
+          "action_label": "List Own Leads",
+          "path": "/api/v1/leads/list",
           "method": "POST",
-          "description": "Create a new user",
+          "description": "List leads assigned to self",
           "is_system": true,
+          "scope_type": "self",        // ← Data scoping type
+          "filter_field": "assigned_to", // ← Field to filter by current user ID
           "created_at": "2026-02-27T10:00:00Z",
           "updated_at": "2026-02-27T10:00:00Z"
         }
@@ -556,7 +682,7 @@ superadmin (inherits all admin permissions)
 ### Create Permission Rule
 **Endpoint:** `POST /permissions/rules`
 **Auth Required:** Yes (RBAC Enforced - Admin only)
-*Creates a custom permission rule that can be endpoint-based or frontend-only (empty path/method).*
+*Creates a custom permission rule that can be endpoint-based or frontend-only (empty path/method). Supports data scoping via scope_type.*
 
 **Request:**
 ```json
@@ -567,9 +693,18 @@ superadmin (inherits all admin permissions)
   "action_label": "Access Dashboard",
   "path": "",
   "method": "",
-  "description": "Access to custom analytics dashboard"
+  "description": "Access to custom analytics dashboard",
+  "scope_type": "self",
+  "filter_field": "user_id"
 }
 ```
+
+**Scope Types:**
+| Scope Type | Description |
+|------------|-------------|
+| `none` | No data filtering - user sees all (default) |
+| `self` | Filter by current user's ID in the specified field |
+| `group` | Filter by group/team user IDs (future) |
 
 **Response (201 Created):**
 ```json

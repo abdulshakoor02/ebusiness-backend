@@ -70,3 +70,20 @@ type PermissionRuleRepository interface {
 	Update(ctx context.Context, rule *domain.PermissionRule) error
 	Delete(ctx context.Context, id primitive.ObjectID) error
 }
+
+type RolePermissionRepository interface {
+	Assign(ctx context.Context, role string, permissionRuleID primitive.ObjectID) error
+	Remove(ctx context.Context, role string, permissionRuleID primitive.ObjectID) error
+	HasPermissionByRuleID(ctx context.Context, role string, permissionRuleID primitive.ObjectID) (bool, error)
+	GetByRole(ctx context.Context, role string) ([]*domain.RolePermission, error)
+	GetByRoleWithDetails(ctx context.Context, role string) ([]*domain.PermissionRule, error)
+	GetAll(ctx context.Context) ([]*domain.RolePermission, error)
+	GetRoleInheritances(ctx context.Context) ([]*domain.RoleInheritance, error)
+	AssignInheritance(ctx context.Context, childRole, parentRole string) error
+	RemoveInheritance(ctx context.Context, childRole, parentRole string) error
+	GetInheritedPermissions(ctx context.Context, role string) (map[primitive.ObjectID]bool, error)
+	GetPermissionRulesForInheritedRoles(ctx context.Context, role string) ([]*domain.PermissionRule, error)
+	CheckPermissionWithInheritance(ctx context.Context, role string, permissionRuleID primitive.ObjectID) (bool, error)
+	CheckPermissionByPathMethod(ctx context.Context, role, path, method string) (bool, error)
+	InvalidateAllCache()
+}

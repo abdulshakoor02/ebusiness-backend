@@ -43,7 +43,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.LoginRequest"
+                            "$ref": "#/definitions/ports.LoginRequest"
                         }
                     }
                 ],
@@ -51,7 +51,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.LoginResponse"
+                            "$ref": "#/definitions/ports.LoginResponse"
                         }
                     },
                     "400": {
@@ -96,7 +96,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadCategoryRequest"
+                            "$ref": "#/definitions/ports.CreateLeadCategoryRequest"
                         }
                     }
                 ],
@@ -150,7 +150,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
+                            "$ref": "#/definitions/ports.FilterRequest"
                         }
                     }
                 ],
@@ -261,7 +261,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadCategoryRequest"
+                            "$ref": "#/definitions/ports.UpdateLeadCategoryRequest"
                         }
                     }
                 ],
@@ -379,7 +379,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadSourceRequest"
+                            "$ref": "#/definitions/ports.CreateLeadSourceRequest"
                         }
                     }
                 ],
@@ -440,7 +440,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
+                            "$ref": "#/definitions/ports.FilterRequest"
                         }
                     }
                 ],
@@ -551,7 +551,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadSourceRequest"
+                            "$ref": "#/definitions/ports.UpdateLeadSourceRequest"
                         }
                     }
                 ],
@@ -658,7 +658,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadRequest"
+                            "$ref": "#/definitions/ports.CreateLeadRequest"
                         }
                     }
                 ],
@@ -719,7 +719,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
+                            "$ref": "#/definitions/ports.FilterRequest"
                         }
                     }
                 ],
@@ -830,7 +830,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadRequest"
+                            "$ref": "#/definitions/ports.UpdateLeadRequest"
                         }
                     }
                 ],
@@ -898,7 +898,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadAppointmentRequest"
+                            "$ref": "#/definitions/ports.CreateLeadAppointmentRequest"
                         }
                     }
                 ],
@@ -959,7 +959,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
+                            "$ref": "#/definitions/ports.FilterRequest"
                         }
                     }
                 ],
@@ -1084,7 +1084,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadAppointmentRequest"
+                            "$ref": "#/definitions/ports.UpdateLeadAppointmentRequest"
                         }
                     }
                 ],
@@ -1216,7 +1216,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadCommentRequest"
+                            "$ref": "#/definitions/ports.CreateLeadCommentRequest"
                         }
                     }
                 ],
@@ -1277,7 +1277,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
+                            "$ref": "#/definitions/ports.FilterRequest"
                         }
                     }
                 ],
@@ -1402,7 +1402,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadCommentRequest"
+                            "$ref": "#/definitions/ports.UpdateLeadCommentRequest"
                         }
                     }
                 ],
@@ -1565,7 +1565,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.AddPermissionRequest"
+                            "$ref": "#/definitions/ports.AddPermissionRequest"
                         }
                     }
                 ],
@@ -1617,7 +1617,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.RemovePermissionRequest"
+                            "$ref": "#/definitions/ports.RemovePermissionRequest"
                         }
                     }
                 ],
@@ -1773,7 +1773,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.AssignRoleInheritanceRequest"
+                            "$ref": "#/definitions/ports.AssignRoleInheritanceRequest"
                         }
                     }
                 ],
@@ -1866,7 +1866,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.BulkUpdateRolePermissionsRequest"
+                            "$ref": "#/definitions/ports.BulkUpdateRolePermissionsRequest"
                         }
                     }
                 ],
@@ -1920,7 +1920,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreatePermissionRuleRequest"
+                            "$ref": "#/definitions/ports.CreatePermissionRuleRequest"
                         }
                     }
                 ],
@@ -1981,7 +1981,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdatePermissionRuleRequest"
+                            "$ref": "#/definitions/ports.UpdatePermissionRuleRequest"
                         }
                     }
                 ],
@@ -2077,7 +2077,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateTenantRequest"
+                            "$ref": "#/definitions/ports.CreateTenantRequest"
                         }
                     }
                 ],
@@ -2131,7 +2131,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
+                            "$ref": "#/definitions/ports.FilterRequest"
                         }
                     }
                 ],
@@ -2242,7 +2242,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateTenantRequest"
+                            "$ref": "#/definitions/ports.UpdateTenantRequest"
                         }
                     }
                 ],
@@ -2303,7 +2303,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateUserRequest"
+                            "$ref": "#/definitions/ports.CreateUserRequest"
                         }
                     }
                 ],
@@ -2357,7 +2357,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
+                            "$ref": "#/definitions/ports.FilterRequest"
                         }
                     }
                 ],
@@ -2461,7 +2461,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateUserRequest"
+                            "$ref": "#/definitions/ports.UpdateUserRequest"
                         }
                     }
                 ],
@@ -2499,7 +2499,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_domain.Address": {
+        "domain.Address": {
             "type": "object",
             "properties": {
                 "city": {
@@ -2519,7 +2519,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_domain.User": {
+        "domain.User": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -2550,13 +2550,10 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.AddPermissionRequest": {
+        "ports.AddPermissionRequest": {
             "type": "object",
             "properties": {
-                "method": {
-                    "type": "string"
-                },
-                "path": {
+                "permission_rule_id": {
                     "type": "string"
                 },
                 "role": {
@@ -2564,7 +2561,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.AssignRoleInheritanceRequest": {
+        "ports.AssignRoleInheritanceRequest": {
             "type": "object",
             "properties": {
                 "child_role": {
@@ -2575,18 +2572,18 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.BulkUpdateRolePermissionsRequest": {
+        "ports.BulkUpdateRolePermissionsRequest": {
             "type": "object",
             "properties": {
                 "permissions": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.RolePermission"
+                        "$ref": "#/definitions/ports.RolePermission"
                     }
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadAppointmentRequest": {
+        "ports.CreateLeadAppointmentRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -2607,7 +2604,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadCategoryRequest": {
+        "ports.CreateLeadCategoryRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -2618,7 +2615,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadCommentRequest": {
+        "ports.CreateLeadCommentRequest": {
             "type": "object",
             "properties": {
                 "content": {
@@ -2626,7 +2623,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadRequest": {
+        "ports.CreateLeadRequest": {
             "type": "object",
             "properties": {
                 "assigned_to": {
@@ -2661,7 +2658,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadSourceRequest": {
+        "ports.CreateLeadSourceRequest": {
             "type": "object",
             "required": [
                 "name"
@@ -2675,7 +2672,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreatePermissionRuleRequest": {
+        "ports.CreatePermissionRuleRequest": {
             "type": "object",
             "properties": {
                 "action": {
@@ -2685,6 +2682,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "description": {
+                    "type": "string"
+                },
+                "filter_field": {
                     "type": "string"
                 },
                 "method": {
@@ -2698,17 +2698,20 @@ const docTemplate = `{
                 },
                 "resource_label": {
                     "type": "string"
+                },
+                "scope_type": {
+                    "type": "string"
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateTenantRequest": {
+        "ports.CreateTenantRequest": {
             "type": "object",
             "properties": {
                 "address": {
-                    "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_domain.Address"
+                    "$ref": "#/definitions/domain.Address"
                 },
                 "admin_user": {
-                    "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateUserRequest"
+                    "$ref": "#/definitions/ports.CreateUserRequest"
                 },
                 "email": {
                     "type": "string"
@@ -2721,7 +2724,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateUserRequest": {
+        "ports.CreateUserRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -2741,7 +2744,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest": {
+        "ports.FilterRequest": {
             "type": "object",
             "properties": {
                 "filters": {
@@ -2756,7 +2759,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.LoginRequest": {
+        "ports.LoginRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -2767,24 +2770,21 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.LoginResponse": {
+        "ports.LoginResponse": {
             "type": "object",
             "properties": {
                 "token": {
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_domain.User"
+                    "$ref": "#/definitions/domain.User"
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.RemovePermissionRequest": {
+        "ports.RemovePermissionRequest": {
             "type": "object",
             "properties": {
-                "method": {
-                    "type": "string"
-                },
-                "path": {
+                "permission_rule_id": {
                     "type": "string"
                 },
                 "role": {
@@ -2792,7 +2792,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.RolePermission": {
+        "ports.RolePermission": {
             "type": "object",
             "properties": {
                 "action": {
@@ -2808,6 +2808,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "description": {
+                    "type": "string"
+                },
+                "filter_field": {
+                    "description": "e.g., \"assigned_to\", \"created_by\"",
                     "type": "string"
                 },
                 "id": {
@@ -2828,12 +2832,16 @@ const docTemplate = `{
                 "resource_label": {
                     "type": "string"
                 },
+                "scope_type": {
+                    "description": "\"none\" | \"self\" | \"group\"",
+                    "type": "string"
+                },
                 "updated_at": {
                     "type": "string"
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadAppointmentRequest": {
+        "ports.UpdateLeadAppointmentRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -2853,7 +2861,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadCategoryRequest": {
+        "ports.UpdateLeadCategoryRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -2864,7 +2872,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadCommentRequest": {
+        "ports.UpdateLeadCommentRequest": {
             "type": "object",
             "properties": {
                 "content": {
@@ -2872,7 +2880,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadRequest": {
+        "ports.UpdateLeadRequest": {
             "type": "object",
             "properties": {
                 "assigned_to": {
@@ -2907,7 +2915,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadSourceRequest": {
+        "ports.UpdateLeadSourceRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -2918,13 +2926,16 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdatePermissionRuleRequest": {
+        "ports.UpdatePermissionRuleRequest": {
             "type": "object",
             "properties": {
                 "action_label": {
                     "type": "string"
                 },
                 "description": {
+                    "type": "string"
+                },
+                "filter_field": {
                     "type": "string"
                 },
                 "method": {
@@ -2935,14 +2946,17 @@ const docTemplate = `{
                 },
                 "resource_label": {
                     "type": "string"
+                },
+                "scope_type": {
+                    "type": "string"
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateTenantRequest": {
+        "ports.UpdateTenantRequest": {
             "type": "object",
             "properties": {
                 "address": {
-                    "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_domain.Address"
+                    "$ref": "#/definitions/domain.Address"
                 },
                 "email": {
                     "type": "string"
@@ -2955,7 +2969,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateUserRequest": {
+        "ports.UpdateUserRequest": {
             "type": "object",
             "properties": {
                 "email": {

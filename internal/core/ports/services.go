@@ -143,7 +143,7 @@ type PermissionService interface {
 	UpdatePermissionRule(ctx context.Context, id primitive.ObjectID, req UpdatePermissionRuleRequest) (*domain.PermissionRule, error)
 	DeletePermissionRule(ctx context.Context, id primitive.ObjectID) error
 	GetPermissionRuleByID(ctx context.Context, id primitive.ObjectID) (*domain.PermissionRule, error)
-	GetAvailableRulesGrouped(ctx context.Context) ([]domain.PermissionRuleGroup, error)
+	GetAvailableRulesGrouped(ctx context.Context, role string) ([]domain.PermissionRuleGroup, error)
 
 	// UI-Friendly Role Permissions
 	GetPermissionsForRoleGrouped(ctx context.Context, role string) ([]RolePermissionGroup, error)
@@ -153,7 +153,7 @@ type PermissionService interface {
 	GetAllPermissionsForRole(ctx context.Context, role string) (map[string]bool, error)
 
 	// Role Management
-	GetAllRoles(ctx context.Context) ([]string, error)
+	GetAllRoles(ctx context.Context, currentUserRole string) ([]string, error)
 
 	// Raw permission rules for scope configuration
 	GetAllPermissionRules(ctx context.Context) ([]*domain.PermissionRule, error)

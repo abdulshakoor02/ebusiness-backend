@@ -49,7 +49,7 @@ func main() {
 
 	db := mongoClient.Database(cfg.DBName)
 
-	if err := database.RunMigrations(context.Background(), db); err != nil {
+	if err := database.RunMigrations(context.Background(), db, cfg); err != nil {
 		slog.Error("Failed to run migrations", "error", err)
 	}
 
@@ -99,7 +99,6 @@ func main() {
 
 	api := app.Group("/api/v1")
 
-	api.Post("/tenants", handler.NewTenantHandler(tenantService).RegisterTenant)
 	api.Post("/auth/login", handler.NewAuthHandler(authService).Login)
 	api.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"status": "ok"})
@@ -125,6 +124,7 @@ func main() {
 	protected.Post("/permissions/roles/:role/bulk", authz, permissionHandler.BulkUpdateRolePermissions)
 
 	tenantHandler := handler.NewTenantHandler(tenantService)
+	protected.Post("/tenants", authz, tenantHandler.RegisterTenant)
 	protected.Get("/tenants/:id", authz, tenantHandler.GetTenant)
 	protected.Put("/tenants/:id", authz, tenantHandler.UpdateTenant)
 	protected.Post("/tenants/list", authz, tenantHandler.ListTenants)

@@ -2,9 +2,11 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/domain"
+	"github.com/abdulshakoor02/goCrmBackend/pkg/middleware"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -29,8 +31,11 @@ func (r *MongoLeadSourceRepository) Create(ctx context.Context, source *domain.L
 func (r *MongoLeadSourceRepository) GetByID(ctx context.Context, id primitive.ObjectID) (*domain.LeadSource, error) {
 	filter := bson.M{"_id": id}
 
-	if tenantID, ok := getTenantIDFromContext(ctx); ok {
-		filter["tenant_id"] = tenantID
+	scopeFilter := middleware.GetScopeFilter(ctx)
+	if !scopeFilter.IsSystemAdmin {
+		if tenantID, ok := getTenantIDFromContext(ctx); ok {
+			filter["tenant_id"] = tenantID
+		}
 	}
 
 	var source domain.LeadSource
@@ -54,8 +59,11 @@ func (r *MongoLeadSourceRepository) List(ctx context.Context, filter interface{}
 		}
 	}
 
-	if tenantID, ok := getTenantIDFromContext(ctx); ok {
-		bsonFilter["tenant_id"] = tenantID
+	scopeFilter := middleware.GetScopeFilter(ctx)
+	if !scopeFilter.IsSystemAdmin {
+		if tenantID, ok := getTenantIDFromContext(ctx); ok {
+			bsonFilter["tenant_id"] = tenantID
+		}
 	}
 
 	total, err := r.collection.CountDocuments(ctx, bsonFilter)
@@ -85,8 +93,11 @@ func (r *MongoLeadSourceRepository) List(ctx context.Context, filter interface{}
 func (r *MongoLeadSourceRepository) Update(ctx context.Context, source *domain.LeadSource) error {
 	filter := bson.M{"_id": source.ID}
 
-	if tenantID, ok := getTenantIDFromContext(ctx); ok {
-		filter["tenant_id"] = tenantID
+	scopeFilter := middleware.GetScopeFilter(ctx)
+	if !scopeFilter.IsSystemAdmin {
+		if tenantID, ok := getTenantIDFromContext(ctx); ok {
+			filter["tenant_id"] = tenantID
+		}
 	}
 
 	update := bson.M{
@@ -103,7 +114,12 @@ func (r *MongoLeadSourceRepository) Update(ctx context.Context, source *domain.L
 func (r *MongoLeadSourceRepository) Delete(ctx context.Context, id primitive.ObjectID) error {
 	filter := bson.M{"_id": id}
 
-	if tenantID, ok := getTenantIDFromContext(ctx); ok {
+	scopeFilter := middleware.GetScopeFilter(ctx)
+	if !scopeFilter.IsSystemAdmin {
+		tenantID, ok := getTenantIDFromContext(ctx)
+		if !ok {
+			return errors.New("tenant context required for non-system admin")
+		}
 		filter["tenant_id"] = tenantID
 	}
 

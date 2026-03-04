@@ -16,8 +16,9 @@ type PermissionRule struct {
 	Method        string             `bson:"method" json:"method"`
 	Description   string             `bson:"description" json:"description"`
 	IsSystem      bool               `bson:"is_system" json:"is_system"`
-	ScopeType     string             `bson:"scope_type" json:"scope_type"`     // "none" | "self" | "group"
-	FilterField   string             `bson:"filter_field" json:"filter_field"` // e.g., "assigned_to", "created_by"
+	ScopeType     string             `bson:"scope_type" json:"scope_type"`       // "none" | "self" | "group"
+	FilterField   string             `bson:"filter_field" json:"filter_field"`   // e.g., "assigned_to", "created_by"
+	RequiresRole  string             `bson:"requires_role" json:"requires_role"` // "" = any role, "superadmin" = only superadmin
 	CreatedAt     time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt     time.Time          `bson:"updated_at" json:"updated_at"`
 }
@@ -50,6 +51,7 @@ func NewPermissionRule(resource, resourceLabel, action, actionLabel, path, metho
 		IsSystem:      isSystem,
 		ScopeType:     scopeType,
 		FilterField:   filterField,
+		RequiresRole:  "", // Default to available for all. Set explicitly for superadmin-only rules.
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 	}

@@ -32,8 +32,11 @@ func (r *MongoLeadRepository) Create(ctx context.Context, lead *domain.Lead) err
 func (r *MongoLeadRepository) GetByID(ctx context.Context, id primitive.ObjectID) (*domain.Lead, error) {
 	filter := bson.M{"_id": id}
 
-	if tenantID, ok := getTenantIDFromContext(ctx); ok {
-		filter["tenant_id"] = tenantID
+	scopeFilter := middleware.GetScopeFilter(ctx)
+	if !scopeFilter.IsSystemAdmin {
+		if tenantID, ok := getTenantIDFromContext(ctx); ok {
+			filter["tenant_id"] = tenantID
+		}
 	}
 
 	var lead domain.Lead
@@ -48,13 +51,17 @@ func (r *MongoLeadRepository) GetByID(ctx context.Context, id primitive.ObjectID
 }
 
 func (r *MongoLeadRepository) List(ctx context.Context, filter interface{}, offset, limit int64) ([]*domain.Lead, int64, error) {
-	tenantID, ok := getTenantIDFromContext(ctx)
-	if !ok {
-		slog.Warn("List leads called without tenant context")
-		return nil, 0, errors.New("tenant context required")
-	}
+	scopeFilter := middleware.GetScopeFilter(ctx)
+	query := bson.M{}
 
-	query := bson.M{"tenant_id": tenantID}
+	if !scopeFilter.IsSystemAdmin {
+		tenantID, ok := getTenantIDFromContext(ctx)
+		if !ok {
+			slog.Warn("List leads called without tenant context")
+			return nil, 0, errors.New("tenant context required")
+		}
+		query["tenant_id"] = tenantID
+	}
 
 	if f, ok := filter.(map[string]interface{}); ok {
 		for k, v := range f {
@@ -62,7 +69,6 @@ func (r *MongoLeadRepository) List(ctx context.Context, filter interface{}, offs
 		}
 	}
 
-	scopeFilter := middleware.GetScopeFilter(ctx)
 	slog.Debug("Lead List - Scope filter", "scope_type", scopeFilter.ScopeType, "self_user_id", scopeFilter.SelfUserID, "filter_field", scopeFilter.FilterField)
 	if scopeFilter.ScopeType == "self" && scopeFilter.SelfUserID != "" && scopeFilter.FilterField != "" && !scopeFilter.IsSystemAdmin {
 		userOID, err := primitive.ObjectIDFromHex(scopeFilter.SelfUserID)
@@ -101,8 +107,11 @@ func (r *MongoLeadRepository) List(ctx context.Context, filter interface{}, offs
 func (r *MongoLeadRepository) Update(ctx context.Context, lead *domain.Lead) error {
 	filter := bson.M{"_id": lead.ID}
 
-	if tenantID, ok := getTenantIDFromContext(ctx); ok {
-		filter["tenant_id"] = tenantID
+	scopeFilter := middleware.GetScopeFilter(ctx)
+	if !scopeFilter.IsSystemAdmin {
+		if tenantID, ok := getTenantIDFromContext(ctx); ok {
+			filter["tenant_id"] = tenantID
+		}
 	}
 
 	update := bson.M{

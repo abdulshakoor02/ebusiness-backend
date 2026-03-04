@@ -4,15 +4,17 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/abdulshakoor02/goCrmBackend/config"
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/domain"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // RunMigrations runs application boot time database setup such as ensuring indexes
-func RunMigrations(ctx context.Context, db *mongo.Database) error {
+func RunMigrations(ctx context.Context, db *mongo.Database, cfg *config.Config) error {
 	slog.Info("Running database migrations...")
 
 	if err := ensureUserIndexes(ctx, db.Collection("users")); err != nil {
@@ -42,6 +44,11 @@ func RunMigrations(ctx context.Context, db *mongo.Database) error {
 
 	if err := createRolePermissionsWithRulesView(ctx, db); err != nil {
 		slog.Warn("Failed to create role_permissions_with_rules view (may already exist)", "error", err)
+	}
+
+	if err := seedServiceProviderTenant(ctx, db, cfg); err != nil {
+		slog.Error("Failed to seed service provider tenant", "error", err)
+		return err
 	}
 
 	slog.Info("Database migrations completed successfully")
@@ -109,11 +116,25 @@ func seedPermissionRules(ctx context.Context, collection *mongo.Collection) erro
 	slog.Info("Seeding system permission rules...")
 
 	// Define all system permission rules
+
+	tenantView := domain.NewPermissionRule("tenants", "Tenant Management", "view", "View Tenant Details", "/api/v1/tenants/:id", "GET", "View tenant information", true)
+	tenantView.RequiresRole = "superadmin"
+
+	tenantUpdate := domain.NewPermissionRule("tenants", "Tenant Management", "update", "Update Tenant", "/api/v1/tenants/:id", "PUT", "Update tenant information", true)
+	tenantUpdate.RequiresRole = "superadmin"
+
+	tenantCreate := domain.NewPermissionRule("tenants", "Tenant Management", "create", "Create Tenant", "/api/v1/tenants", "POST", "Create new tenant", true)
+	tenantCreate.RequiresRole = "superadmin"
+
+	tenantList := domain.NewPermissionRule("tenants", "Tenant Management", "list", "List Tenants", "/api/v1/tenants/list", "POST", "List all tenants", true)
+	tenantList.RequiresRole = "superadmin"
+
 	rules := []domain.PermissionRule{
 		// Tenant Management
-		*domain.NewPermissionRule("tenants", "Tenant Management", "view", "View Tenant Details", "/api/v1/tenants/:id", "GET", "View tenant information", true),
-		*domain.NewPermissionRule("tenants", "Tenant Management", "update", "Update Tenant", "/api/v1/tenants/:id", "PUT", "Update tenant information", true),
-		*domain.NewPermissionRule("tenants", "Tenant Management", "list", "List Tenants", "/api/v1/tenants/list", "POST", "List all tenants", true),
+		*tenantView,
+		*tenantUpdate,
+		*tenantCreate,
+		*tenantList,
 
 		// User Management
 		*domain.NewPermissionRule("users", "User Management", "create", "Create User", "/api/v1/users", "POST", "Create a new user", true),
@@ -175,7 +196,8 @@ func seedPermissionRules(ctx context.Context, collection *mongo.Collection) erro
 		*domain.NewPermissionRule("permissions", "Permission Management", "view-rules", "View Rules", "/api/v1/permissions/rules", "GET", "View permission rules", true),
 		*domain.NewPermissionRule("permissions", "Permission Management", "inherit-roles", "Manage Role Inheritance", "/api/v1/permissions/roles/inherit", "*", "Manage role inheritance", true),
 		*domain.NewPermissionRule("permissions", "Permission Management", "view-roles", "View Roles", "/api/v1/permissions/roles", "GET", "View all roles and their permissions", true),
-		*domain.NewPermissionRule("permissions", "Permission Management", "bulk-update-roles", "Bulk Update Roles", "/api/v1/permissions/roles", "POST", "Bulk update role permissions", true),
+		*domain.NewPermissionRule("permissions", "Permission Management", "view-role-permissions", "View Role Permissions", "/api/v1/permissions/roles/:role", "GET", "View permissions for a specific role", true),
+		*domain.NewPermissionRule("permissions", "Permission Management", "bulk-update-roles", "Bulk Update Roles", "/api/v1/permissions/roles/:role/bulk", "POST", "Bulk update role permissions", true),
 
 		// Permission Rules Management endpoints for admin
 		*domain.NewPermissionRule("permissions", "Permission Management", "available-rules", "View Available Rules", "/api/v1/permissions/available-rules", "GET", "View available permission rules", true),
@@ -231,10 +253,13 @@ func seedRolePermissions(ctx context.Context, rolePermsCollection, permRulesColl
 		resource string
 		action   string
 	}{
+		// Superadmin exclusively
+		{role: "superadmin", resource: "tenants", action: "view"},
+		{role: "superadmin", resource: "tenants", action: "update"},
+		{role: "superadmin", resource: "tenants", action: "create"},
+		{role: "superadmin", resource: "tenants", action: "list"},
+
 		// Admin permissions (unscoped — admin sees all data)
-		{role: "admin", resource: "tenants", action: "view"},
-		{role: "admin", resource: "tenants", action: "update"},
-		{role: "admin", resource: "tenants", action: "list"},
 		{role: "admin", resource: "users", action: "create"},
 		{role: "admin", resource: "users", action: "view"},
 		{role: "admin", resource: "users", action: "update"},
@@ -295,6 +320,7 @@ func seedRolePermissions(ctx context.Context, rolePermsCollection, permRulesColl
 		{role: "admin", resource: "permissions", action: "view-rules"},
 		{role: "admin", resource: "permissions", action: "inherit-roles"},
 		{role: "admin", resource: "permissions", action: "view-roles"},
+		{role: "admin", resource: "permissions", action: "view-role-permissions"},
 		{role: "admin", resource: "permissions", action: "bulk-update-roles"},
 		{role: "admin", resource: "permissions", action: "available-rules"},
 	}
@@ -385,5 +411,61 @@ func createRolePermissionsWithRulesView(ctx context.Context, db *mongo.Database)
 	}
 
 	slog.Info("Created role_permissions_with_rules view")
+	return nil
+}
+
+func seedServiceProviderTenant(ctx context.Context, db *mongo.Database, cfg *config.Config) error {
+	tenantsCollection := db.Collection("tenants")
+	usersCollection := db.Collection("users")
+
+	// 1. Check if the service provider tenant exists
+	var tenant domain.Tenant
+	err := tenantsCollection.FindOne(ctx, bson.M{"name": cfg.ServiceTenantName}).Decode(&tenant)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			// Create tenant
+			slog.Info("Service provider tenant not found. Creating...", "name", cfg.ServiceTenantName)
+			tenant = *domain.NewTenant(cfg.ServiceTenantName, cfg.SuperAdminEmail)
+			_, err = tenantsCollection.InsertOne(ctx, tenant)
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+
+	// 2. Check if the superadmin user exists
+	count, err := usersCollection.CountDocuments(ctx, bson.M{"email": cfg.SuperAdminEmail})
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		slog.Info("Super admin user not found. Creating...", "email", cfg.SuperAdminEmail)
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(cfg.SuperAdminPassword), 14)
+		if err != nil {
+			return err
+		}
+
+		user := domain.NewUser(
+			tenant.ID,
+			cfg.SuperAdminName,
+			cfg.SuperAdminEmail,
+			"", // Mobile
+			string(hashedPassword),
+			"superadmin", // explicitly superadmin role
+		)
+
+		_, err = usersCollection.InsertOne(ctx, user)
+		if err != nil {
+			return err
+		}
+
+		slog.Info("Super admin user created successfully", "tenant_id", tenant.ID.Hex(), "user_id", user.ID.Hex())
+	}
+
 	return nil
 }

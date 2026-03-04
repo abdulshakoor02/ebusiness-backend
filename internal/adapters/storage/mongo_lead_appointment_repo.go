@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/domain"
+	"github.com/abdulshakoor02/goCrmBackend/pkg/middleware"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -31,8 +32,11 @@ func (r *MongoLeadAppointmentRepository) Create(ctx context.Context, appointment
 func (r *MongoLeadAppointmentRepository) GetByID(ctx context.Context, id primitive.ObjectID) (*domain.LeadAppointment, error) {
 	filter := bson.M{"_id": id}
 
-	if tenantID, ok := getTenantIDFromContext(ctx); ok {
-		filter["tenant_id"] = tenantID
+	scopeFilter := middleware.GetScopeFilter(ctx)
+	if !scopeFilter.IsSystemAdmin {
+		if tenantID, ok := getTenantIDFromContext(ctx); ok {
+			filter["tenant_id"] = tenantID
+		}
 	}
 
 	var appointment domain.LeadAppointment
@@ -47,15 +51,18 @@ func (r *MongoLeadAppointmentRepository) GetByID(ctx context.Context, id primiti
 }
 
 func (r *MongoLeadAppointmentRepository) ListByLeadID(ctx context.Context, leadID primitive.ObjectID, filter interface{}, offset, limit int64) ([]*domain.LeadAppointment, int64, error) {
-	tenantID, ok := getTenantIDFromContext(ctx)
-	if !ok {
-		slog.Warn("List lead appointments called without tenant context")
-		return nil, 0, errors.New("tenant context required")
+	scopeFilter := middleware.GetScopeFilter(ctx)
+	query := bson.M{
+		"lead_id": leadID,
 	}
 
-	query := bson.M{
-		"tenant_id": tenantID,
-		"lead_id":   leadID,
+	if !scopeFilter.IsSystemAdmin {
+		tenantID, ok := getTenantIDFromContext(ctx)
+		if !ok {
+			slog.Warn("List lead appointments called without tenant context")
+			return nil, 0, errors.New("tenant context required")
+		}
+		query["tenant_id"] = tenantID
 	}
 
 	if f, ok := filter.(map[string]interface{}); ok {
@@ -92,8 +99,11 @@ func (r *MongoLeadAppointmentRepository) ListByLeadID(ctx context.Context, leadI
 func (r *MongoLeadAppointmentRepository) Update(ctx context.Context, appointment *domain.LeadAppointment) error {
 	filter := bson.M{"_id": appointment.ID}
 
-	if tenantID, ok := getTenantIDFromContext(ctx); ok {
-		filter["tenant_id"] = tenantID
+	scopeFilter := middleware.GetScopeFilter(ctx)
+	if !scopeFilter.IsSystemAdmin {
+		if tenantID, ok := getTenantIDFromContext(ctx); ok {
+			filter["tenant_id"] = tenantID
+		}
 	}
 
 	update := bson.M{
@@ -113,8 +123,11 @@ func (r *MongoLeadAppointmentRepository) Update(ctx context.Context, appointment
 func (r *MongoLeadAppointmentRepository) Delete(ctx context.Context, id primitive.ObjectID) error {
 	filter := bson.M{"_id": id}
 
-	if tenantID, ok := getTenantIDFromContext(ctx); ok {
-		filter["tenant_id"] = tenantID
+	scopeFilter := middleware.GetScopeFilter(ctx)
+	if !scopeFilter.IsSystemAdmin {
+		if tenantID, ok := getTenantIDFromContext(ctx); ok {
+			filter["tenant_id"] = tenantID
+		}
 	}
 
 	res, err := r.collection.DeleteOne(ctx, filter)

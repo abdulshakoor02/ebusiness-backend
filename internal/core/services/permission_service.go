@@ -205,7 +205,7 @@ func (s *PermissionService) GetPermissionRuleByID(ctx context.Context, id primit
 	return s.permissionRuleRepo.GetByID(ctx, id)
 }
 
-func (s *PermissionService) GetAvailableRulesGrouped(ctx context.Context) ([]domain.PermissionRuleGroup, error) {
+func (s *PermissionService) GetAvailableRulesGrouped(ctx context.Context, role string) ([]domain.PermissionRuleGroup, error) {
 	rules, err := s.permissionRuleRepo.ListAll(ctx)
 	if err != nil {
 		return nil, err
@@ -213,6 +213,10 @@ func (s *PermissionService) GetAvailableRulesGrouped(ctx context.Context) ([]dom
 
 	resourceMap := make(map[string]*domain.PermissionRuleGroup)
 	for _, rule := range rules {
+		if rule.RequiresRole != "" && rule.RequiresRole != role {
+			continue
+		}
+
 		group, exists := resourceMap[rule.Resource]
 		if !exists {
 			group = &domain.PermissionRuleGroup{
@@ -247,6 +251,9 @@ func (s *PermissionService) GetAllPermissionsForRole(ctx context.Context, role s
 
 	permissions := make(map[string]bool)
 	for _, rule := range rules {
+		if rule.RequiresRole != "" && rule.RequiresRole != role {
+			continue
+		}
 		key := "can_" + rule.Action + "_" + rule.Resource
 		permissions[key] = assignedRuleIDs[rule.ID]
 	}
@@ -280,6 +287,10 @@ func (s *PermissionService) GetPermissionsForRoleGrouped(ctx context.Context, ro
 
 	resourceMap := make(map[string]*ports.RolePermissionGroup)
 	for _, rule := range rules {
+		if rule.RequiresRole != "" && rule.RequiresRole != role {
+			continue
+		}
+
 		group, exists := resourceMap[rule.Resource]
 		if !exists {
 			group = &ports.RolePermissionGroup{
@@ -330,7 +341,7 @@ func (s *PermissionService) BulkUpdateRolePermissions(ctx context.Context, role 
 	return nil
 }
 
-func (s *PermissionService) GetAllRoles(ctx context.Context) ([]string, error) {
+func (s *PermissionService) GetAllRoles(ctx context.Context, currentUserRole string) ([]string, error) {
 	permissions, err := s.rolePermissionRepo.GetAll(ctx)
 	if err != nil {
 		return nil, err
@@ -343,6 +354,10 @@ func (s *PermissionService) GetAllRoles(ctx context.Context) ([]string, error) {
 
 	roles := make([]string, 0, len(roleSet))
 	for role := range roleSet {
+		// Hide 'superadmin' role from non-superadmin users
+		if role == "superadmin" && currentUserRole != "superadmin" {
+			continue
+		}
 		roles = append(roles, role)
 	}
 

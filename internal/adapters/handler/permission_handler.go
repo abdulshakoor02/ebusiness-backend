@@ -151,7 +151,12 @@ func (h *PermissionHandler) GetAllPermissions(c *fiber.Ctx) error {
 // @Security     Bearer
 // @Router       /permissions/roles [get]
 func (h *PermissionHandler) GetAllRoles(c *fiber.Ctx) error {
-	roles, err := h.service.GetAllRoles(c.Context())
+	role, ok := c.Locals("role").(string)
+	if !ok || role == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Role not found in context"})
+	}
+
+	roles, err := h.service.GetAllRoles(c.Context(), role)
 	if err != nil {
 		slog.Error("Failed to fetch roles", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
@@ -191,7 +196,12 @@ func (h *PermissionHandler) GetRoleInheritances(c *fiber.Ctx) error {
 // @Security     Bearer
 // @Router       /permissions/available-rules [get]
 func (h *PermissionHandler) GetAvailableRules(c *fiber.Ctx) error {
-	groups, err := h.service.GetAvailableRulesGrouped(c.Context())
+	role, ok := c.Locals("role").(string)
+	if !ok || role == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Role not found in context"})
+	}
+
+	groups, err := h.service.GetAvailableRulesGrouped(c.Context(), role)
 	if err != nil {
 		slog.Error("Failed to fetch available rules", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})

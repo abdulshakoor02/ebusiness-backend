@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -19,12 +20,19 @@ type Lead struct {
 	Designation     string             `bson:"designation,omitempty" json:"designation,omitempty"`
 	Email           string             `bson:"email" json:"email"`
 	Phone           string             `bson:"phone" json:"phone"`
+	SearchText      string             `bson:"search_text" json:"-"`
 	CreatedAt       time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt       time.Time          `bson:"updated_at" json:"updated_at"`
 }
 
+// BuildSearchText builds a lowercase concatenated string of searchable fields
+// for efficient single-field regex search.
+func (l *Lead) BuildSearchText() {
+	l.SearchText = strings.ToLower(l.FirstName + " " + l.LastName + " " + l.Email + " " + l.Phone)
+}
+
 func NewLead(tenantID primitive.ObjectID, firstName, lastName, designation, email, phone string) *Lead {
-	return &Lead{
+	lead := &Lead{
 		ID:          primitive.NewObjectID(),
 		TenantID:    tenantID,
 		FirstName:   firstName,
@@ -35,4 +43,6 @@ func NewLead(tenantID primitive.ObjectID, firstName, lastName, designation, emai
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
+	lead.BuildSearchText()
+	return lead
 }

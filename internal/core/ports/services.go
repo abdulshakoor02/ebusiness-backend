@@ -50,6 +50,7 @@ type LoginResponse struct {
 
 type FilterRequest struct {
 	Filters map[string]interface{} `json:"filters"`
+	Search  string                 `json:"search"`
 	Offset  int64                  `json:"offset"`
 	Limit   int64                  `json:"limit"`
 }
@@ -188,11 +189,49 @@ type UpdateLeadRequest struct {
 	Phone           string `json:"phone,omitempty"`
 }
 
+// LeadRefItem is a lightweight reference to a related entity (category, source, qualification)
+type LeadRefItem struct {
+	ID   primitive.ObjectID `json:"id" bson:"_id"`
+	Name string             `json:"name" bson:"name"`
+}
+
+// LeadUserRef is a lightweight reference to the assigned user
+type LeadUserRef struct {
+	ID   primitive.ObjectID `json:"id" bson:"_id"`
+	Name string             `json:"name" bson:"name"`
+}
+
+// LeadCountryRef is a lightweight reference to a country with additional display fields
+type LeadCountryRef struct {
+	ID        primitive.ObjectID `json:"id" bson:"_id"`
+	Name      string             `json:"name" bson:"name"`
+	ISO2      string             `json:"iso2" bson:"iso2"`
+	PhoneCode string             `json:"phone_code" bson:"phone_code"`
+}
+
+// LeadListItem is the enriched response for the list endpoint with resolved references
+type LeadListItem struct {
+	ID             primitive.ObjectID `json:"id" bson:"_id"`
+	TenantID       primitive.ObjectID `json:"tenant_id" bson:"tenant_id"`
+	FirstName      string             `json:"first_name" bson:"first_name"`
+	LastName       string             `json:"last_name" bson:"last_name"`
+	Designation    string             `json:"designation,omitempty" bson:"designation"`
+	Email          string             `json:"email" bson:"email"`
+	Phone          string             `json:"phone" bson:"phone"`
+	Category       *LeadRefItem       `json:"category,omitempty" bson:"category,omitempty"`
+	Source         *LeadRefItem       `json:"source,omitempty" bson:"source,omitempty"`
+	AssignedToUser *LeadUserRef       `json:"assigned_to_user,omitempty" bson:"assigned_to_user,omitempty"`
+	Country        *LeadCountryRef    `json:"country,omitempty" bson:"country,omitempty"`
+	Qualification  *LeadRefItem       `json:"qualification,omitempty" bson:"qualification,omitempty"`
+	CreatedAt      time.Time          `json:"created_at" bson:"created_at"`
+	UpdatedAt      time.Time          `json:"updated_at" bson:"updated_at"`
+}
+
 type LeadService interface {
 	CreateLead(ctx context.Context, req CreateLeadRequest) (*domain.Lead, error)
 	GetLead(ctx context.Context, id primitive.ObjectID) (*domain.Lead, error)
 	UpdateLead(ctx context.Context, id primitive.ObjectID, req UpdateLeadRequest) (*domain.Lead, error)
-	ListLeads(ctx context.Context, req FilterRequest) ([]*domain.Lead, int64, error)
+	ListLeads(ctx context.Context, req FilterRequest) ([]*LeadListItem, int64, error)
 }
 
 type CreateLeadCategoryRequest struct {

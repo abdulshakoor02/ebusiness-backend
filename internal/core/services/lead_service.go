@@ -74,6 +74,8 @@ func (s *LeadService) CreateLead(ctx context.Context, req ports.CreateLeadReques
 		lead.QualificationID = qualificationID
 	}
 
+	lead.BuildSearchText()
+
 	if err := s.leadRepo.Create(ctx, lead); err != nil {
 		return nil, err
 	}
@@ -147,6 +149,8 @@ func (s *LeadService) UpdateLead(ctx context.Context, id primitive.ObjectID, req
 		lead.QualificationID = qualificationID
 	}
 
+	lead.BuildSearchText()
+
 	if err := s.leadRepo.Update(ctx, lead); err != nil {
 		return nil, err
 	}
@@ -154,6 +158,6 @@ func (s *LeadService) UpdateLead(ctx context.Context, id primitive.ObjectID, req
 	return lead, nil
 }
 
-func (s *LeadService) ListLeads(ctx context.Context, req ports.FilterRequest) ([]*domain.Lead, int64, error) {
-	return s.leadRepo.List(ctx, req.Filters, req.Offset, req.Limit)
+func (s *LeadService) ListLeads(ctx context.Context, req ports.FilterRequest) ([]*ports.LeadListItem, int64, error) {
+	return s.leadRepo.List(ctx, req.Filters, req.Search, req.Offset, req.Limit)
 }

@@ -25,7 +25,7 @@ type UserRepository interface {
 type LeadRepository interface {
 	Create(ctx context.Context, lead *domain.Lead) error
 	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.Lead, error)
-	List(ctx context.Context, filter interface{}, offset, limit int64) ([]*domain.Lead, int64, error)
+	List(ctx context.Context, filter interface{}, search string, offset, limit int64) ([]*LeadListItem, int64, error)
 	Update(ctx context.Context, lead *domain.Lead) error
 }
 

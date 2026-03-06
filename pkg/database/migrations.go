@@ -114,6 +114,23 @@ func ensureLeadIndexes(ctx context.Context, collection *mongo.Collection) error 
 				SetName("unique_tenant_phone").
 				SetSparse(true), // allows partial updates with missing phone numbers
 		},
+		// Compound index for admin queries: tenant-wide list + sort by created_at
+		{
+			Keys: bson.D{
+				{Key: "tenant_id", Value: 1},
+				{Key: "created_at", Value: -1},
+			},
+			Options: options.Index().SetName("tenant_created"),
+		},
+		// Compound index for user queries: assigned_to scoped list + sort by created_at
+		{
+			Keys: bson.D{
+				{Key: "tenant_id", Value: 1},
+				{Key: "assigned_to", Value: 1},
+				{Key: "created_at", Value: -1},
+			},
+			Options: options.Index().SetName("tenant_assigned_created"),
+		},
 	}
 
 	_, err := collection.Indexes().CreateMany(ctx, indexes)

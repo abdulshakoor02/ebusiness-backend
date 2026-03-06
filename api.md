@@ -916,6 +916,39 @@ The system supports **row-level security** via permission rules. Each permission
 ```json
 {
   "filters": {},
+  "search": "",
+  "offset": 0,
+  "limit": 10
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `filters` | object | No | Key-value pairs for exact-match filtering (e.g., `country_id`, `qualification_id`) |
+| `search` | string | No | Free-text search across lead name, email, and phone. Case-insensitive, partial match supported. |
+| `offset` | number | No | Pagination offset (default: 0) |
+| `limit` | number | No | Number of results per page (default: 10) |
+
+> **Note:** The `search` field performs a single regex match against a pre-built, lowercase concatenation of `first_name`, `last_name`, `email`, and `phone`. This is optimized for use with a single search box in the UI.
+
+**Search Examples:**
+
+**Search by name (partial match):**
+```json
+{
+  "search": "alice",
+  "offset": 0,
+  "limit": 10
+}
+```
+
+**Search combined with filters:**
+```json
+{
+  "filters": {
+    "country_id": "60c9g..."
+  },
+  "search": "john",
   "offset": 0,
   "limit": 10
 }
@@ -957,7 +990,51 @@ The system supports **row-level security** via permission rules. Each permission
 ```
 
 **Response (200 OK):**
-(Returns paginated leads)
+
+> **Note:** The list response resolves all referenced IDs into nested objects. The `Create`, `Get`, and `Update` endpoints still return raw ObjectIDs since those are used for edit forms.
+
+```json
+{
+  "data": [
+    {
+      "id": "60c9g...",
+      "tenant_id": "60a7e...",
+      "first_name": "Alice",
+      "last_name": "Johnson",
+      "designation": "Software Engineer",
+      "email": "alice@techinnovations.com",
+      "phone": "+1987654321",
+      "category": {
+        "id": "60b8f...",
+        "name": "High Priority"
+      },
+      "source": {
+        "id": "60b8f...",
+        "name": "Website"
+      },
+      "assigned_to_user": {
+        "id": "60b8f...",
+        "name": "John Doe"
+      },
+      "country": {
+        "id": "60c9g...",
+        "name": "United Arab Emirates",
+        "iso2": "AE",
+        "phone_code": "+971"
+      },
+      "qualification": {
+        "id": "60d0h...",
+        "name": "Bachelor's Degree"
+      },
+      "created_at": "2026-02-15T12:00:00Z",
+      "updated_at": "2026-02-15T12:00:00Z"
+    }
+  ],
+  "total": 1,
+  "offset": 0,
+  "limit": 10
+}
+```
 
 ---
 

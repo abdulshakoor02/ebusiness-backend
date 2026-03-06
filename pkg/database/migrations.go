@@ -51,6 +51,26 @@ func RunMigrations(ctx context.Context, db *mongo.Database, cfg *config.Config) 
 		return err
 	}
 
+	if err := ensureQualificationIndexes(ctx, db.Collection("qualifications")); err != nil {
+		slog.Error("Failed to apply qualification indexes", "error", err)
+		return err
+	}
+
+	if err := ensureCountryIndexes(ctx, db.Collection("countries")); err != nil {
+		slog.Error("Failed to apply country indexes", "error", err)
+		return err
+	}
+
+	if err := seedQualifications(ctx, db.Collection("qualifications")); err != nil {
+		slog.Error("Failed to seed qualifications", "error", err)
+		return err
+	}
+
+	if err := seedCountries(ctx, db.Collection("countries")); err != nil {
+		slog.Error("Failed to seed countries", "error", err)
+		return err
+	}
+
 	slog.Info("Database migrations completed successfully")
 	return nil
 }
@@ -467,5 +487,265 @@ func seedServiceProviderTenant(ctx context.Context, db *mongo.Database, cfg *con
 		slog.Info("Super admin user created successfully", "tenant_id", tenant.ID.Hex(), "user_id", user.ID.Hex())
 	}
 
+	return nil
+}
+
+func ensureQualificationIndexes(ctx context.Context, collection *mongo.Collection) error {
+	indexes := []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "name", Value: 1}},
+			Options: options.Index().SetUnique(true).SetName("unique_name"),
+		},
+	}
+	_, err := collection.Indexes().CreateMany(ctx, indexes)
+	return err
+}
+
+func ensureCountryIndexes(ctx context.Context, collection *mongo.Collection) error {
+	indexes := []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "iso2", Value: 1}},
+			Options: options.Index().SetUnique(true).SetName("unique_iso2"),
+		},
+		{
+			Keys:    bson.D{{Key: "iso3", Value: 1}},
+			Options: options.Index().SetUnique(true).SetName("unique_iso3"),
+		},
+		{
+			Keys:    bson.D{{Key: "name", Value: 1}},
+			Options: options.Index().SetUnique(true).SetName("unique_name"),
+		},
+	}
+	_, err := collection.Indexes().CreateMany(ctx, indexes)
+	return err
+}
+
+func seedQualifications(ctx context.Context, collection *mongo.Collection) error {
+	count, err := collection.CountDocuments(ctx, bson.M{})
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		slog.Info("Qualifications already seeded, skipping")
+		return nil
+	}
+
+	qualifications := []*domain.Qualification{
+		domain.NewQualification("High School"),
+		domain.NewQualification("Associate's Degree"),
+		domain.NewQualification("Bachelor's Degree"),
+		domain.NewQualification("Master's Degree"),
+		domain.NewQualification("Doctorate (PhD)"),
+		domain.NewQualification("Post-Doctorate"),
+		domain.NewQualification("Professional Certification"),
+		domain.NewQualification("Diploma"),
+		domain.NewQualification("Vocational Training"),
+		domain.NewQualification("Other"),
+	}
+
+	docs := make([]interface{}, len(qualifications))
+	for i, q := range qualifications {
+		docs[i] = q
+	}
+
+	_, err = collection.InsertMany(ctx, docs)
+	if err != nil {
+		return err
+	}
+
+	slog.Info("Qualifications seeded successfully", "count", len(qualifications))
+	return nil
+}
+
+func seedCountries(ctx context.Context, collection *mongo.Collection) error {
+	count, err := collection.CountDocuments(ctx, bson.M{})
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		slog.Info("Countries already seeded, skipping")
+		return nil
+	}
+
+	countries := []*domain.Country{
+		domain.NewCountry("Afghanistan", "AF", "AFG", "+93", "AFN", "Afghan Afghani"),
+		domain.NewCountry("Albania", "AL", "ALB", "+355", "ALL", "Albanian Lek"),
+		domain.NewCountry("Algeria", "DZ", "DZA", "+213", "DZD", "Algerian Dinar"),
+		domain.NewCountry("Andorra", "AD", "AND", "+376", "EUR", "Euro"),
+		domain.NewCountry("Angola", "AO", "AGO", "+244", "AOA", "Angolan Kwanza"),
+		domain.NewCountry("Argentina", "AR", "ARG", "+54", "ARS", "Argentine Peso"),
+		domain.NewCountry("Armenia", "AM", "ARM", "+374", "AMD", "Armenian Dram"),
+		domain.NewCountry("Australia", "AU", "AUS", "+61", "AUD", "Australian Dollar"),
+		domain.NewCountry("Austria", "AT", "AUT", "+43", "EUR", "Euro"),
+		domain.NewCountry("Azerbaijan", "AZ", "AZE", "+994", "AZN", "Azerbaijani Manat"),
+		domain.NewCountry("Bahamas", "BS", "BHS", "+1", "BSD", "Bahamian Dollar"),
+		domain.NewCountry("Bahrain", "BH", "BHR", "+973", "BHD", "Bahraini Dinar"),
+		domain.NewCountry("Bangladesh", "BD", "BGD", "+880", "BDT", "Bangladeshi Taka"),
+		domain.NewCountry("Belarus", "BY", "BLR", "+375", "BYN", "Belarusian Ruble"),
+		domain.NewCountry("Belgium", "BE", "BEL", "+32", "EUR", "Euro"),
+		domain.NewCountry("Belize", "BZ", "BLZ", "+501", "BZD", "Belize Dollar"),
+		domain.NewCountry("Benin", "BJ", "BEN", "+229", "XOF", "West African CFA Franc"),
+		domain.NewCountry("Bhutan", "BT", "BTN", "+975", "BTN", "Bhutanese Ngultrum"),
+		domain.NewCountry("Bolivia", "BO", "BOL", "+591", "BOB", "Bolivian Boliviano"),
+		domain.NewCountry("Bosnia and Herzegovina", "BA", "BIH", "+387", "BAM", "Bosnia-Herzegovina Convertible Mark"),
+		domain.NewCountry("Botswana", "BW", "BWA", "+267", "BWP", "Botswanan Pula"),
+		domain.NewCountry("Brazil", "BR", "BRA", "+55", "BRL", "Brazilian Real"),
+		domain.NewCountry("Brunei", "BN", "BRN", "+673", "BND", "Brunei Dollar"),
+		domain.NewCountry("Bulgaria", "BG", "BGR", "+359", "BGN", "Bulgarian Lev"),
+		domain.NewCountry("Burkina Faso", "BF", "BFA", "+226", "XOF", "West African CFA Franc"),
+		domain.NewCountry("Burundi", "BI", "BDI", "+257", "BIF", "Burundian Franc"),
+		domain.NewCountry("Cambodia", "KH", "KHM", "+855", "KHR", "Cambodian Riel"),
+		domain.NewCountry("Cameroon", "CM", "CMR", "+237", "XAF", "Central African CFA Franc"),
+		domain.NewCountry("Canada", "CA", "CAN", "+1", "CAD", "Canadian Dollar"),
+		domain.NewCountry("Cape Verde", "CV", "CPV", "+238", "CVE", "Cape Verdean Escudo"),
+		domain.NewCountry("Central African Republic", "CF", "CAF", "+236", "XAF", "Central African CFA Franc"),
+		domain.NewCountry("Chad", "TD", "TCD", "+235", "XAF", "Central African CFA Franc"),
+		domain.NewCountry("Chile", "CL", "CHL", "+56", "CLP", "Chilean Peso"),
+		domain.NewCountry("China", "CN", "CHN", "+86", "CNY", "Chinese Yuan"),
+		domain.NewCountry("Colombia", "CO", "COL", "+57", "COP", "Colombian Peso"),
+		domain.NewCountry("Congo", "CG", "COG", "+242", "XAF", "Central African CFA Franc"),
+		domain.NewCountry("Costa Rica", "CR", "CRI", "+506", "CRC", "Costa Rican Colón"),
+		domain.NewCountry("Croatia", "HR", "HRV", "+385", "EUR", "Euro"),
+		domain.NewCountry("Cuba", "CU", "CUB", "+53", "CUP", "Cuban Peso"),
+		domain.NewCountry("Cyprus", "CY", "CYP", "+357", "EUR", "Euro"),
+		domain.NewCountry("Czech Republic", "CZ", "CZE", "+420", "CZK", "Czech Republic Koruna"),
+		domain.NewCountry("Denmark", "DK", "DNK", "+45", "DKK", "Danish Krone"),
+		domain.NewCountry("Djibouti", "DJ", "DJI", "+253", "DJF", "Djiboutian Franc"),
+		domain.NewCountry("Dominican Republic", "DO", "DOM", "+1", "DOP", "Dominican Peso"),
+		domain.NewCountry("Ecuador", "EC", "ECU", "+593", "USD", "United States Dollar"),
+		domain.NewCountry("Egypt", "EG", "EGY", "+20", "EGP", "Egyptian Pound"),
+		domain.NewCountry("El Salvador", "SV", "SLV", "+503", "USD", "United States Dollar"),
+		domain.NewCountry("Eritrea", "ER", "ERI", "+291", "ERN", "Eritrean Nakfa"),
+		domain.NewCountry("Estonia", "EE", "EST", "+372", "EUR", "Euro"),
+		domain.NewCountry("Ethiopia", "ET", "ETH", "+251", "ETB", "Ethiopian Birr"),
+		domain.NewCountry("Fiji", "FJ", "FJI", "+679", "FJD", "Fijian Dollar"),
+		domain.NewCountry("Finland", "FI", "FIN", "+358", "EUR", "Euro"),
+		domain.NewCountry("France", "FR", "FRA", "+33", "EUR", "Euro"),
+		domain.NewCountry("Gabon", "GA", "GAB", "+241", "XAF", "Central African CFA Franc"),
+		domain.NewCountry("Gambia", "GM", "GMB", "+220", "GMD", "Gambian Dalasi"),
+		domain.NewCountry("Georgia", "GE", "GEO", "+995", "GEL", "Georgian Lari"),
+		domain.NewCountry("Germany", "DE", "DEU", "+49", "EUR", "Euro"),
+		domain.NewCountry("Ghana", "GH", "GHA", "+233", "GHS", "Ghanaian Cedi"),
+		domain.NewCountry("Greece", "GR", "GRC", "+30", "EUR", "Euro"),
+		domain.NewCountry("Guatemala", "GT", "GTM", "+502", "GTQ", "Guatemalan Quetzal"),
+		domain.NewCountry("Guinea", "GN", "GIN", "+224", "GNF", "Guinean Franc"),
+		domain.NewCountry("Guyana", "GY", "GUY", "+592", "GYD", "Guyanaese Dollar"),
+		domain.NewCountry("Haiti", "HT", "HTI", "+509", "HTG", "Haitian Gourde"),
+		domain.NewCountry("Honduras", "HN", "HND", "+504", "HNL", "Honduran Lempira"),
+		domain.NewCountry("Hungary", "HU", "HUN", "+36", "HUF", "Hungarian Forint"),
+		domain.NewCountry("Iceland", "IS", "ISL", "+354", "ISK", "Icelandic Króna"),
+		domain.NewCountry("India", "IN", "IND", "+91", "INR", "Indian Rupee"),
+		domain.NewCountry("Indonesia", "ID", "IDN", "+62", "IDR", "Indonesian Rupiah"),
+		domain.NewCountry("Iran", "IR", "IRN", "+98", "IRR", "Iranian Rial"),
+		domain.NewCountry("Iraq", "IQ", "IRQ", "+964", "IQD", "Iraqi Dinar"),
+		domain.NewCountry("Ireland", "IE", "IRL", "+353", "EUR", "Euro"),
+		domain.NewCountry("Israel", "IL", "ISR", "+972", "ILS", "Israeli New Sheqel"),
+		domain.NewCountry("Italy", "IT", "ITA", "+39", "EUR", "Euro"),
+		domain.NewCountry("Jamaica", "JM", "JAM", "+1", "JMD", "Jamaican Dollar"),
+		domain.NewCountry("Japan", "JP", "JPN", "+81", "JPY", "Japanese Yen"),
+		domain.NewCountry("Jordan", "JO", "JOR", "+962", "JOD", "Jordanian Dinar"),
+		domain.NewCountry("Kazakhstan", "KZ", "KAZ", "+7", "KZT", "Kazakhstani Tenge"),
+		domain.NewCountry("Kenya", "KE", "KEN", "+254", "KES", "Kenyan Shilling"),
+		domain.NewCountry("Kuwait", "KW", "KWT", "+965", "KWD", "Kuwaiti Dinar"),
+		domain.NewCountry("Kyrgyzstan", "KG", "KGZ", "+996", "KGS", "Kyrgystani Som"),
+		domain.NewCountry("Laos", "LA", "LAO", "+856", "LAK", "Laotian Kip"),
+		domain.NewCountry("Latvia", "LV", "LVA", "+371", "EUR", "Euro"),
+		domain.NewCountry("Lebanon", "LB", "LBN", "+961", "LBP", "Lebanese Pound"),
+		domain.NewCountry("Lesotho", "LS", "LSO", "+266", "LSL", "Lesotho Loti"),
+		domain.NewCountry("Liberia", "LR", "LBR", "+231", "LRD", "Liberian Dollar"),
+		domain.NewCountry("Libya", "LY", "LBY", "+218", "LYD", "Libyan Dinar"),
+		domain.NewCountry("Lithuania", "LT", "LTU", "+370", "EUR", "Euro"),
+		domain.NewCountry("Luxembourg", "LU", "LUX", "+352", "EUR", "Euro"),
+		domain.NewCountry("Madagascar", "MG", "MDG", "+261", "MGA", "Malagasy Ariary"),
+		domain.NewCountry("Malawi", "MW", "MWI", "+265", "MWK", "Malawian Kwacha"),
+		domain.NewCountry("Malaysia", "MY", "MYS", "+60", "MYR", "Malaysian Ringgit"),
+		domain.NewCountry("Maldives", "MV", "MDV", "+960", "MVR", "Maldivian Rufiyaa"),
+		domain.NewCountry("Mali", "ML", "MLI", "+223", "XOF", "West African CFA Franc"),
+		domain.NewCountry("Malta", "MT", "MLT", "+356", "EUR", "Euro"),
+		domain.NewCountry("Mauritania", "MR", "MRT", "+222", "MRU", "Mauritanian Ouguiya"),
+		domain.NewCountry("Mauritius", "MU", "MUS", "+230", "MUR", "Mauritian Rupee"),
+		domain.NewCountry("Mexico", "MX", "MEX", "+52", "MXN", "Mexican Peso"),
+		domain.NewCountry("Moldova", "MD", "MDA", "+373", "MDL", "Moldovan Leu"),
+		domain.NewCountry("Monaco", "MC", "MCO", "+377", "EUR", "Euro"),
+		domain.NewCountry("Mongolia", "MN", "MNG", "+976", "MNT", "Mongolian Tugrik"),
+		domain.NewCountry("Montenegro", "ME", "MNE", "+382", "EUR", "Euro"),
+		domain.NewCountry("Morocco", "MA", "MAR", "+212", "MAD", "Moroccan Dirham"),
+		domain.NewCountry("Mozambique", "MZ", "MOZ", "+258", "MZN", "Mozambican Metical"),
+		domain.NewCountry("Myanmar", "MM", "MMR", "+95", "MMK", "Myanma Kyat"),
+		domain.NewCountry("Namibia", "NA", "NAM", "+264", "NAD", "Namibian Dollar"),
+		domain.NewCountry("Nepal", "NP", "NPL", "+977", "NPR", "Nepalese Rupee"),
+		domain.NewCountry("Netherlands", "NL", "NLD", "+31", "EUR", "Euro"),
+		domain.NewCountry("New Zealand", "NZ", "NZL", "+64", "NZD", "New Zealand Dollar"),
+		domain.NewCountry("Nicaragua", "NI", "NIC", "+505", "NIO", "Nicaraguan Córdoba"),
+		domain.NewCountry("Niger", "NE", "NER", "+227", "XOF", "West African CFA Franc"),
+		domain.NewCountry("Nigeria", "NG", "NGA", "+234", "NGN", "Nigerian Naira"),
+		domain.NewCountry("North Korea", "KP", "PRK", "+850", "KPW", "North Korean Won"),
+		domain.NewCountry("North Macedonia", "MK", "MKD", "+389", "MKD", "Macedonian Denar"),
+		domain.NewCountry("Norway", "NO", "NOR", "+47", "NOK", "Norwegian Krone"),
+		domain.NewCountry("Oman", "OM", "OMN", "+968", "OMR", "Omani Rial"),
+		domain.NewCountry("Pakistan", "PK", "PAK", "+92", "PKR", "Pakistani Rupee"),
+		domain.NewCountry("Panama", "PA", "PAN", "+507", "PAB", "Panamanian Balboa"),
+		domain.NewCountry("Papua New Guinea", "PG", "PNG", "+675", "PGK", "Papua New Guinean Kina"),
+		domain.NewCountry("Paraguay", "PY", "PRY", "+595", "PYG", "Paraguayan Guarani"),
+		domain.NewCountry("Peru", "PE", "PER", "+51", "PEN", "Peruvian Nuevo Sol"),
+		domain.NewCountry("Philippines", "PH", "PHL", "+63", "PHP", "Philippine Peso"),
+		domain.NewCountry("Poland", "PL", "POL", "+48", "PLN", "Polish Zloty"),
+		domain.NewCountry("Portugal", "PT", "PRT", "+351", "EUR", "Euro"),
+		domain.NewCountry("Qatar", "QA", "QAT", "+974", "QAR", "Qatari Rial"),
+		domain.NewCountry("Romania", "RO", "ROU", "+40", "RON", "Romanian Leu"),
+		domain.NewCountry("Russia", "RU", "RUS", "+7", "RUB", "Russian Ruble"),
+		domain.NewCountry("Rwanda", "RW", "RWA", "+250", "RWF", "Rwandan Franc"),
+		domain.NewCountry("Saudi Arabia", "SA", "SAU", "+966", "SAR", "Saudi Riyal"),
+		domain.NewCountry("Senegal", "SN", "SEN", "+221", "XOF", "West African CFA Franc"),
+		domain.NewCountry("Serbia", "RS", "SRB", "+381", "RSD", "Serbian Dinar"),
+		domain.NewCountry("Sierra Leone", "SL", "SLE", "+232", "SLL", "Sierra Leonean Leone"),
+		domain.NewCountry("Singapore", "SG", "SGP", "+65", "SGD", "Singapore Dollar"),
+		domain.NewCountry("Slovakia", "SK", "SVK", "+421", "EUR", "Euro"),
+		domain.NewCountry("Slovenia", "SI", "SVN", "+386", "EUR", "Euro"),
+		domain.NewCountry("Somalia", "SO", "SOM", "+252", "SOS", "Somali Shilling"),
+		domain.NewCountry("South Africa", "ZA", "ZAF", "+27", "ZAR", "South African Rand"),
+		domain.NewCountry("South Korea", "KR", "KOR", "+82", "KRW", "South Korean Won"),
+		domain.NewCountry("South Sudan", "SS", "SSD", "+211", "SSP", "South Sudanese Pound"),
+		domain.NewCountry("Spain", "ES", "ESP", "+34", "EUR", "Euro"),
+		domain.NewCountry("Sri Lanka", "LK", "LKA", "+94", "LKR", "Sri Lankan Rupee"),
+		domain.NewCountry("Sudan", "SD", "SDN", "+249", "SDG", "Sudanese Pound"),
+		domain.NewCountry("Suriname", "SR", "SUR", "+597", "SRD", "Surinamese Dollar"),
+		domain.NewCountry("Sweden", "SE", "SWE", "+46", "SEK", "Swedish Krona"),
+		domain.NewCountry("Switzerland", "CH", "CHE", "+41", "CHF", "Swiss Franc"),
+		domain.NewCountry("Syria", "SY", "SYR", "+963", "SYP", "Syrian Pound"),
+		domain.NewCountry("Taiwan", "TW", "TWN", "+886", "TWD", "New Taiwan Dollar"),
+		domain.NewCountry("Tajikistan", "TJ", "TJK", "+992", "TJS", "Tajikistani Somoni"),
+		domain.NewCountry("Tanzania", "TZ", "TZA", "+255", "TZS", "Tanzanian Shilling"),
+		domain.NewCountry("Thailand", "TH", "THA", "+66", "THB", "Thai Baht"),
+		domain.NewCountry("Togo", "TG", "TGO", "+228", "XOF", "West African CFA Franc"),
+		domain.NewCountry("Trinidad and Tobago", "TT", "TTO", "+1", "TTD", "Trinidad and Tobago Dollar"),
+		domain.NewCountry("Tunisia", "TN", "TUN", "+216", "TND", "Tunisian Dinar"),
+		domain.NewCountry("Turkey", "TR", "TUR", "+90", "TRY", "Turkish Lira"),
+		domain.NewCountry("Turkmenistan", "TM", "TKM", "+993", "TMT", "Turkmenistani Manat"),
+		domain.NewCountry("Uganda", "UG", "UGA", "+256", "UGX", "Ugandan Shilling"),
+		domain.NewCountry("Ukraine", "UA", "UKR", "+380", "UAH", "Ukrainian Hryvnia"),
+		domain.NewCountry("United Arab Emirates", "AE", "ARE", "+971", "AED", "United Arab Emirates Dirham"),
+		domain.NewCountry("United Kingdom", "GB", "GBR", "+44", "GBP", "British Pound Sterling"),
+		domain.NewCountry("United States", "US", "USA", "+1", "USD", "United States Dollar"),
+		domain.NewCountry("Uruguay", "UY", "URY", "+598", "UYU", "Uruguayan Peso"),
+		domain.NewCountry("Uzbekistan", "UZ", "UZB", "+998", "UZS", "Uzbekistan Som"),
+		domain.NewCountry("Venezuela", "VE", "VEN", "+58", "VES", "Venezuelan Bolívar"),
+		domain.NewCountry("Vietnam", "VN", "VNM", "+84", "VND", "Vietnamese Dong"),
+		domain.NewCountry("Yemen", "YE", "YEM", "+967", "YER", "Yemeni Rial"),
+		domain.NewCountry("Zambia", "ZM", "ZMB", "+260", "ZMW", "Zambian Kwacha"),
+		domain.NewCountry("Zimbabwe", "ZW", "ZWE", "+263", "ZWL", "Zimbabwean Dollar"),
+	}
+
+	docs := make([]interface{}, len(countries))
+	for i, c := range countries {
+		docs[i] = c
+	}
+
+	_, err = collection.InsertMany(ctx, docs)
+	if err != nil {
+		return err
+	}
+
+	slog.Info("Countries seeded successfully", "count", len(countries))
 	return nil
 }

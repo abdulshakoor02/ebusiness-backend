@@ -821,13 +821,13 @@ The system supports **row-level security** via permission rules. Each permission
   "assigned_to": "60b8f...",
   "category_id": "60b8f...",
   "source_id": "60b8f...",
+  "country_id": "60c9g...",
+  "qualification_id": "60d0h...",
   "first_name": "Alice",
   "last_name": "Johnson",
-  "company": "Tech Innovations",
-  "title": "CTO",
+  "designation": "Software Engineer",
   "email": "alice@techinnovations.com",
-  "phone": "+1987654321",
-  "status": "New"
+  "phone": "+1987654321"
 }
 ```
 
@@ -839,13 +839,13 @@ The system supports **row-level security** via permission rules. Each permission
   "assigned_to": "60b8f...",
   "category_id": "60b8f...",
   "source_id": "60b8f...",
+  "country_id": "60c9g...",
+  "qualification_id": "60d0h...",
   "first_name": "Alice",
   "last_name": "Johnson",
-  "company": "Tech Innovations",
-  "title": "CTO",
+  "designation": "Software Engineer",
   "email": "alice@techinnovations.com",
   "phone": "+1987654321",
-  "status": "New",
   "created_at": "2026-02-15T12:00:00Z",
   "updated_at": "2026-02-15T12:00:00Z"
 }
@@ -863,13 +863,13 @@ The system supports **row-level security** via permission rules. Each permission
   "assigned_to": "60b8f...",
   "category_id": "60b8f...",
   "source_id": "60b8f...",
+  "country_id": "60c9g...",
+  "qualification_id": "60d0h...",
   "first_name": "Alice",
   "last_name": "Johnson",
-  "company": "Tech Innovations",
-  "title": "CTO",
+  "designation": "Software Engineer",
   "email": "alice@techinnovations.com",
   "phone": "+1987654321",
-  "status": "New",
   "created_at": "2026-02-15T12:00:00Z",
   "updated_at": "2026-02-15T12:00:00Z"
 }
@@ -882,9 +882,9 @@ The system supports **row-level security** via permission rules. Each permission
 **Request (Partial update supported):**
 ```json
 {
-  "status": "Contacted",
   "source_id": "60b8f...",
-  "category_id": "60b8f..."
+  "category_id": "60b8f...",
+  "designation": "Senior Software Engineer"
 }
 ```
 
@@ -896,13 +896,13 @@ The system supports **row-level security** via permission rules. Each permission
   "assigned_to": "60b8f...",
   "category_id": "60b8f...",
   "source_id": "60b8f...",
+  "country_id": "60c9g...",
+  "qualification_id": "60d0h...",
   "first_name": "Alice",
   "last_name": "Johnson",
-  "company": "Tech Innovations",
-  "title": "CTO",
+  "designation": "Senior Software Engineer",
   "email": "alice@techinnovations.com",
   "phone": "+1987654321",
-  "status": "Contacted",
   "created_at": "2026-02-15T12:00:00Z",
   "updated_at": "2026-02-15T14:30:00Z"
 }
@@ -913,6 +913,39 @@ The system supports **row-level security** via permission rules. Each permission
 **Auth Required:** JWT + RBAC: All (Admin & User)
 
 **Request:**
+```json
+{
+  "filters": {},
+  "offset": 0,
+  "limit": 10
+}
+```
+
+**Filter Examples:**
+
+**Filter by country:**
+```json
+{
+  "filters": {
+    "country_id": "60c9g..."
+  },
+  "offset": 0,
+  "limit": 10
+}
+```
+
+**Filter by qualification:**
+```json
+{
+  "filters": {
+    "qualification_id": "60d0h..."
+  },
+  "offset": 0,
+  "limit": 10
+}
+```
+
+**Filter by status:**
 ```json
 {
   "filters": {
@@ -1406,7 +1439,358 @@ The system supports **row-level security** via permission rules. Each permission
 
 ---
 
-## 10. System
+## 10. Qualifications
+
+*Global reference data - shared across all tenants. No authentication required.*
+
+### Create Qualification
+**Endpoint:** `POST /qualifications`
+**Auth Required:** No
+
+**Request:**
+```json
+{
+  "name": "Bachelor's Degree"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "id": "60h4l...",
+  "name": "Bachelor's Degree",
+  "is_active": true,
+  "created_at": "2026-03-06T12:00:00Z",
+  "updated_at": "2026-03-06T12:00:00Z",
+  "created_by": null,
+  "updated_by": null
+}
+```
+
+### Get Qualification by ID
+**Endpoint:** `GET /qualifications/:id`
+**Auth Required:** No
+
+**Response (200 OK):**
+```json
+{
+  "id": "60h4l...",
+  "name": "Bachelor's Degree",
+  "is_active": true,
+  "created_at": "2026-03-06T12:00:00Z",
+  "updated_at": "2026-03-06T12:00:00Z",
+  "created_by": null,
+  "updated_by": null
+}
+```
+
+### Update Qualification
+**Endpoint:** `PUT /qualifications/:id`
+**Auth Required:** No
+
+**Request:**
+```json
+{
+  "name": "Master's Degree",
+  "is_active": true
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": "60h4l...",
+  "name": "Master's Degree",
+  "is_active": true,
+  "created_at": "2026-03-06T12:00:00Z",
+  "updated_at": "2026-03-06T14:30:00Z",
+  "created_by": null,
+  "updated_by": null
+}
+```
+
+### Delete Qualification
+**Endpoint:** `DELETE /qualifications/:id`
+**Auth Required:** No
+
+**Response (200 OK):**
+```json
+{
+  "message": "Qualification deleted successfully"
+}
+```
+
+### List Qualifications
+**Endpoint:** `POST /qualifications/list`
+**Auth Required:** No
+*Note: Returns only active qualifications by default.*
+
+**Request:**
+```json
+{
+  "filters": {
+    "is_active": true
+  },
+  "offset": 0,
+  "limit": 10
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "id": "60h4l...",
+      "name": "High School",
+      "is_active": true,
+      "created_at": "2026-03-06T12:00:00Z",
+      "updated_at": "2026-03-06T12:00:00Z"
+    },
+    {
+      "id": "60h4m...",
+      "name": "Associate's Degree",
+      "is_active": true,
+      "created_at": "2026-03-06T12:00:00Z",
+      "updated_at": "2026-03-06T12:00:00Z"
+    },
+    {
+      "id": "60h4n...",
+      "name": "Bachelor's Degree",
+      "is_active": true,
+      "created_at": "2026-03-06T12:00:00Z",
+      "updated_at": "2026-03-06T12:00:00Z"
+    }
+  ],
+  "total": 10,
+  "offset": 0,
+  "limit": 10
+}
+```
+
+### Filter Examples
+
+**List all qualifications (including inactive):**
+```json
+{
+  "filters": {
+    "is_active": false
+  },
+  "offset": 0,
+  "limit": 10
+}
+```
+
+**List all qualifications (no filter):**
+```json
+{
+  "filters": {},
+  "offset": 0,
+  "limit": 10
+}
+```
+
+---
+
+## 11. Countries
+
+*Global reference data - shared across all tenants. No authentication required.*
+
+### Create Country
+**Endpoint:** `POST /countries`
+**Auth Required:** No
+
+**Request:**
+```json
+{
+  "name": "Japan",
+  "iso2": "JP",
+  "iso3": "JPN",
+  "phone_code": "+81",
+  "currency": "JPY",
+  "currency_name": "Japanese Yen"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "id": "60i5m...",
+  "name": "Japan",
+  "iso2": "JP",
+  "iso3": "JPN",
+  "phone_code": "+81",
+  "currency": "JPY",
+  "currency_name": "Japanese Yen",
+  "is_active": true,
+  "created_at": "2026-03-06T12:00:00Z",
+  "updated_at": "2026-03-06T12:00:00Z",
+  "created_by": null,
+  "updated_by": null
+}
+```
+
+### Get Country by ID
+**Endpoint:** `GET /countries/:id`
+**Auth Required:** No
+
+**Response (200 OK):**
+```json
+{
+  "id": "60j6n...",
+  "name": "United States",
+  "iso2": "US",
+  "iso3": "USA",
+  "phone_code": "+1",
+  "currency": "USD",
+  "currency_name": "United States Dollar",
+  "is_active": true,
+  "created_at": "2026-03-06T12:00:00Z",
+  "updated_at": "2026-03-06T12:00:00Z"
+}
+```
+
+### Update Country
+**Endpoint:** `PUT /countries/:id`
+**Auth Required:** No
+
+**Request:**
+```json
+{
+  "currency": "USD",
+  "currency_name": "US Dollar",
+  "is_active": false
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": "60j6n...",
+  "name": "United States",
+  "iso2": "US",
+  "iso3": "USA",
+  "phone_code": "+1",
+  "currency": "USD",
+  "currency_name": "US Dollar",
+  "is_active": false,
+  "created_at": "2026-03-06T12:00:00Z",
+  "updated_at": "2026-03-06T14:30:00Z"
+}
+```
+
+### Delete Country
+**Endpoint:** `DELETE /countries/:id`
+**Auth Required:** No
+
+**Response (200 OK):**
+```json
+{
+  "message": "Country deleted successfully"
+}
+```
+
+### List Countries
+**Endpoint:** `POST /countries/list`
+**Auth Required:** No
+*Note: Returns only active countries by default. Sorted alphabetically by name.*
+
+**Request:**
+```json
+{
+  "filters": {
+    "is_active": true
+  },
+  "offset": 0,
+  "limit": 10
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "id": "60j6n...",
+      "name": "Afghanistan",
+      "iso2": "AF",
+      "iso3": "AFG",
+      "phone_code": "+93",
+      "currency": "AFN",
+      "currency_name": "Afghan Afghani",
+      "is_active": true,
+      "created_at": "2026-03-06T12:00:00Z",
+      "updated_at": "2026-03-06T12:00:00Z"
+    },
+    {
+      "id": "60j7o...",
+      "name": "Albania",
+      "iso2": "AL",
+      "iso3": "ALB",
+      "phone_code": "+355",
+      "currency": "ALL",
+      "currency_name": "Albanian Lek",
+      "is_active": true,
+      "created_at": "2026-03-06T12:00:00Z",
+      "updated_at": "2026-03-06T12:00:00Z"
+    },
+    {
+      "id": "60j8p...",
+      "name": "United States",
+      "iso2": "US",
+      "iso3": "USA",
+      "phone_code": "+1",
+      "currency": "USD",
+      "currency_name": "United States Dollar",
+      "is_active": true,
+      "created_at": "2026-03-06T12:00:00Z",
+      "updated_at": "2026-03-06T12:00:00Z"
+    }
+  ],
+  "total": 140,
+  "offset": 0,
+  "limit": 10
+}
+```
+
+### Filter Examples
+
+**Filter by ISO2 code:**
+```json
+{
+  "filters": {
+    "iso2": "US"
+  },
+  "offset": 0,
+  "limit": 10
+}
+```
+
+**Filter by currency:**
+```json
+{
+  "filters": {
+    "currency": "USD"
+  },
+  "offset": 0,
+  "limit": 10
+}
+```
+
+**List all countries (including inactive):**
+```json
+{
+  "filters": {
+    "is_active": false
+  },
+  "offset": 0,
+  "limit": 10
+}
+```
+
+---
+
+## 12. System
 
 ### System Health Check
 **Endpoint:** `GET /health`

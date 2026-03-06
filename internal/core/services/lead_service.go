@@ -29,11 +29,9 @@ func (s *LeadService) CreateLead(ctx context.Context, req ports.CreateLeadReques
 		tenantID,
 		req.FirstName,
 		req.LastName,
-		req.Company,
-		req.Title,
+		req.Designation,
 		req.Email,
 		req.Phone,
-		req.Status,
 	)
 
 	if req.AssignedTo != "" {
@@ -60,6 +58,22 @@ func (s *LeadService) CreateLead(ctx context.Context, req ports.CreateLeadReques
 		lead.SourceID = sourceID
 	}
 
+	if req.CountryID != "" {
+		countryID, err := primitive.ObjectIDFromHex(req.CountryID)
+		if err != nil {
+			return nil, errors.New("invalid country_id format")
+		}
+		lead.CountryID = countryID
+	}
+
+	if req.QualificationID != "" {
+		qualificationID, err := primitive.ObjectIDFromHex(req.QualificationID)
+		if err != nil {
+			return nil, errors.New("invalid qualification_id format")
+		}
+		lead.QualificationID = qualificationID
+	}
+
 	if err := s.leadRepo.Create(ctx, lead); err != nil {
 		return nil, err
 	}
@@ -83,20 +97,14 @@ func (s *LeadService) UpdateLead(ctx context.Context, id primitive.ObjectID, req
 	if req.LastName != "" {
 		lead.LastName = req.LastName
 	}
-	if req.Company != "" {
-		lead.Company = req.Company
-	}
-	if req.Title != "" {
-		lead.Title = req.Title
+	if req.Designation != "" {
+		lead.Designation = req.Designation
 	}
 	if req.Email != "" {
 		lead.Email = req.Email
 	}
 	if req.Phone != "" {
 		lead.Phone = req.Phone
-	}
-	if req.Status != "" {
-		lead.Status = req.Status
 	}
 
 	if req.AssignedTo != "" {
@@ -121,6 +129,22 @@ func (s *LeadService) UpdateLead(ctx context.Context, id primitive.ObjectID, req
 			return nil, errors.New("invalid source_id format")
 		}
 		lead.SourceID = sourceID
+	}
+
+	if req.CountryID != "" {
+		countryID, err := primitive.ObjectIDFromHex(req.CountryID)
+		if err != nil {
+			return nil, errors.New("invalid country_id format")
+		}
+		lead.CountryID = countryID
+	}
+
+	if req.QualificationID != "" {
+		qualificationID, err := primitive.ObjectIDFromHex(req.QualificationID)
+		if err != nil {
+			return nil, errors.New("invalid qualification_id format")
+		}
+		lead.QualificationID = qualificationID
 	}
 
 	if err := s.leadRepo.Update(ctx, lead); err != nil {

@@ -43,7 +43,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.LoginRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.LoginRequest"
                         }
                     }
                 ],
@@ -51,7 +51,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/ports.LoginResponse"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.LoginResponse"
                         }
                     },
                     "400": {
@@ -63,6 +63,264 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/countries": {
+            "post": {
+                "description": "Creates a new country",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "countries"
+                ],
+                "summary": "Create a new country",
+                "parameters": [
+                    {
+                        "description": "Create Country Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateCountryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/countries/list": {
+            "post": {
+                "description": "Retrieves a paginated list of countries based on filters",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "countries"
+                ],
+                "summary": "List countries",
+                "parameters": [
+                    {
+                        "description": "Filter Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/countries/{id}": {
+            "get": {
+                "description": "Retrieves a specific country",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "countries"
+                ],
+                "summary": "Get a country by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Country ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Updates an existing country's details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "countries"
+                ],
+                "summary": "Update a country",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Country ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update Country Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateCountryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes an existing country",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "countries"
+                ],
+                "summary": "Delete a country",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Country ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -96,7 +354,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.CreateLeadCategoryRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadCategoryRequest"
                         }
                     }
                 ],
@@ -150,7 +408,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.FilterRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
                         }
                     }
                 ],
@@ -261,7 +519,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.UpdateLeadCategoryRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadCategoryRequest"
                         }
                     }
                 ],
@@ -379,7 +637,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.CreateLeadSourceRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadSourceRequest"
                         }
                     }
                 ],
@@ -440,7 +698,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.FilterRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
                         }
                     }
                 ],
@@ -551,7 +809,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.UpdateLeadSourceRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadSourceRequest"
                         }
                     }
                 ],
@@ -658,7 +916,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.CreateLeadRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadRequest"
                         }
                     }
                 ],
@@ -719,7 +977,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.FilterRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
                         }
                     }
                 ],
@@ -830,7 +1088,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.UpdateLeadRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadRequest"
                         }
                     }
                 ],
@@ -898,7 +1156,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.CreateLeadAppointmentRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadAppointmentRequest"
                         }
                     }
                 ],
@@ -959,7 +1217,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.FilterRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
                         }
                     }
                 ],
@@ -1084,7 +1342,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.UpdateLeadAppointmentRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadAppointmentRequest"
                         }
                     }
                 ],
@@ -1216,7 +1474,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.CreateLeadCommentRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadCommentRequest"
                         }
                     }
                 ],
@@ -1277,7 +1535,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.FilterRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
                         }
                     }
                 ],
@@ -1402,7 +1660,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.UpdateLeadCommentRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadCommentRequest"
                         }
                     }
                 ],
@@ -1565,7 +1823,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.AddPermissionRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.AddPermissionRequest"
                         }
                     }
                 ],
@@ -1617,7 +1875,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.RemovePermissionRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.RemovePermissionRequest"
                         }
                     }
                 ],
@@ -1773,7 +2031,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.AssignRoleInheritanceRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.AssignRoleInheritanceRequest"
                         }
                     }
                 ],
@@ -1866,7 +2124,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.BulkUpdateRolePermissionsRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.BulkUpdateRolePermissionsRequest"
                         }
                     }
                 ],
@@ -1920,7 +2178,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.CreatePermissionRuleRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreatePermissionRuleRequest"
                         }
                     }
                 ],
@@ -1981,7 +2239,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.UpdatePermissionRuleRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdatePermissionRuleRequest"
                         }
                     }
                 ],
@@ -2057,6 +2315,264 @@ const docTemplate = `{
                 }
             }
         },
+        "/qualifications": {
+            "post": {
+                "description": "Creates a new qualification",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "qualifications"
+                ],
+                "summary": "Create a new qualification",
+                "parameters": [
+                    {
+                        "description": "Create Qualification Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateQualificationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/qualifications/list": {
+            "post": {
+                "description": "Retrieves a paginated list of qualifications based on filters",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "qualifications"
+                ],
+                "summary": "List qualifications",
+                "parameters": [
+                    {
+                        "description": "Filter Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/qualifications/{id}": {
+            "get": {
+                "description": "Retrieves a specific qualification",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "qualifications"
+                ],
+                "summary": "Get a qualification by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Qualification ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Updates an existing qualification's details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "qualifications"
+                ],
+                "summary": "Update a qualification",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Qualification ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update Qualification Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateQualificationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes an existing qualification",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "qualifications"
+                ],
+                "summary": "Delete a qualification",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Qualification ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/tenants": {
             "post": {
                 "description": "Creates a new tenant and an initial admin user",
@@ -2077,7 +2593,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.CreateTenantRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateTenantRequest"
                         }
                     }
                 ],
@@ -2131,7 +2647,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.FilterRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
                         }
                     }
                 ],
@@ -2242,7 +2758,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.UpdateTenantRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateTenantRequest"
                         }
                     }
                 ],
@@ -2303,7 +2819,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.CreateUserRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateUserRequest"
                         }
                     }
                 ],
@@ -2357,7 +2873,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.FilterRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
                         }
                     }
                 ],
@@ -2461,7 +2977,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/ports.UpdateUserRequest"
+                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateUserRequest"
                         }
                     }
                 ],
@@ -2499,7 +3015,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "domain.Address": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_domain.Address": {
             "type": "object",
             "properties": {
                 "city": {
@@ -2519,7 +3035,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.User": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_domain.User": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -2550,7 +3066,7 @@ const docTemplate = `{
                 }
             }
         },
-        "ports.AddPermissionRequest": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.AddPermissionRequest": {
             "type": "object",
             "properties": {
                 "permission_rule_id": {
@@ -2561,7 +3077,7 @@ const docTemplate = `{
                 }
             }
         },
-        "ports.AssignRoleInheritanceRequest": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.AssignRoleInheritanceRequest": {
             "type": "object",
             "properties": {
                 "child_role": {
@@ -2572,18 +3088,41 @@ const docTemplate = `{
                 }
             }
         },
-        "ports.BulkUpdateRolePermissionsRequest": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.BulkUpdateRolePermissionsRequest": {
             "type": "object",
             "properties": {
                 "permissions": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/ports.RolePermission"
+                        "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.RolePermission"
                     }
                 }
             }
         },
-        "ports.CreateLeadAppointmentRequest": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateCountryRequest": {
+            "type": "object",
+            "properties": {
+                "currency": {
+                    "type": "string"
+                },
+                "currency_name": {
+                    "type": "string"
+                },
+                "iso2": {
+                    "type": "string"
+                },
+                "iso3": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadAppointmentRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -2604,7 +3143,7 @@ const docTemplate = `{
                 }
             }
         },
-        "ports.CreateLeadCategoryRequest": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadCategoryRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -2615,7 +3154,7 @@ const docTemplate = `{
                 }
             }
         },
-        "ports.CreateLeadCommentRequest": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadCommentRequest": {
             "type": "object",
             "properties": {
                 "content": {
@@ -2623,7 +3162,7 @@ const docTemplate = `{
                 }
             }
         },
-        "ports.CreateLeadRequest": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadRequest": {
             "type": "object",
             "properties": {
                 "assigned_to": {
@@ -2632,7 +3171,10 @@ const docTemplate = `{
                 "category_id": {
                     "type": "string"
                 },
-                "company": {
+                "country_id": {
+                    "type": "string"
+                },
+                "designation": {
                     "type": "string"
                 },
                 "email": {
@@ -2647,18 +3189,15 @@ const docTemplate = `{
                 "phone": {
                     "type": "string"
                 },
+                "qualification_id": {
+                    "type": "string"
+                },
                 "source_id": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "title": {
                     "type": "string"
                 }
             }
         },
-        "ports.CreateLeadSourceRequest": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadSourceRequest": {
             "type": "object",
             "required": [
                 "name"
@@ -2672,7 +3211,7 @@ const docTemplate = `{
                 }
             }
         },
-        "ports.CreatePermissionRuleRequest": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreatePermissionRuleRequest": {
             "type": "object",
             "properties": {
                 "action": {
@@ -2704,14 +3243,22 @@ const docTemplate = `{
                 }
             }
         },
-        "ports.CreateTenantRequest": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateQualificationRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateTenantRequest": {
             "type": "object",
             "properties": {
                 "address": {
-                    "$ref": "#/definitions/domain.Address"
+                    "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_domain.Address"
                 },
                 "admin_user": {
-                    "$ref": "#/definitions/ports.CreateUserRequest"
+                    "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateUserRequest"
                 },
                 "email": {
                     "type": "string"
@@ -2724,7 +3271,7 @@ const docTemplate = `{
                 }
             }
         },
-        "ports.CreateUserRequest": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateUserRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -2744,7 +3291,7 @@ const docTemplate = `{
                 }
             }
         },
-        "ports.FilterRequest": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest": {
             "type": "object",
             "properties": {
                 "filters": {
@@ -2759,7 +3306,7 @@ const docTemplate = `{
                 }
             }
         },
-        "ports.LoginRequest": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.LoginRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -2770,18 +3317,18 @@ const docTemplate = `{
                 }
             }
         },
-        "ports.LoginResponse": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.LoginResponse": {
             "type": "object",
             "properties": {
                 "token": {
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/domain.User"
+                    "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_domain.User"
                 }
             }
         },
-        "ports.RemovePermissionRequest": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.RemovePermissionRequest": {
             "type": "object",
             "properties": {
                 "permission_rule_id": {
@@ -2792,7 +3339,7 @@ const docTemplate = `{
                 }
             }
         },
-        "ports.RolePermission": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.RolePermission": {
             "type": "object",
             "properties": {
                 "action": {
@@ -2826,6 +3373,10 @@ const docTemplate = `{
                 "path": {
                     "type": "string"
                 },
+                "requires_role": {
+                    "description": "\"\" = any role, \"superadmin\" = only superadmin",
+                    "type": "string"
+                },
                 "resource": {
                     "type": "string"
                 },
@@ -2841,7 +3392,33 @@ const docTemplate = `{
                 }
             }
         },
-        "ports.UpdateLeadAppointmentRequest": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateCountryRequest": {
+            "type": "object",
+            "properties": {
+                "currency": {
+                    "type": "string"
+                },
+                "currency_name": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "iso2": {
+                    "type": "string"
+                },
+                "iso3": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadAppointmentRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -2861,7 +3438,7 @@ const docTemplate = `{
                 }
             }
         },
-        "ports.UpdateLeadCategoryRequest": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadCategoryRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -2872,7 +3449,7 @@ const docTemplate = `{
                 }
             }
         },
-        "ports.UpdateLeadCommentRequest": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadCommentRequest": {
             "type": "object",
             "properties": {
                 "content": {
@@ -2880,7 +3457,7 @@ const docTemplate = `{
                 }
             }
         },
-        "ports.UpdateLeadRequest": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadRequest": {
             "type": "object",
             "properties": {
                 "assigned_to": {
@@ -2889,7 +3466,10 @@ const docTemplate = `{
                 "category_id": {
                     "type": "string"
                 },
-                "company": {
+                "country_id": {
+                    "type": "string"
+                },
+                "designation": {
                     "type": "string"
                 },
                 "email": {
@@ -2904,18 +3484,15 @@ const docTemplate = `{
                 "phone": {
                     "type": "string"
                 },
+                "qualification_id": {
+                    "type": "string"
+                },
                 "source_id": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "title": {
                     "type": "string"
                 }
             }
         },
-        "ports.UpdateLeadSourceRequest": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadSourceRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -2926,7 +3503,7 @@ const docTemplate = `{
                 }
             }
         },
-        "ports.UpdatePermissionRuleRequest": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdatePermissionRuleRequest": {
             "type": "object",
             "properties": {
                 "action_label": {
@@ -2952,11 +3529,22 @@ const docTemplate = `{
                 }
             }
         },
-        "ports.UpdateTenantRequest": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateQualificationRequest": {
+            "type": "object",
+            "properties": {
+                "is_active": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateTenantRequest": {
             "type": "object",
             "properties": {
                 "address": {
-                    "$ref": "#/definitions/domain.Address"
+                    "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_domain.Address"
                 },
                 "email": {
                     "type": "string"
@@ -2969,7 +3557,7 @@ const docTemplate = `{
                 }
             }
         },
-        "ports.UpdateUserRequest": {
+        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateUserRequest": {
             "type": "object",
             "properties": {
                 "email": {

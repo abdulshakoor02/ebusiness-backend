@@ -60,6 +60,8 @@ func main() {
 	leadSourceRepo := storage.NewMongoLeadSourceRepository(db)
 	leadCommentRepo := storage.NewMongoLeadCommentRepository(db)
 	leadAppointmentRepo := storage.NewMongoLeadAppointmentRepository(db)
+	qualificationRepo := storage.NewMongoQualificationRepository(db)
+	countryRepo := storage.NewMongoCountryRepository(db)
 
 	tenantService := services.NewTenantService(tenantRepo, userRepo)
 	userService := services.NewUserService(userRepo)
@@ -69,6 +71,8 @@ func main() {
 	leadSourceService := services.NewLeadSourceService(leadSourceRepo)
 	leadCommentService := services.NewLeadCommentService(leadCommentRepo, leadRepo)
 	leadAppointmentService := services.NewLeadAppointmentService(leadAppointmentRepo, leadRepo)
+	qualificationService := services.NewQualificationService(qualificationRepo)
+	countryService := services.NewCountryService(countryRepo)
 
 	permissionRuleRepo := storage.NewMongoPermissionRuleRepository(db)
 	rolePermissionRepo := storage.NewMongoRolePermissionRepository(db)
@@ -103,6 +107,20 @@ func main() {
 	api.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"status": "ok"})
 	})
+
+	qualificationHandler := handler.NewQualificationHandler(qualificationService)
+	api.Post("/qualifications", qualificationHandler.CreateQualification)
+	api.Get("/qualifications/:id", qualificationHandler.GetQualification)
+	api.Put("/qualifications/:id", qualificationHandler.UpdateQualification)
+	api.Delete("/qualifications/:id", qualificationHandler.DeleteQualification)
+	api.Post("/qualifications/list", qualificationHandler.ListQualifications)
+
+	countryHandler := handler.NewCountryHandler(countryService)
+	api.Post("/countries", countryHandler.CreateCountry)
+	api.Get("/countries/:id", countryHandler.GetCountry)
+	api.Put("/countries/:id", countryHandler.UpdateCountry)
+	api.Delete("/countries/:id", countryHandler.DeleteCountry)
+	api.Post("/countries/list", countryHandler.ListCountries)
 
 	protected := api.Group("/", middleware.Protected(cfg.JWTSecret), middleware.NewFilterContextMiddleware(permissionService, rolePermissionRepo))
 

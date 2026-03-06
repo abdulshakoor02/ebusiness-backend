@@ -163,29 +163,29 @@ type PermissionService interface {
 }
 
 type CreateLeadRequest struct {
-	CategoryID string `json:"category_id,omitempty"`
-	SourceID   string `json:"source_id,omitempty"`
-	AssignedTo string `json:"assigned_to,omitempty"`
-	FirstName  string `json:"first_name"`
-	LastName   string `json:"last_name"`
-	Company    string `json:"company"`
-	Title      string `json:"title"`
-	Email      string `json:"email"`
-	Phone      string `json:"phone"`
-	Status     string `json:"status"`
+	CategoryID      string `json:"category_id,omitempty"`
+	SourceID        string `json:"source_id,omitempty"`
+	AssignedTo      string `json:"assigned_to,omitempty"`
+	CountryID       string `json:"country_id,omitempty"`
+	QualificationID string `json:"qualification_id,omitempty"`
+	FirstName       string `json:"first_name"`
+	LastName        string `json:"last_name"`
+	Designation     string `json:"designation,omitempty"`
+	Email           string `json:"email"`
+	Phone           string `json:"phone"`
 }
 
 type UpdateLeadRequest struct {
-	CategoryID string `json:"category_id,omitempty"`
-	SourceID   string `json:"source_id,omitempty"`
-	AssignedTo string `json:"assigned_to,omitempty"`
-	FirstName  string `json:"first_name,omitempty"`
-	LastName   string `json:"last_name,omitempty"`
-	Company    string `json:"company,omitempty"`
-	Title      string `json:"title,omitempty"`
-	Email      string `json:"email,omitempty"`
-	Phone      string `json:"phone,omitempty"`
-	Status     string `json:"status,omitempty"`
+	CategoryID      string `json:"category_id,omitempty"`
+	SourceID        string `json:"source_id,omitempty"`
+	AssignedTo      string `json:"assigned_to,omitempty"`
+	CountryID       string `json:"country_id,omitempty"`
+	QualificationID string `json:"qualification_id,omitempty"`
+	FirstName       string `json:"first_name,omitempty"`
+	LastName        string `json:"last_name,omitempty"`
+	Designation     string `json:"designation,omitempty"`
+	Email           string `json:"email,omitempty"`
+	Phone           string `json:"phone,omitempty"`
 }
 
 type LeadService interface {
@@ -269,4 +269,48 @@ type LeadAppointmentService interface {
 	UpdateLeadAppointment(ctx context.Context, id primitive.ObjectID, req UpdateLeadAppointmentRequest) (*domain.LeadAppointment, error)
 	DeleteLeadAppointment(ctx context.Context, id primitive.ObjectID) error
 	ListLeadAppointments(ctx context.Context, leadID primitive.ObjectID, req FilterRequest) ([]*domain.LeadAppointment, int64, error)
+}
+
+type CreateQualificationRequest struct {
+	Name string `json:"name"`
+}
+
+type UpdateQualificationRequest struct {
+	Name     string `json:"name,omitempty"`
+	IsActive *bool  `json:"is_active,omitempty"`
+}
+
+type QualificationService interface {
+	CreateQualification(ctx context.Context, req CreateQualificationRequest) (*domain.Qualification, error)
+	GetQualification(ctx context.Context, id primitive.ObjectID) (*domain.Qualification, error)
+	UpdateQualification(ctx context.Context, id primitive.ObjectID, req UpdateQualificationRequest) (*domain.Qualification, error)
+	DeleteQualification(ctx context.Context, id primitive.ObjectID) error
+	ListQualifications(ctx context.Context, req FilterRequest) ([]*domain.Qualification, int64, error)
+}
+
+type CreateCountryRequest struct {
+	Name         string `json:"name"`
+	ISO2         string `json:"iso2"`
+	ISO3         string `json:"iso3"`
+	PhoneCode    string `json:"phone_code"`
+	Currency     string `json:"currency"`
+	CurrencyName string `json:"currency_name"`
+}
+
+type UpdateCountryRequest struct {
+	Name         string `json:"name,omitempty"`
+	ISO2         string `json:"iso2,omitempty"`
+	ISO3         string `json:"iso3,omitempty"`
+	PhoneCode    string `json:"phone_code,omitempty"`
+	Currency     string `json:"currency,omitempty"`
+	CurrencyName string `json:"currency_name,omitempty"`
+	IsActive     *bool  `json:"is_active,omitempty"`
+}
+
+type CountryService interface {
+	CreateCountry(ctx context.Context, req CreateCountryRequest) (*domain.Country, error)
+	GetCountry(ctx context.Context, id primitive.ObjectID) (*domain.Country, error)
+	UpdateCountry(ctx context.Context, id primitive.ObjectID, req UpdateCountryRequest) (*domain.Country, error)
+	DeleteCountry(ctx context.Context, id primitive.ObjectID) error
+	ListCountries(ctx context.Context, req FilterRequest) ([]*domain.Country, int64, error)
 }

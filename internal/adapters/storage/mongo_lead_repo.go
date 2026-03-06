@@ -116,17 +116,17 @@ func (r *MongoLeadRepository) Update(ctx context.Context, lead *domain.Lead) err
 
 	update := bson.M{
 		"$set": bson.M{
-			"first_name":  lead.FirstName,
-			"last_name":   lead.LastName,
-			"company":     lead.Company,
-			"title":       lead.Title,
-			"email":       lead.Email,
-			"phone":       lead.Phone,
-			"status":      lead.Status,
-			"source_id":   lead.SourceID,
-			"category_id": lead.CategoryID,
-			"assigned_to": lead.AssignedTo,
-			"updated_at":  time.Now(),
+			"first_name":       lead.FirstName,
+			"last_name":        lead.LastName,
+			"designation":      lead.Designation,
+			"email":            lead.Email,
+			"phone":            lead.Phone,
+			"source_id":        lead.SourceID,
+			"category_id":      lead.CategoryID,
+			"assigned_to":      lead.AssignedTo,
+			"country_id":       lead.CountryID,
+			"qualification_id": lead.QualificationID,
+			"updated_at":       time.Now(),
 		},
 	}
 	_, err := r.collection.UpdateOne(ctx, filter, update)

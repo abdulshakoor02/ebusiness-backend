@@ -87,3 +87,19 @@ type RolePermissionRepository interface {
 	CheckPermissionByPathMethod(ctx context.Context, role, path, method string) (bool, error)
 	InvalidateAllCache()
 }
+
+type QualificationRepository interface {
+	Create(ctx context.Context, qualification *domain.Qualification) error
+	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.Qualification, error)
+	List(ctx context.Context, filter interface{}, offset, limit int64) ([]*domain.Qualification, int64, error)
+	Update(ctx context.Context, qualification *domain.Qualification) error
+	Delete(ctx context.Context, id primitive.ObjectID) error
+}
+
+type CountryRepository interface {
+	Create(ctx context.Context, country *domain.Country) error
+	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.Country, error)
+	List(ctx context.Context, filter interface{}, offset, limit int64) ([]*domain.Country, int64, error)
+	Update(ctx context.Context, country *domain.Country) error
+	Delete(ctx context.Context, id primitive.ObjectID) error
+}

@@ -58,6 +58,7 @@ func (s *AuthService) Login(ctx context.Context, req ports.LoginRequest) (*ports
 		tenant, err := s.tenantRepo.GetByID(ctx, user.TenantID)
 		if err == nil && tenant != nil {
 			response.Tax = tenant.Tax
+			response.NextCloudFolder = tenant.Name
 
 			if !tenant.CountryID.IsZero() {
 				country, err := s.countryRepo.GetByID(ctx, tenant.CountryID)

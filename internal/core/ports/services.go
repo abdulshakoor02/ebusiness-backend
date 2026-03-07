@@ -48,10 +48,11 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	Token    string       `json:"token"`
-	User     *domain.User `json:"user"`
-	Tax      float64      `json:"tax,omitempty"`
-	Currency string       `json:"currency,omitempty"`
+	Token           string       `json:"token"`
+	User            *domain.User `json:"user"`
+	Tax             float64      `json:"tax,omitempty"`
+	Currency        string       `json:"currency,omitempty"`
+	NextCloudFolder string       `json:"next_cloud_folder,omitempty"`
 }
 
 type FilterRequest struct {

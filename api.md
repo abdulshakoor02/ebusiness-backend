@@ -165,13 +165,15 @@ The system supports **row-level security** via permission rules. Each permission
     "updated_at": "2026-02-15T12:00:00Z"
   },
   "tax": 5.0,
-  "currency": "AED"
+  "currency": "AED",
+  "next_cloud_folder": "ebusiness"
 }
 ```
 
-> **Note:** The `tax` and `currency` fields are only included for non-superadmin users (admin and user roles). These values are fetched from the user's tenant configuration.
+> **Note:** The `tax`, `currency`, and `next_cloud_folder` fields are only included for non-superadmin users (admin and user roles). These values are fetched from the user's tenant configuration.
 > - `tax`: Tax percentage from tenant settings (e.g., 5.0 for 5%)
 > - `currency`: Currency code from tenant's country (e.g., "AED", "USD")
+> - `next_cloud_folder`: Tenant name for Nextcloud folder path (e.g., "ebusiness")
 
 **Response for Superadmin:**
 ```json

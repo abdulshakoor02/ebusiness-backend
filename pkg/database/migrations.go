@@ -137,23 +137,11 @@ func ensureLeadIndexes(ctx context.Context, collection *mongo.Collection) error 
 	return err
 }
 
-// seedPermissionRules seeds the database with system permission rules
+// seedPermissionRules seeds the database with system permission rules (incremental - adds new rules if they don't exist)
 func seedPermissionRules(ctx context.Context, collection *mongo.Collection) error {
-	// Check if already seeded
-	count, err := collection.CountDocuments(ctx, bson.M{"is_system": true})
-	if err != nil {
-		return err
-	}
+	slog.Info("Seeding system permission rules (incremental)...")
 
-	if count > 0 {
-		slog.Info("Permission rules already seeded, skipping...")
-		return nil
-	}
-
-	slog.Info("Seeding system permission rules...")
-
-	// Define all system permission rules
-
+	// Define all system permission rules (existing + new)
 	tenantView := domain.NewPermissionRule("tenants", "Tenant Management", "view", "View Tenant Details", "/api/v1/tenants/:id", "GET", "View tenant information", true)
 	tenantView.RequiresRole = "superadmin"
 
@@ -238,31 +226,49 @@ func seedPermissionRules(ctx context.Context, collection *mongo.Collection) erro
 
 		// Permission Rules Management endpoints for admin
 		*domain.NewPermissionRule("permissions", "Permission Management", "available-rules", "View Available Rules", "/api/v1/permissions/available-rules", "GET", "View available permission rules", true),
+
+		// Product Management
+		*domain.NewPermissionRule("products", "Product Management", "create", "Create Product", "/api/v1/products", "POST", "Create a new product", true),
+		*domain.NewPermissionRule("products", "Product Management", "view", "View Product", "/api/v1/products/:id", "GET", "View product details", true),
+		*domain.NewPermissionRule("products", "Product Management", "update", "Update Product", "/api/v1/products/:id", "PUT", "Update product information", true),
+		*domain.NewPermissionRule("products", "Product Management", "delete", "Delete Product", "/api/v1/products/:id", "DELETE", "Delete product", true),
+		*domain.NewPermissionRule("products", "Product Management", "list", "List Products", "/api/v1/products/list", "POST", "List all products", true),
+
+		// Invoice Management
+		*domain.NewPermissionRule("invoices", "Invoice Management", "create", "Create Invoice", "/api/v1/leads/:lead_id/invoices", "POST", "Create a new invoice", true),
+		*domain.NewPermissionRule("invoices", "Invoice Management", "view", "View Invoice", "/api/v1/invoices/:id", "GET", "View invoice details", true),
+		*domain.NewPermissionRule("invoices", "Invoice Management", "update-due-date", "Update Due Date", "/api/v1/invoices/:id/due-date", "PUT", "Update invoice due date", true),
+		*domain.NewPermissionRule("invoices", "Invoice Management", "list", "List Invoices", "/api/v1/invoices/list", "POST", "List all invoices", true),
+		*domain.NewPermissionRule("invoices", "Invoice Management", "view-by-lead", "View Invoices By Lead", "/api/v1/leads/:lead_id/invoices", "GET", "View invoices for a lead", true),
+
+		// Receipt Management
+		*domain.NewPermissionRule("receipts", "Receipt Management", "create", "Create Receipt", "/api/v1/invoices/:invoice_id/receipts", "POST", "Create a new receipt", true),
+		*domain.NewPermissionRule("receipts", "Receipt Management", "view", "View Receipt", "/api/v1/receipts/:id", "GET", "View receipt details", true),
+		*domain.NewPermissionRule("receipts", "Receipt Management", "list", "List Receipts", "/api/v1/invoices/:invoice_id/receipts/list", "POST", "List all receipts for an invoice", true),
 	}
 
-	docs := make([]interface{}, len(rules))
-	for i, rule := range rules {
-		docs[i] = rule
+	// Use upsert to incrementally add new rules (won't duplicate existing ones)
+	upsertCount := 0
+	for _, rule := range rules {
+		filter := bson.M{"resource": rule.Resource, "action": rule.Action}
+		update := bson.M{"$setOnInsert": rule}
+		opts := options.Update().SetUpsert(true)
+		result, err := collection.UpdateOne(ctx, filter, update, opts)
+		if err != nil {
+			slog.Warn("Failed to upsert permission rule", "resource", rule.Resource, "action", rule.Action, "error", err)
+			continue
+		}
+		if result.UpsertedCount > 0 {
+			upsertCount++
+		}
 	}
 
-	_, err = collection.InsertMany(ctx, docs)
-	if err != nil {
-		return err
-	}
-
-	slog.Info("System permission rules seeded successfully", "count", len(rules))
+	slog.Info("System permission rules seeded/updated successfully", "new_rules", upsertCount, "total_defined", len(rules))
 	return nil
 }
 
 func seedRolePermissions(ctx context.Context, rolePermsCollection, permRulesCollection *mongo.Collection) error {
-	count, err := rolePermsCollection.CountDocuments(ctx, bson.M{})
-	if err != nil {
-		return err
-	}
-	if count > 0 {
-		slog.Info("Role permissions already seeded, skipping")
-		return nil
-	}
+	slog.Info("Seeding role permissions (incremental)...")
 
 	// Build lookup by resource+action (unique per rule, unlike path+method which can have duplicates)
 	type ruleKey struct {
@@ -326,6 +332,25 @@ func seedRolePermissions(ctx context.Context, rolePermsCollection, permRulesColl
 		{role: "admin", resource: "lead-appointments", action: "delete"},
 		{role: "admin", resource: "lead-appointments", action: "list"},
 
+		// Product Management (admin only)
+		{role: "admin", resource: "products", action: "create"},
+		{role: "admin", resource: "products", action: "view"},
+		{role: "admin", resource: "products", action: "update"},
+		{role: "admin", resource: "products", action: "delete"},
+		{role: "admin", resource: "products", action: "list"},
+
+		// Invoice Management (admin only - creating invoices)
+		{role: "admin", resource: "invoices", action: "create"},
+		{role: "admin", resource: "invoices", action: "view"},
+		{role: "admin", resource: "invoices", action: "update-due-date"},
+		{role: "admin", resource: "invoices", action: "list"},
+		{role: "admin", resource: "invoices", action: "view-by-lead"},
+
+		// Receipt Management (admin only - creating receipts)
+		{role: "admin", resource: "receipts", action: "create"},
+		{role: "admin", resource: "receipts", action: "view"},
+		{role: "admin", resource: "receipts", action: "list"},
+
 		// User permissions (scoped — user sees only own data where applicable)
 		{role: "user", resource: "tenants", action: "view"},
 		{role: "user", resource: "users", action: "view"},
@@ -348,6 +373,19 @@ func seedRolePermissions(ctx context.Context, rolePermsCollection, permRulesColl
 		{role: "user", resource: "lead-appointments", action: "delete"},
 		{role: "user", resource: "lead-appointments", action: "list_own"},
 
+		// Product Management (user - read only)
+		{role: "user", resource: "products", action: "view"},
+		{role: "user", resource: "products", action: "list"},
+
+		// Invoice Management (user - read only)
+		{role: "user", resource: "invoices", action: "view"},
+		{role: "user", resource: "invoices", action: "list"},
+		{role: "user", resource: "invoices", action: "view-by-lead"},
+
+		// Receipt Management (user - read only)
+		{role: "user", resource: "receipts", action: "view"},
+		{role: "user", resource: "receipts", action: "list"},
+
 		// Permission management (admin only)
 		{role: "admin", resource: "permissions", action: "view"},
 		{role: "admin", resource: "permissions", action: "create"},
@@ -362,27 +400,39 @@ func seedRolePermissions(ctx context.Context, rolePermsCollection, permRulesColl
 		{role: "admin", resource: "permissions", action: "available-rules"},
 	}
 
-	var docs []interface{}
+	// Insert incrementally - check if role permission already exists before inserting
+	insertCount := 0
 	for _, p := range permissions {
 		ruleID, ok := ruleIDMap[ruleKey{resource: p.resource, action: p.action}]
 		if !ok {
 			slog.Warn("Permission rule not found for seeding", "resource", p.resource, "action", p.action)
 			continue
 		}
-		docs = append(docs, domain.NewRolePermission(p.role, ruleID))
+
+		// Check if this role permission already exists
+		existingCount, err := rolePermsCollection.CountDocuments(ctx, bson.M{
+			"role":               p.role,
+			"permission_rule_id": ruleID,
+		})
+		if err != nil {
+			slog.Warn("Failed to check existing role permission", "error", err)
+			continue
+		}
+
+		if existingCount > 0 {
+			continue // Skip - already exists
+		}
+
+		// Insert new role permission
+		_, err = rolePermsCollection.InsertOne(ctx, domain.NewRolePermission(p.role, ruleID))
+		if err != nil {
+			slog.Warn("Failed to insert role permission", "role", p.role, "resource", p.resource, "action", p.action, "error", err)
+			continue
+		}
+		insertCount++
 	}
 
-	if len(docs) == 0 {
-		slog.Warn("No role permissions to seed")
-		return nil
-	}
-
-	_, err = rolePermsCollection.InsertMany(ctx, docs)
-	if err != nil {
-		return err
-	}
-
-	slog.Info("Role permissions seeded successfully", "count", len(docs))
+	slog.Info("Role permissions seeded successfully", "new_permissions", insertCount)
 	return nil
 }
 

@@ -144,3 +144,37 @@ func (h *LeadHandler) ListLeads(c *fiber.Ctx) error {
 		"limit":  req.Limit,
 	})
 }
+
+// UpdateLeadStatus godoc
+// @Summary      Toggle lead client status
+// @Description  Toggle a converted lead's status between active and inactive
+// @Tags         leads
+// @Accept       json
+// @Produce      json
+// @Param        id      path   string                           true  "Lead ID"
+// @Param        request body   ports.UpdateLeadStatusRequest  true  "Update Lead Status Request"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Security     Bearer
+// @Router       /leads/{id}/status [put]
+func (h *LeadHandler) UpdateLeadStatus(c *fiber.Ctx) error {
+	idParam := c.Params("id")
+	id, err := primitive.ObjectIDFromHex(idParam)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid lead ID"})
+	}
+
+	var req ports.UpdateLeadStatusRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	lead, err := h.service.UpdateLeadStatus(c.Context(), id, req)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(lead)
+}

@@ -215,6 +215,8 @@ func (r *MongoLeadRepository) Update(ctx context.Context, lead *domain.Lead) err
 			"assigned_to":      lead.AssignedTo,
 			"country_id":       lead.CountryID,
 			"qualification_id": lead.QualificationID,
+			"status":           lead.Status,
+			"converted_at":     lead.ConvertedAt,
 			"search_text":      lead.SearchText,
 			"updated_at":       time.Now(),
 		},

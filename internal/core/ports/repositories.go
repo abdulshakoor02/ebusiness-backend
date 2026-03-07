@@ -130,4 +130,6 @@ type ReceiptRepository interface {
 	GetByInvoiceID(ctx context.Context, invoiceID primitive.ObjectID) ([]*domain.Receipt, error)
 	SumPaidAmountByInvoiceID(ctx context.Context, invoiceID primitive.ObjectID) (float64, float64, error)
 	IncrementReceiptNumber(ctx context.Context, tenantID primitive.ObjectID) (int64, error)
+	Update(ctx context.Context, receipt *domain.Receipt) error
+	Delete(ctx context.Context, id primitive.ObjectID) error
 }

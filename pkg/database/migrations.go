@@ -114,22 +114,24 @@ func ensureLeadIndexes(ctx context.Context, collection *mongo.Collection) error 
 				SetName("unique_tenant_phone").
 				SetSparse(true), // allows partial updates with missing phone numbers
 		},
-		// Compound index for admin queries: tenant-wide list + sort by created_at
+		// Compound index for admin queries: tenant-wide list + status filter + sort by created_at
 		{
 			Keys: bson.D{
 				{Key: "tenant_id", Value: 1},
+				{Key: "status", Value: 1},
 				{Key: "created_at", Value: -1},
 			},
-			Options: options.Index().SetName("tenant_created"),
+			Options: options.Index().SetName("tenant_status_created"),
 		},
-		// Compound index for user queries: assigned_to scoped list + sort by created_at
+		// Compound index for user queries: assigned_to scoped list + status filter + sort by created_at
 		{
 			Keys: bson.D{
 				{Key: "tenant_id", Value: 1},
 				{Key: "assigned_to", Value: 1},
+				{Key: "status", Value: 1},
 				{Key: "created_at", Value: -1},
 			},
-			Options: options.Index().SetName("tenant_assigned_created"),
+			Options: options.Index().SetName("tenant_assigned_status_created"),
 		},
 	}
 
@@ -237,6 +239,7 @@ func seedPermissionRules(ctx context.Context, collection *mongo.Collection) erro
 		// Invoice Management
 		*domain.NewPermissionRule("invoices", "Invoice Management", "create", "Create Invoice", "/api/v1/leads/:lead_id/invoices", "POST", "Create a new invoice", true),
 		*domain.NewPermissionRule("invoices", "Invoice Management", "view", "View Invoice", "/api/v1/invoices/:id", "GET", "View invoice details", true),
+		*domain.NewPermissionRule("invoices", "Invoice Management", "update", "Update Invoice", "/api/v1/invoices/:id", "PUT", "Update invoice", true),
 		*domain.NewPermissionRule("invoices", "Invoice Management", "update-due-date", "Update Due Date", "/api/v1/invoices/:id/due-date", "PUT", "Update invoice due date", true),
 		*domain.NewPermissionRule("invoices", "Invoice Management", "list", "List Invoices", "/api/v1/invoices/list", "POST", "List all invoices", true),
 		*domain.NewPermissionRule("invoices", "Invoice Management", "view-by-lead", "View Invoices By Lead", "/api/v1/leads/:lead_id/invoices", "GET", "View invoices for a lead", true),
@@ -244,6 +247,8 @@ func seedPermissionRules(ctx context.Context, collection *mongo.Collection) erro
 		// Receipt Management
 		*domain.NewPermissionRule("receipts", "Receipt Management", "create", "Create Receipt", "/api/v1/invoices/:invoice_id/receipts", "POST", "Create a new receipt", true),
 		*domain.NewPermissionRule("receipts", "Receipt Management", "view", "View Receipt", "/api/v1/receipts/:id", "GET", "View receipt details", true),
+		*domain.NewPermissionRule("receipts", "Receipt Management", "update", "Update Receipt", "/api/v1/receipts/:id", "PUT", "Update receipt", true),
+		*domain.NewPermissionRule("receipts", "Receipt Management", "delete", "Delete Receipt", "/api/v1/receipts/:id", "DELETE", "Delete receipt", true),
 		*domain.NewPermissionRule("receipts", "Receipt Management", "list", "List Receipts", "/api/v1/invoices/:invoice_id/receipts/list", "POST", "List all receipts for an invoice", true),
 	}
 
@@ -342,6 +347,7 @@ func seedRolePermissions(ctx context.Context, rolePermsCollection, permRulesColl
 		// Invoice Management (admin only - creating invoices)
 		{role: "admin", resource: "invoices", action: "create"},
 		{role: "admin", resource: "invoices", action: "view"},
+		{role: "admin", resource: "invoices", action: "update"},
 		{role: "admin", resource: "invoices", action: "update-due-date"},
 		{role: "admin", resource: "invoices", action: "list"},
 		{role: "admin", resource: "invoices", action: "view-by-lead"},
@@ -349,6 +355,8 @@ func seedRolePermissions(ctx context.Context, rolePermsCollection, permRulesColl
 		// Receipt Management (admin only - creating receipts)
 		{role: "admin", resource: "receipts", action: "create"},
 		{role: "admin", resource: "receipts", action: "view"},
+		{role: "admin", resource: "receipts", action: "update"},
+		{role: "admin", resource: "receipts", action: "delete"},
 		{role: "admin", resource: "receipts", action: "list"},
 
 		// User permissions (scoped — user sees only own data where applicable)

@@ -53,6 +53,27 @@ func (h *InvoiceHandler) GetInvoice(c *fiber.Ctx) error {
 	return c.JSON(invoice)
 }
 
+func (h *InvoiceHandler) UpdateInvoice(c *fiber.Ctx) error {
+	idParam := c.Params("id")
+	id, err := primitive.ObjectIDFromHex(idParam)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid invoice ID"})
+	}
+
+	var req ports.UpdateInvoiceRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	invoice, err := h.service.UpdateInvoice(c.Context(), id, req)
+	if err != nil {
+		slog.Error("Failed to update invoice", "error", err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(invoice)
+}
+
 func (h *InvoiceHandler) UpdateDueDate(c *fiber.Ctx) error {
 	idParam := c.Params("id")
 	id, err := primitive.ObjectIDFromHex(idParam)

@@ -127,4 +127,24 @@ func (r *MongoReceiptRepository) IncrementReceiptNumber(ctx context.Context, ten
 	return tenant.NextReceiptNumber, nil
 }
 
+func (r *MongoReceiptRepository) Update(ctx context.Context, receipt *domain.Receipt) error {
+	filter := bson.M{"_id": receipt.ID}
+	update := bson.M{
+		"$set": bson.M{
+			"amount_paid":  receipt.AmountPaid,
+			"tax_amount":   receipt.TaxAmount,
+			"total_paid":   receipt.TotalPaid,
+			"payment_date": receipt.PaymentDate,
+		},
+	}
+	_, err := r.collection.UpdateOne(ctx, filter, update)
+	return err
+}
+
+func (r *MongoReceiptRepository) Delete(ctx context.Context, id primitive.ObjectID) error {
+	filter := bson.M{"_id": id}
+	_, err := r.collection.DeleteOne(ctx, filter)
+	return err
+}
+
 var _ ports.ReceiptRepository = (*MongoReceiptRepository)(nil)

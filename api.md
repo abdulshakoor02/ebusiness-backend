@@ -163,6 +163,27 @@ The system supports **row-level security** via permission rules. Each permission
     "role": "admin",
     "created_at": "2026-02-15T12:00:00Z",
     "updated_at": "2026-02-15T12:00:00Z"
+  },
+  "tax": 5.0,
+  "currency": "AED"
+}
+```
+
+> **Note:** The `tax` and `currency` fields are only included for non-superadmin users (admin and user roles). These values are fetched from the user's tenant configuration.
+> - `tax`: Tax percentage from tenant settings (e.g., 5.0 for 5%)
+> - `currency`: Currency code from tenant's country (e.g., "AED", "USD")
+
+**Response for Superadmin:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR...",
+  "user": {
+    "id": "60a7e...",
+    "name": "Super Admin",
+    "email": "superadmin@example.com",
+    "role": "superadmin",
+    "created_at": "2026-02-15T12:00:00Z",
+    "updated_at": "2026-02-15T12:00:00Z"
   }
 }
 ```
@@ -898,6 +919,7 @@ The system supports **row-level security** via permission rules. Each permission
   "designation": "Software Engineer",
   "email": "alice@techinnovations.com",
   "phone": "+1987654321",
+  "status": "lead",
   "created_at": "2026-02-15T12:00:00Z",
   "updated_at": "2026-02-15T12:00:00Z"
 }
@@ -931,8 +953,47 @@ The system supports **row-level security** via permission rules. Each permission
   "designation": "Senior Software Engineer",
   "email": "alice@techinnovations.com",
   "phone": "+1987654321",
+  "status": "lead",
   "created_at": "2026-02-15T12:00:00Z",
   "updated_at": "2026-02-15T14:30:00Z"
+}
+```
+
+### Toggle Lead Status
+**Endpoint:** `PUT /leads/:id/status`
+**Auth Required:** JWT + RBAC: Admin only
+
+> **Note:** This endpoint only works on leads that have been converted to clients (status is `"active"` or `"inactive"`). Conversion happens automatically on first receipt. You cannot set a lead back to `"lead"` status.
+
+**Request:**
+```json
+{
+  "status": "inactive"
+}
+```
+
+| Status Value | Description |
+|---|---|
+| `active` | Client is active |
+| `inactive` | Client is inactive |
+
+**Response (200 OK):**
+```json
+{
+  "id": "60c9g...",
+  "tenant_id": "60a7e...",
+  "first_name": "Alice",
+  "last_name": "Johnson",
+  "status": "inactive",
+  "converted_at": "2026-03-01T10:00:00Z",
+  "updated_at": "2026-03-07T12:00:00Z"
+}
+```
+
+**Error — Lead not yet converted (400):**
+```json
+{
+  "error": "lead has not been converted to a client yet"
 }
 ```
 
@@ -1054,6 +1115,7 @@ The system supports **row-level security** via permission rules. Each permission
         "id": "60d0h...",
         "name": "Bachelor's Degree"
       },
+      "status": "lead",
       "created_at": "2026-02-15T12:00:00Z",
       "updated_at": "2026-02-15T12:00:00Z"
     }
@@ -2118,6 +2180,79 @@ Total Amount = Taxable Amount + Tax Amount
 }
 ```
 
+### Update Invoice
+**Endpoint:** `PUT /invoices/:id`
+**Auth Required:** JWT + RBAC: Admin only
+
+*Updates invoice items, discount, or due date. Recalculates totals automatically.*
+
+**Request:**
+```json
+{
+  "items": [
+    {
+      "product_id": "60k7q...",
+      "quantity": 3
+    },
+    {
+      "product_id": "60l8r...",
+      "quantity": 2
+    }
+  ],
+  "discount": 200.00,
+  "due_date": "2026-05-15T23:59:59Z"
+}
+```
+
+> **Note:** 
+> - All fields are optional - only provided fields will be updated
+> - Updating items will recalculate subtotal, tax amount, and total amount
+> - Cannot update a fully paid invoice
+
+**Response (200 OK):**
+```json
+{
+  "id": "60m9s...",
+  "tenant_id": "60a7e...",
+  "lead_id": "60c9g...",
+  "invoice_number": 1,
+  "items": [
+    {
+      "product_id": "60k7q...",
+      "product_name": "CRM License - Annual",
+      "quantity": 3,
+      "unit_price": 999.00,
+      "total": 2997.00
+    },
+    {
+      "product_id": "60l8r...",
+      "product_name": "Implementation Fee",
+      "quantity": 2,
+      "unit_price": 500.00,
+      "total": 1000.00
+    }
+  ],
+  "subtotal": 3997.00,
+  "discount": 200.00,
+  "tax_percentage": 5.0,
+  "tax_amount": 189.85,
+  "total_amount": 3986.85,
+  "paid_amount": 1000.00,
+  "paid_amount_vat": 1050.00,
+  "due_date": "2026-05-15T23:59:59Z",
+  "status": "partial",
+  "created_at": "2026-03-07T12:00:00Z",
+  "updated_at": "2026-03-08T10:00:00Z"
+}
+```
+
+**Response (400 Bad Request):** (If invoice is fully paid)
+```json
+{
+  "error": "cannot update a fully paid invoice"
+}
+```
+
 ### Update Invoice Due Date
 **Endpoint:** `PUT /invoices/:id/due-date`
 **Auth Required:** JWT + RBAC: Admin only
@@ -2275,6 +2410,62 @@ Total Paid = Amount Paid + Tax on Payment
   "created_at": "2026-03-15T10:00:00Z"
 }
 ```
+
+### Update Receipt
+**Endpoint:** `PUT /receipts/:id`
+**Auth Required:** JWT + RBAC: Admin only
+
+*Updates receipt amount or payment date. Automatically recalculates tax and validates against remaining invoice amount.*
+
+**Request:**
+```json
+{
+  "amount_paid": 1500.00,
+  "payment_date": "2026-03-20T14:00:00Z"
+}
+```
+
+> **Note:** All fields are optional - only provided fields will be updated. Tax is automatically recalculated based on the invoice's tax percentage.
+
+**Response (200 OK):**
+```json
+{
+  "id": "60n0t...",
+  "tenant_id": "60a7e...",
+  "invoice_id": "60m9s...",
+  "receipt_number": 1,
+  "amount_paid": 1500.00,
+  "tax_amount": 75.00,
+  "total_paid": 1575.00,
+  "payment_date": "2026-03-20T14:00:00Z",
+  "created_at": "2026-03-15T10:00:00Z"
+}
+```
+
+**Response (400 Bad Request):** (If payment exceeds remaining)
+```json
+{
+  "error": "updated payment exceeds remaining invoice amount"
+}
+```
+
+### Delete Receipt
+**Endpoint:** `DELETE /receipts/:id`
+**Auth Required:** JWT + RBAC: Admin only
+
+*Deletes a receipt and automatically recalculates the invoice totals and status.*
+
+**Response (200 OK):**
+```json
+{
+  "message": "Receipt deleted successfully"
+}
+```
+
+**Note:** Deleting a receipt will:
+1. Remove the receipt
+2. Recalculate the invoice's `paid_amount` and `paid_amount_vat`
+3. Update invoice status (`paid` → `partial` → `pending`) based on remaining payments
 
 ### List Receipts by Invoice ID
 **Endpoint:** `POST /invoices/:invoice_id/receipts/list`

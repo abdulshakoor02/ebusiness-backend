@@ -107,7 +107,7 @@ func (s *LeadCommentService) DeleteLeadComment(ctx context.Context, id primitive
 	return s.commentRepo.Delete(ctx, id)
 }
 
-func (s *LeadCommentService) ListLeadComments(ctx context.Context, leadID primitive.ObjectID, req ports.FilterRequest) ([]*domain.LeadComment, int64, error) {
+func (s *LeadCommentService) ListLeadComments(ctx context.Context, leadID primitive.ObjectID, req ports.FilterRequest) ([]*ports.CommentListItem, int64, error) {
 	return s.commentRepo.ListByLeadID(ctx, leadID, req.Filters, req.Offset, req.Limit)
 }
 

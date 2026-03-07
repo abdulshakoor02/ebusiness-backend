@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/domain"
+	"github.com/abdulshakoor02/goCrmBackend/internal/core/ports"
 	"github.com/abdulshakoor02/goCrmBackend/pkg/middleware"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type MongoLeadCommentRepository struct {
@@ -50,7 +50,7 @@ func (r *MongoLeadCommentRepository) GetByID(ctx context.Context, id primitive.O
 	return &comment, nil
 }
 
-func (r *MongoLeadCommentRepository) ListByLeadID(ctx context.Context, leadID primitive.ObjectID, filter interface{}, offset, limit int64) ([]*domain.LeadComment, int64, error) {
+func (r *MongoLeadCommentRepository) ListByLeadID(ctx context.Context, leadID primitive.ObjectID, filter interface{}, offset, limit int64) ([]*ports.CommentListItem, int64, error) {
 	scopeFilter := middleware.GetScopeFilter(ctx)
 	query := bson.M{
 		"lead_id": leadID,
@@ -76,19 +76,33 @@ func (r *MongoLeadCommentRepository) ListByLeadID(ctx context.Context, leadID pr
 		return nil, 0, err
 	}
 
-	findOptions := options.Find()
-	findOptions.SetSkip(offset)
-	findOptions.SetLimit(limit)
-	// Sort oldest to newest, commonly preferred for comment threads
-	findOptions.SetSort(bson.D{{Key: "created_at", Value: 1}})
+	// Build aggregation pipeline: match → sort → skip → limit → lookup author
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: query}},
+		{{Key: "$sort", Value: bson.D{{Key: "created_at", Value: 1}}}},
+		{{Key: "$skip", Value: offset}},
+		{{Key: "$limit", Value: limit}},
 
-	cursor, err := r.collection.Find(ctx, query, findOptions)
+		// Lookup author from users collection
+		{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: "users"},
+			{Key: "localField", Value: "author_id"},
+			{Key: "foreignField", Value: "_id"},
+			{Key: "as", Value: "author"},
+		}}},
+		{{Key: "$unwind", Value: bson.D{
+			{Key: "path", Value: "$author"},
+			{Key: "preserveNullAndEmptyArrays", Value: true},
+		}}},
+	}
+
+	cursor, err := r.collection.Aggregate(ctx, pipeline)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer cursor.Close(ctx)
 
-	var comments []*domain.LeadComment
+	var comments []*ports.CommentListItem
 	if err = cursor.All(ctx, &comments); err != nil {
 		return nil, 0, err
 	}

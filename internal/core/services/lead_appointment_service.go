@@ -136,6 +136,6 @@ func (s *LeadAppointmentService) DeleteLeadAppointment(ctx context.Context, id p
 	return s.appointmentRepo.Delete(ctx, id)
 }
 
-func (s *LeadAppointmentService) ListLeadAppointments(ctx context.Context, leadID primitive.ObjectID, req ports.FilterRequest) ([]*domain.LeadAppointment, int64, error) {
+func (s *LeadAppointmentService) ListLeadAppointments(ctx context.Context, leadID primitive.ObjectID, req ports.FilterRequest) ([]*ports.AppointmentListItem, int64, error) {
 	return s.appointmentRepo.ListByLeadID(ctx, leadID, req.Filters, req.Offset, req.Limit)
 }

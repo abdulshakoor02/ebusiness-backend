@@ -1285,7 +1285,10 @@ The system supports **row-level security** via permission rules. Each permission
       "id": "60e1i...",
       "tenant_id": "60a7e...",
       "lead_id": "60c9g...",
-      "author_id": "60b8f...",
+      "author": {
+        "id": "60b8f...",
+        "name": "John Doe"
+      },
       "content": "Had a great phone screen with Alice. She's ready to sign.",
       "created_at": "2026-02-15T12:00:00Z",
       "updated_at": "2026-02-15T12:00:00Z"
@@ -1416,7 +1419,10 @@ The system supports **row-level security** via permission rules. Each permission
       "id": "60f2j...",
       "tenant_id": "60a7e...",
       "lead_id": "60c9g...",
-      "organizer_id": "60b8f...",
+      "organizer": {
+        "id": "60b8f...",
+        "name": "John Doe"
+      },
       "title": "Initial Demo Call",
       "description": "Walkthrough of core CRM features with Alice",
       "start_time": "2024-05-15T14:30:00Z",

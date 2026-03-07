@@ -282,12 +282,23 @@ type UpdateLeadCommentRequest struct {
 	Content string `json:"content"`
 }
 
+// CommentListItem is the enriched response for the comment list endpoint with resolved author
+type CommentListItem struct {
+	ID        primitive.ObjectID `json:"id" bson:"_id"`
+	TenantID  primitive.ObjectID `json:"tenant_id" bson:"tenant_id"`
+	LeadID    primitive.ObjectID `json:"lead_id" bson:"lead_id"`
+	Author    *LeadUserRef       `json:"author,omitempty" bson:"author,omitempty"`
+	Content   string             `json:"content" bson:"content"`
+	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
+	UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`
+}
+
 type LeadCommentService interface {
 	CreateLeadComment(ctx context.Context, leadID primitive.ObjectID, req CreateLeadCommentRequest) (*domain.LeadComment, error)
 	GetLeadComment(ctx context.Context, id primitive.ObjectID) (*domain.LeadComment, error)
 	UpdateLeadComment(ctx context.Context, id primitive.ObjectID, req UpdateLeadCommentRequest) (*domain.LeadComment, error)
 	DeleteLeadComment(ctx context.Context, id primitive.ObjectID) error
-	ListLeadComments(ctx context.Context, leadID primitive.ObjectID, req FilterRequest) ([]*domain.LeadComment, int64, error)
+	ListLeadComments(ctx context.Context, leadID primitive.ObjectID, req FilterRequest) ([]*CommentListItem, int64, error)
 }
 
 type CreateLeadAppointmentRequest struct {
@@ -306,12 +317,27 @@ type UpdateLeadAppointmentRequest struct {
 	Status      string    `json:"status,omitempty"`
 }
 
+// AppointmentListItem is the enriched response for the appointment list endpoint with resolved organizer
+type AppointmentListItem struct {
+	ID          primitive.ObjectID       `json:"id" bson:"_id"`
+	TenantID    primitive.ObjectID       `json:"tenant_id" bson:"tenant_id"`
+	LeadID      primitive.ObjectID       `json:"lead_id" bson:"lead_id"`
+	Organizer   *LeadUserRef             `json:"organizer,omitempty" bson:"organizer,omitempty"`
+	Title       string                   `json:"title" bson:"title"`
+	Description string                   `json:"description" bson:"description"`
+	StartTime   time.Time                `json:"start_time" bson:"start_time"`
+	EndTime     time.Time                `json:"end_time" bson:"end_time"`
+	Status      domain.AppointmentStatus `json:"status" bson:"status"`
+	CreatedAt   time.Time                `json:"created_at" bson:"created_at"`
+	UpdatedAt   time.Time                `json:"updated_at" bson:"updated_at"`
+}
+
 type LeadAppointmentService interface {
 	CreateLeadAppointment(ctx context.Context, leadID primitive.ObjectID, req CreateLeadAppointmentRequest) (*domain.LeadAppointment, error)
 	GetLeadAppointment(ctx context.Context, id primitive.ObjectID) (*domain.LeadAppointment, error)
 	UpdateLeadAppointment(ctx context.Context, id primitive.ObjectID, req UpdateLeadAppointmentRequest) (*domain.LeadAppointment, error)
 	DeleteLeadAppointment(ctx context.Context, id primitive.ObjectID) error
-	ListLeadAppointments(ctx context.Context, leadID primitive.ObjectID, req FilterRequest) ([]*domain.LeadAppointment, int64, error)
+	ListLeadAppointments(ctx context.Context, leadID primitive.ObjectID, req FilterRequest) ([]*AppointmentListItem, int64, error)
 }
 
 type CreateQualificationRequest struct {

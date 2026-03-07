@@ -40,7 +40,7 @@ type LeadCategoryRepository interface {
 type LeadCommentRepository interface {
 	Create(ctx context.Context, comment *domain.LeadComment) error
 	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.LeadComment, error)
-	ListByLeadID(ctx context.Context, leadID primitive.ObjectID, filter interface{}, offset, limit int64) ([]*domain.LeadComment, int64, error)
+	ListByLeadID(ctx context.Context, leadID primitive.ObjectID, filter interface{}, offset, limit int64) ([]*CommentListItem, int64, error)
 	Update(ctx context.Context, comment *domain.LeadComment) error
 	Delete(ctx context.Context, id primitive.ObjectID) error
 }
@@ -48,7 +48,7 @@ type LeadCommentRepository interface {
 type LeadAppointmentRepository interface {
 	Create(ctx context.Context, appointment *domain.LeadAppointment) error
 	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.LeadAppointment, error)
-	ListByLeadID(ctx context.Context, leadID primitive.ObjectID, filter interface{}, offset, limit int64) ([]*domain.LeadAppointment, int64, error)
+	ListByLeadID(ctx context.Context, leadID primitive.ObjectID, filter interface{}, offset, limit int64) ([]*AppointmentListItem, int64, error)
 	Update(ctx context.Context, appointment *domain.LeadAppointment) error
 	Delete(ctx context.Context, id primitive.ObjectID) error
 }

@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/domain"
+	"github.com/abdulshakoor02/goCrmBackend/internal/core/ports"
 	"github.com/abdulshakoor02/goCrmBackend/pkg/middleware"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type MongoLeadAppointmentRepository struct {
@@ -50,7 +50,7 @@ func (r *MongoLeadAppointmentRepository) GetByID(ctx context.Context, id primiti
 	return &appointment, nil
 }
 
-func (r *MongoLeadAppointmentRepository) ListByLeadID(ctx context.Context, leadID primitive.ObjectID, filter interface{}, offset, limit int64) ([]*domain.LeadAppointment, int64, error) {
+func (r *MongoLeadAppointmentRepository) ListByLeadID(ctx context.Context, leadID primitive.ObjectID, filter interface{}, offset, limit int64) ([]*ports.AppointmentListItem, int64, error) {
 	scopeFilter := middleware.GetScopeFilter(ctx)
 	query := bson.M{
 		"lead_id": leadID,
@@ -76,19 +76,33 @@ func (r *MongoLeadAppointmentRepository) ListByLeadID(ctx context.Context, leadI
 		return nil, 0, err
 	}
 
-	findOptions := options.Find()
-	findOptions.SetSkip(offset)
-	findOptions.SetLimit(limit)
-	// Sort by closest start time ascending
-	findOptions.SetSort(bson.D{{Key: "start_time", Value: 1}})
+	// Build aggregation pipeline: match → sort → skip → limit → lookup organizer
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: query}},
+		{{Key: "$sort", Value: bson.D{{Key: "start_time", Value: 1}}}},
+		{{Key: "$skip", Value: offset}},
+		{{Key: "$limit", Value: limit}},
 
-	cursor, err := r.collection.Find(ctx, query, findOptions)
+		// Lookup organizer from users collection
+		{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: "users"},
+			{Key: "localField", Value: "organizer_id"},
+			{Key: "foreignField", Value: "_id"},
+			{Key: "as", Value: "organizer"},
+		}}},
+		{{Key: "$unwind", Value: bson.D{
+			{Key: "path", Value: "$organizer"},
+			{Key: "preserveNullAndEmptyArrays", Value: true},
+		}}},
+	}
+
+	cursor, err := r.collection.Aggregate(ctx, pipeline)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer cursor.Close(ctx)
 
-	var appointments []*domain.LeadAppointment
+	var appointments []*ports.AppointmentListItem
 	if err = cursor.All(ctx, &appointments); err != nil {
 		return nil, 0, err
 	}

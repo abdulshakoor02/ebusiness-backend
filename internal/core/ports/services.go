@@ -13,14 +13,18 @@ type CreateTenantRequest struct {
 	Email     string            `json:"email"`
 	LogoURL   string            `json:"logo_url"`
 	Address   domain.Address    `json:"address"`
+	CountryID string            `json:"country_id"`
+	Tax       float64           `json:"tax"`
 	AdminUser CreateUserRequest `json:"admin_user"`
 }
 
 type UpdateTenantRequest struct {
-	Name    string         `json:"name"`
-	Email   string         `json:"email"`
-	LogoURL string         `json:"logo_url"`
-	Address domain.Address `json:"address"`
+	Name      string         `json:"name"`
+	Email     string         `json:"email"`
+	LogoURL   string         `json:"logo_url"`
+	Address   domain.Address `json:"address"`
+	CountryID string         `json:"country_id"`
+	Tax       float64        `json:"tax"`
 }
 
 type CreateUserRequest struct {
@@ -278,12 +282,23 @@ type UpdateLeadCommentRequest struct {
 	Content string `json:"content"`
 }
 
+// CommentListItem is the enriched response for the comment list endpoint with resolved author
+type CommentListItem struct {
+	ID        primitive.ObjectID `json:"id" bson:"_id"`
+	TenantID  primitive.ObjectID `json:"tenant_id" bson:"tenant_id"`
+	LeadID    primitive.ObjectID `json:"lead_id" bson:"lead_id"`
+	Author    *LeadUserRef       `json:"author,omitempty" bson:"author,omitempty"`
+	Content   string             `json:"content" bson:"content"`
+	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
+	UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`
+}
+
 type LeadCommentService interface {
 	CreateLeadComment(ctx context.Context, leadID primitive.ObjectID, req CreateLeadCommentRequest) (*domain.LeadComment, error)
 	GetLeadComment(ctx context.Context, id primitive.ObjectID) (*domain.LeadComment, error)
 	UpdateLeadComment(ctx context.Context, id primitive.ObjectID, req UpdateLeadCommentRequest) (*domain.LeadComment, error)
 	DeleteLeadComment(ctx context.Context, id primitive.ObjectID) error
-	ListLeadComments(ctx context.Context, leadID primitive.ObjectID, req FilterRequest) ([]*domain.LeadComment, int64, error)
+	ListLeadComments(ctx context.Context, leadID primitive.ObjectID, req FilterRequest) ([]*CommentListItem, int64, error)
 }
 
 type CreateLeadAppointmentRequest struct {
@@ -302,12 +317,27 @@ type UpdateLeadAppointmentRequest struct {
 	Status      string    `json:"status,omitempty"`
 }
 
+// AppointmentListItem is the enriched response for the appointment list endpoint with resolved organizer
+type AppointmentListItem struct {
+	ID          primitive.ObjectID       `json:"id" bson:"_id"`
+	TenantID    primitive.ObjectID       `json:"tenant_id" bson:"tenant_id"`
+	LeadID      primitive.ObjectID       `json:"lead_id" bson:"lead_id"`
+	Organizer   *LeadUserRef             `json:"organizer,omitempty" bson:"organizer,omitempty"`
+	Title       string                   `json:"title" bson:"title"`
+	Description string                   `json:"description" bson:"description"`
+	StartTime   time.Time                `json:"start_time" bson:"start_time"`
+	EndTime     time.Time                `json:"end_time" bson:"end_time"`
+	Status      domain.AppointmentStatus `json:"status" bson:"status"`
+	CreatedAt   time.Time                `json:"created_at" bson:"created_at"`
+	UpdatedAt   time.Time                `json:"updated_at" bson:"updated_at"`
+}
+
 type LeadAppointmentService interface {
 	CreateLeadAppointment(ctx context.Context, leadID primitive.ObjectID, req CreateLeadAppointmentRequest) (*domain.LeadAppointment, error)
 	GetLeadAppointment(ctx context.Context, id primitive.ObjectID) (*domain.LeadAppointment, error)
 	UpdateLeadAppointment(ctx context.Context, id primitive.ObjectID, req UpdateLeadAppointmentRequest) (*domain.LeadAppointment, error)
 	DeleteLeadAppointment(ctx context.Context, id primitive.ObjectID) error
-	ListLeadAppointments(ctx context.Context, leadID primitive.ObjectID, req FilterRequest) ([]*domain.LeadAppointment, int64, error)
+	ListLeadAppointments(ctx context.Context, leadID primitive.ObjectID, req FilterRequest) ([]*AppointmentListItem, int64, error)
 }
 
 type CreateQualificationRequest struct {
@@ -352,4 +382,59 @@ type CountryService interface {
 	UpdateCountry(ctx context.Context, id primitive.ObjectID, req UpdateCountryRequest) (*domain.Country, error)
 	DeleteCountry(ctx context.Context, id primitive.ObjectID) error
 	ListCountries(ctx context.Context, req FilterRequest) ([]*domain.Country, int64, error)
+}
+
+type CreateProductRequest struct {
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Price       float64 `json:"price"`
+}
+
+type UpdateProductRequest struct {
+	Name        string  `json:"name,omitempty"`
+	Description string  `json:"description,omitempty"`
+	Price       float64 `json:"price,omitempty"`
+}
+
+type ProductService interface {
+	CreateProduct(ctx context.Context, req CreateProductRequest) (*domain.Product, error)
+	GetProduct(ctx context.Context, id primitive.ObjectID) (*domain.Product, error)
+	UpdateProduct(ctx context.Context, id primitive.ObjectID, req UpdateProductRequest) (*domain.Product, error)
+	DeleteProduct(ctx context.Context, id primitive.ObjectID) error
+	ListProducts(ctx context.Context, req FilterRequest) ([]*domain.Product, int64, error)
+}
+
+type CreateInvoiceItemRequest struct {
+	ProductID string `json:"product_id"`
+	Quantity  int    `json:"quantity"`
+}
+
+type CreateInvoiceRequest struct {
+	LeadID   string                     `json:"lead_id"`
+	Items    []CreateInvoiceItemRequest `json:"items"`
+	Discount float64                    `json:"discount"`
+	DueDate  *time.Time                 `json:"due_date,omitempty"`
+}
+
+type UpdateInvoiceDueDateRequest struct {
+	DueDate time.Time `json:"due_date"`
+}
+
+type InvoiceService interface {
+	CreateInvoice(ctx context.Context, req CreateInvoiceRequest) (*domain.Invoice, error)
+	GetInvoice(ctx context.Context, id primitive.ObjectID) (*domain.Invoice, error)
+	UpdateInvoiceDueDate(ctx context.Context, id primitive.ObjectID, req UpdateInvoiceDueDateRequest) (*domain.Invoice, error)
+	ListInvoices(ctx context.Context, req FilterRequest) ([]*domain.Invoice, int64, error)
+	GetInvoicesByLeadID(ctx context.Context, leadID primitive.ObjectID) ([]*domain.Invoice, error)
+}
+
+type CreateReceiptRequest struct {
+	AmountPaid  float64   `json:"amount_paid"`
+	PaymentDate time.Time `json:"payment_date"`
+}
+
+type ReceiptService interface {
+	CreateReceipt(ctx context.Context, invoiceID primitive.ObjectID, req CreateReceiptRequest) (*domain.Receipt, error)
+	GetReceipt(ctx context.Context, id primitive.ObjectID) (*domain.Receipt, error)
+	ListReceiptsByInvoiceID(ctx context.Context, invoiceID primitive.ObjectID) ([]*domain.Receipt, error)
 }

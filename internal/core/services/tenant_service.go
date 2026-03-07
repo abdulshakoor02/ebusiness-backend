@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/domain"
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/ports"
@@ -22,37 +23,40 @@ func NewTenantService(tenantRepo ports.TenantRepository, userRepo ports.UserRepo
 }
 
 func (s *TenantService) RegisterTenant(ctx context.Context, req ports.CreateTenantRequest) (*domain.Tenant, *domain.User, error) {
-	// 1. Create Tenant
 	tenant := domain.NewTenant(req.Name, req.Email)
 	tenant.LogoURL = req.LogoURL
 	tenant.Address = req.Address
+
+	if req.CountryID != "" {
+		countryID, err := primitive.ObjectIDFromHex(req.CountryID)
+		if err != nil {
+			return nil, nil, errors.New("invalid country_id format")
+		}
+		tenant.CountryID = countryID
+	}
+
+	if req.Tax > 0 {
+		tenant.Tax = req.Tax
+	}
 
 	if err := s.tenantRepo.Create(ctx, tenant); err != nil {
 		return nil, nil, err
 	}
 
-	// 2. Hash Password
 	hashedPassword, err := hashPassword(req.AdminUser.Password)
 	if err != nil {
-		// Ideally rollback tenant creation here if no transaction support
 		return nil, nil, err
 	}
 
-	// 3. Create Admin User
 	user := domain.NewUser(
 		tenant.ID,
 		req.AdminUser.Name,
 		req.AdminUser.Email,
 		req.AdminUser.Mobile,
 		hashedPassword,
-		"admin", // First user is always admin
+		"admin",
 	)
-	// Since we don't have a Tenant Context yet for this new user creation,
-	// the repo implementation must ensure it uses the user.TenantID if provided,
-	// or we manually handle it.
-	// For now, valid architecture assumes User entity has TenantID.
 	if err := s.userRepo.Create(ctx, user); err != nil {
-		// Rollback tenant?
 		return nil, nil, err
 	}
 
@@ -78,9 +82,20 @@ func (s *TenantService) UpdateTenant(ctx context.Context, id primitive.ObjectID,
 	if req.LogoURL != "" {
 		tenant.LogoURL = req.LogoURL
 	}
-	// Update address if any field is provided
 	if req.Address.Street != "" || req.Address.City != "" || req.Address.State != "" || req.Address.Country != "" || req.Address.ZipCode != "" {
 		tenant.Address = req.Address
+	}
+
+	if req.CountryID != "" {
+		countryID, err := primitive.ObjectIDFromHex(req.CountryID)
+		if err != nil {
+			return nil, errors.New("invalid country_id format")
+		}
+		tenant.CountryID = countryID
+	}
+
+	if req.Tax >= 0 {
+		tenant.Tax = req.Tax
 	}
 
 	if err := s.tenantRepo.Update(ctx, tenant); err != nil {

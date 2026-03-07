@@ -183,11 +183,14 @@ The system supports **row-level security** via permission rules. Each permission
   "logo_url": "https://example.com/logo.png",
   "address": {
     "street": "123 Tech Lane",
+    "address_line": "Suite 400",
     "city": "San Francisco",
     "state": "CA",
     "country": "USA",
     "zip_code": "94105"
   },
+  "country_id": "60c9g...",
+  "tax": 5.0,
   "admin_user": {
     "name": "Jane Doe",
     "email": "jane@acmecorp.com",
@@ -197,6 +200,11 @@ The system supports **row-level security** via permission rules. Each permission
   }
 }
 ```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `country_id` | string | No | MongoDB ObjectID of the country |
+| `tax` | number | No | Tax percentage (e.g., 5.0 for 5%) |
 
 **Response (201 Created):**
 ```json
@@ -228,11 +236,16 @@ The system supports **row-level security** via permission rules. Each permission
   "logo_url": "https://example.com/logo.png",
   "address": {
     "street": "123 Tech Lane",
+    "address_line": "Suite 400",
     "city": "San Francisco",
     "state": "CA",
     "country": "USA",
     "zip_code": "94105"
   },
+  "country_id": "60c9g...",
+  "tax": 5.0,
+  "next_invoice_number": 1,
+  "next_receipt_number": 1,
   "created_at": "2026-02-15T10:00:00Z",
   "updated_at": "2026-02-15T10:00:00Z"
 }
@@ -249,9 +262,16 @@ The system supports **row-level security** via permission rules. Each permission
   "logo_url": "https://example.com/newlogo.png",
   "address": {
     "city": "San Jose"
-  }
+  },
+  "country_id": "60c9g...",
+  "tax": 7.5
 }
 ```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `country_id` | string | MongoDB ObjectID of the country |
+| `tax` | number | Tax percentage (e.g., 5.0 for 5%) |
 
 **Response (200 OK):**
 ```json
@@ -262,11 +282,19 @@ The system supports **row-level security** via permission rules. Each permission
   "logo_url": "https://example.com/newlogo.png",
   "address": {
     "street": "123 Tech Lane",
+    "address_line": "Suite 400",
     "city": "San Jose",
     "state": "CA",
     "country": "USA",
     "zip_code": "94105"
   },
+  "country_id": "60c9g...",
+  "tax": 7.5,
+  "next_invoice_number": 1,
+  "next_receipt_number": 1,
+  "created_at": "2026-02-15T10:00:00Z",
+  "updated_at": "2026-02-15T14:30:00Z"
+}
   "created_at": "2026-02-15T10:00:00Z",
   "updated_at": "2026-02-15T14:30:00Z"
 }
@@ -1257,7 +1285,10 @@ The system supports **row-level security** via permission rules. Each permission
       "id": "60e1i...",
       "tenant_id": "60a7e...",
       "lead_id": "60c9g...",
-      "author_id": "60b8f...",
+      "author": {
+        "id": "60b8f...",
+        "name": "John Doe"
+      },
       "content": "Had a great phone screen with Alice. She's ready to sign.",
       "created_at": "2026-02-15T12:00:00Z",
       "updated_at": "2026-02-15T12:00:00Z"
@@ -1388,7 +1419,10 @@ The system supports **row-level security** via permission rules. Each permission
       "id": "60f2j...",
       "tenant_id": "60a7e...",
       "lead_id": "60c9g...",
-      "organizer_id": "60b8f...",
+      "organizer": {
+        "id": "60b8f...",
+        "name": "John Doe"
+      },
       "title": "Initial Demo Call",
       "description": "Walkthrough of core CRM features with Alice",
       "start_time": "2024-05-15T14:30:00Z",
@@ -1867,7 +1901,498 @@ The system supports **row-level security** via permission rules. Each permission
 
 ---
 
-## 12. System
+## 12. Products
+
+*Tenant-specific products for invoicing.*
+
+### Create Product
+**Endpoint:** `POST /products`
+**Auth Required:** JWT + RBAC: Admin only
+
+**Request:**
+```json
+{
+  "name": "CRM License - Annual",
+  "description": "Annual CRM software license for up to 10 users",
+  "price": 1200.00
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "id": "60k7q...",
+  "tenant_id": "60a7e...",
+  "name": "CRM License - Annual",
+  "description": "Annual CRM software license for up to 10 users",
+  "price": 1200.00,
+  "created_at": "2026-03-07T12:00:00Z",
+  "updated_at": "2026-03-07T12:00:00Z"
+}
+```
+
+### Get Product by ID
+**Endpoint:** `GET /products/:id`
+**Auth Required:** JWT + RBAC: All (Admin & User)
+
+**Response (200 OK):**
+```json
+{
+  "id": "60k7q...",
+  "tenant_id": "60a7e...",
+  "name": "CRM License - Annual",
+  "description": "Annual CRM software license for up to 10 users",
+  "price": 1200.00,
+  "created_at": "2026-03-07T12:00:00Z",
+  "updated_at": "2026-03-07T12:00:00Z"
+}
+```
+
+### Update Product
+**Endpoint:** `PUT /products/:id`
+**Auth Required:** JWT + RBAC: Admin only
+
+**Request:**
+```json
+{
+  "price": 999.00,
+  "description": "Annual CRM software license for up to 10 users - Special Offer"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": "60k7q...",
+  "tenant_id": "60a7e...",
+  "name": "CRM License - Annual",
+  "description": "Annual CRM software license for up to 10 users - Special Offer",
+  "price": 999.00,
+  "created_at": "2026-03-07T12:00:00Z",
+  "updated_at": "2026-03-07T14:30:00Z"
+}
+```
+
+### Delete Product
+**Endpoint:** `DELETE /products/:id`
+**Auth Required:** JWT + RBAC: Admin only
+
+**Response (200 OK):**
+```json
+{
+  "message": "Product deleted successfully"
+}
+```
+
+### List Products
+**Endpoint:** `POST /products/list`
+**Auth Required:** JWT + RBAC: All (Admin & User)
+
+**Request:**
+```json
+{
+  "filters": {},
+  "offset": 0,
+  "limit": 10
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "id": "60k7q...",
+      "tenant_id": "60a7e...",
+      "name": "CRM License - Annual",
+      "description": "Annual CRM software license",
+      "price": 999.00,
+      "created_at": "2026-03-07T12:00:00Z",
+      "updated_at": "2026-03-07T14:30:00Z"
+    }
+  ],
+  "total": 1,
+  "offset": 0,
+  "limit": 10
+}
+```
+
+---
+
+## 13. Invoices
+
+*Invoices are linked to leads and contain products with automatic tax calculation based on tenant settings.*
+
+### Invoice Calculation Logic
+```
+Subtotal = Sum(Product Quantity × Unit Price)
+Taxable Amount = Subtotal - Discount
+Tax Amount = Taxable Amount × (Tenant Tax Percentage / 100)
+Total Amount = Taxable Amount + Tax Amount
+```
+
+### Create Invoice
+**Endpoint:** `POST /leads/:lead_id/invoices`
+**Auth Required:** JWT + RBAC: Admin only
+
+**Request:**
+```json
+{
+  "items": [
+    {
+      "product_id": "60k7q...",
+      "quantity": 2
+    },
+    {
+      "product_id": "60l8r...",
+      "quantity": 1
+    }
+  ],
+  "discount": 100.00,
+  "due_date": "2026-04-07T23:59:59Z"
+}
+```
+
+> **Note:** Tax percentage is automatically pulled from tenant settings. Ensure the tenant has a valid `tax` value configured.
+
+**Response (201 Created):**
+```json
+{
+  "id": "60m9s...",
+  "tenant_id": "60a7e...",
+  "lead_id": "60c9g...",
+  "invoice_number": 1,
+  "items": [
+    {
+      "product_id": "60k7q...",
+      "product_name": "CRM License - Annual",
+      "quantity": 2,
+      "unit_price": 999.00,
+      "total": 1998.00
+    },
+    {
+      "product_id": "60l8r...",
+      "product_name": "Implementation Fee",
+      "quantity": 1,
+      "unit_price": 500.00,
+      "total": 500.00
+    }
+  ],
+  "subtotal": 2498.00,
+  "discount": 100.00,
+  "tax_percentage": 5.0,
+  "tax_amount": 119.90,
+  "total_amount": 2517.90,
+  "paid_amount": 0,
+  "paid_amount_vat": 0,
+  "due_date": "2026-04-07T23:59:59Z",
+  "status": "pending",
+  "created_at": "2026-03-07T12:00:00Z",
+  "updated_at": "2026-03-07T12:00:00Z"
+}
+```
+
+### Get Invoice by ID
+**Endpoint:** `GET /invoices/:id`
+**Auth Required:** JWT + RBAC: All (Admin & User)
+
+**Response (200 OK):**
+```json
+{
+  "id": "60m9s...",
+  "tenant_id": "60a7e...",
+  "lead_id": "60c9g...",
+  "invoice_number": 1,
+  "items": [...],
+  "subtotal": 2498.00,
+  "discount": 100.00,
+  "tax_percentage": 5.0,
+  "tax_amount": 119.90,
+  "total_amount": 2517.90,
+  "paid_amount": 1000.00,
+  "paid_amount_vat": 1050.00,
+  "due_date": "2026-04-07T23:59:59Z",
+  "status": "partial",
+  "created_at": "2026-03-07T12:00:00Z",
+  "updated_at": "2026-03-07T14:00:00Z"
+}
+```
+
+### Update Invoice Due Date
+**Endpoint:** `PUT /invoices/:id/due-date`
+**Auth Required:** JWT + RBAC: Admin only
+
+**Request:**
+```json
+{
+  "due_date": "2026-05-07T23:59:59Z"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": "60m9s...",
+  "tenant_id": "60a7e...",
+  "lead_id": "60c9g...",
+  "invoice_number": 1,
+  "due_date": "2026-05-07T23:59:59Z",
+  "status": "partial",
+  "updated_at": "2026-03-07T15:00:00Z"
+}
+```
+
+### List Invoices
+**Endpoint:** `POST /invoices/list`
+**Auth Required:** JWT + RBAC: All (Admin & User)
+
+**Request:**
+```json
+{
+  "filters": {
+    "status": "pending"
+  },
+  "offset": 0,
+  "limit": 10
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "id": "60m9s...",
+      "tenant_id": "60a7e...",
+      "lead_id": "60c9g...",
+      "invoice_number": 1,
+      "subtotal": 2498.00,
+      "discount": 100.00,
+      "tax_percentage": 5.0,
+      "tax_amount": 119.90,
+      "total_amount": 2517.90,
+      "paid_amount": 1000.00,
+      "paid_amount_vat": 1050.00,
+      "due_date": "2026-04-07T23:59:59Z",
+      "status": "partial",
+      "created_at": "2026-03-07T12:00:00Z",
+      "updated_at": "2026-03-07T14:00:00Z"
+    }
+  ],
+  "total": 1,
+  "offset": 0,
+  "limit": 10
+}
+```
+
+### Get Invoices by Lead ID
+**Endpoint:** `GET /leads/:lead_id/invoices`
+**Auth Required:** JWT + RBAC: All (Admin & User)
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "id": "60m9s...",
+      "tenant_id": "60a7e...",
+      "lead_id": "60c9g...",
+      "invoice_number": 1,
+      "total_amount": 2517.90,
+      "paid_amount_vat": 1050.00,
+      "status": "partial",
+      "created_at": "2026-03-07T12:00:00Z"
+    }
+  ]
+}
+```
+
+### Invoice Status Values
+| Status | Description |
+|--------|-------------|
+| `pending` | Invoice created, no payments received |
+| `partial` | Partially paid (at least one receipt, not fully paid) |
+| `paid` | Fully paid (total amount + tax received) |
+
+---
+
+## 14. Receipts
+
+*Receipts represent payments made against an invoice. Each payment includes tax automatically calculated based on the invoice's tax percentage.*
+
+### Receipt Calculation Logic
+```
+Tax on Payment = Amount Paid × (Invoice Tax Percentage / 100)
+Total Paid = Amount Paid + Tax on Payment
+```
+
+### Create Receipt
+**Endpoint:** `POST /invoices/:invoice_id/receipts`
+**Auth Required:** JWT + RBAC: Admin only
+
+**Guardrails:**
+- Payment cannot exceed the remaining amount (including tax)
+- Works with multiple partial payments - validates against total paid so far
+
+**Request:**
+```json
+{
+  "amount_paid": 1000.00,
+  "payment_date": "2026-03-15T10:00:00Z"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "id": "60n0t...",
+  "tenant_id": "60a7e...",
+  "invoice_id": "60m9s...",
+  "receipt_number": 1,
+  "amount_paid": 1000.00,
+  "tax_amount": 50.00,
+  "total_paid": 1050.00,
+  "payment_date": "2026-03-15T10:00:00Z",
+  "created_at": "2026-03-15T10:00:00Z"
+}
+```
+
+### Get Receipt by ID
+**Endpoint:** `GET /receipts/:id`
+**Auth Required:** JWT + RBAC: All (Admin & User)
+
+**Response (200 OK):**
+```json
+{
+  "id": "60n0t...",
+  "tenant_id": "60a7e...",
+  "invoice_id": "60m9s...",
+  "receipt_number": 1,
+  "amount_paid": 1000.00,
+  "tax_amount": 50.00,
+  "total_paid": 1050.00,
+  "payment_date": "2026-03-15T10:00:00Z",
+  "created_at": "2026-03-15T10:00:00Z"
+}
+```
+
+### List Receipts by Invoice ID
+**Endpoint:** `POST /invoices/:invoice_id/receipts/list`
+**Auth Required:** JWT + RBAC: All (Admin & User)
+
+**Request:**
+```json
+{}
+```
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "id": "60n0t...",
+      "tenant_id": "60a7e...",
+      "invoice_id": "60m9s...",
+      "receipt_number": 1,
+      "amount_paid": 1000.00,
+      "tax_amount": 50.00,
+      "total_paid": 1050.00,
+      "payment_date": "2026-03-15T10:00:00Z",
+      "created_at": "2026-03-15T10:00:00Z"
+    },
+    {
+      "id": "60o1u...",
+      "tenant_id": "60a7e...",
+      "invoice_id": "60m9s...",
+      "receipt_number": 2,
+      "amount_paid": 1467.90,
+      "tax_amount": 73.40,
+      "total_paid": 1541.30,
+      "payment_date": "2026-03-20T14:00:00Z",
+      "created_at": "2026-03-20T14:00:00Z"
+    }
+  ]
+}
+```
+
+### Error: Payment Exceeds Remaining Amount
+**Response (400 Bad Request):**
+```json
+{
+  "error": "payment exceeds remaining amount to be paid"
+}
+```
+
+### Error: Invoice Already Paid
+**Response (400 Bad Request):**
+```json
+{
+  "error": "invoice is already fully paid"
+}
+```
+
+### Receipt Summary Example
+
+For an invoice with:
+- Total Amount: 2517.90
+- Tax Percentage: 5%
+- Status: partial (first payment of 1000 + 50 tax = 1050 received)
+
+**First Receipt:**
+```json
+{
+  "amount_paid": 1000.00,
+  "tax_amount": 50.00,
+  "total_paid": 1050.00
+}
+```
+
+**Remaining to pay:** 1467.90 (2517.90 - 1050)
+
+**Second Receipt (full payment):**
+```json
+{
+  "amount_paid": 1467.90,
+  "tax_amount": 73.40,
+  "total_paid": 1541.30
+}
+```
+
+Invoice status automatically updates to `paid` after the final receipt.
+
+---
+
+## 15. Tenant Updates
+
+### Address Fields
+
+The Address struct now includes:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `street` | string | Street address |
+| `address_line` | string | Additional address line (e.g., suite, floor) |
+| `city` | string | City |
+| `state` | string | State/Province |
+| `zip_code` | string | ZIP/Postal code |
+| `country` | string | Country name |
+
+### Tenant Fields for Products & Invoices
+
+The following new fields have been added to the Tenant model:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `country_id` | ObjectID | Reference to country |
+| `tax` | float64 | Tax percentage (e.g., 5.0 for 5%) |
+| `next_invoice_number` | int64 | Auto-increment counter for invoices |
+| `next_receipt_number` | int64 | Auto-increment counter for receipts |
+
+These fields are used internally for invoice/receipt numbering and tax calculation. Update tenant settings to configure the tax percentage for your organization.
+
+---
+
+## 16. System
 
 ### System Health Check
 **Endpoint:** `GET /health`

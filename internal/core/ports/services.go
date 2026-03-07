@@ -13,14 +13,18 @@ type CreateTenantRequest struct {
 	Email     string            `json:"email"`
 	LogoURL   string            `json:"logo_url"`
 	Address   domain.Address    `json:"address"`
+	CountryID string            `json:"country_id"`
+	Tax       float64           `json:"tax"`
 	AdminUser CreateUserRequest `json:"admin_user"`
 }
 
 type UpdateTenantRequest struct {
-	Name    string         `json:"name"`
-	Email   string         `json:"email"`
-	LogoURL string         `json:"logo_url"`
-	Address domain.Address `json:"address"`
+	Name      string         `json:"name"`
+	Email     string         `json:"email"`
+	LogoURL   string         `json:"logo_url"`
+	Address   domain.Address `json:"address"`
+	CountryID string         `json:"country_id"`
+	Tax       float64        `json:"tax"`
 }
 
 type CreateUserRequest struct {

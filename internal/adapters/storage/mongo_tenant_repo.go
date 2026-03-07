@@ -82,6 +82,8 @@ func (r *MongoTenantRepository) Update(ctx context.Context, tenant *domain.Tenan
 			"email":      tenant.Email,
 			"logo_url":   tenant.LogoURL,
 			"address":    tenant.Address,
+			"country_id": tenant.CountryID,
+			"tax":        tenant.Tax,
 			"updated_at": time.Now(),
 		},
 	}

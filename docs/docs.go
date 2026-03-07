@@ -3303,6 +3303,9 @@ const docTemplate = `{
                 },
                 "offset": {
                     "type": "integer"
+                },
+                "search": {
+                    "type": "string"
                 }
             }
         },

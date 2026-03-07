@@ -183,11 +183,14 @@ The system supports **row-level security** via permission rules. Each permission
   "logo_url": "https://example.com/logo.png",
   "address": {
     "street": "123 Tech Lane",
+    "address_line": "Suite 400",
     "city": "San Francisco",
     "state": "CA",
     "country": "USA",
     "zip_code": "94105"
   },
+  "country_id": "60c9g...",
+  "tax": 5.0,
   "admin_user": {
     "name": "Jane Doe",
     "email": "jane@acmecorp.com",
@@ -197,6 +200,11 @@ The system supports **row-level security** via permission rules. Each permission
   }
 }
 ```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `country_id` | string | No | MongoDB ObjectID of the country |
+| `tax` | number | No | Tax percentage (e.g., 5.0 for 5%) |
 
 **Response (201 Created):**
 ```json
@@ -228,11 +236,16 @@ The system supports **row-level security** via permission rules. Each permission
   "logo_url": "https://example.com/logo.png",
   "address": {
     "street": "123 Tech Lane",
+    "address_line": "Suite 400",
     "city": "San Francisco",
     "state": "CA",
     "country": "USA",
     "zip_code": "94105"
   },
+  "country_id": "60c9g...",
+  "tax": 5.0,
+  "next_invoice_number": 1,
+  "next_receipt_number": 1,
   "created_at": "2026-02-15T10:00:00Z",
   "updated_at": "2026-02-15T10:00:00Z"
 }
@@ -249,9 +262,16 @@ The system supports **row-level security** via permission rules. Each permission
   "logo_url": "https://example.com/newlogo.png",
   "address": {
     "city": "San Jose"
-  }
+  },
+  "country_id": "60c9g...",
+  "tax": 7.5
 }
 ```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `country_id` | string | MongoDB ObjectID of the country |
+| `tax` | number | Tax percentage (e.g., 5.0 for 5%) |
 
 **Response (200 OK):**
 ```json
@@ -262,11 +282,19 @@ The system supports **row-level security** via permission rules. Each permission
   "logo_url": "https://example.com/newlogo.png",
   "address": {
     "street": "123 Tech Lane",
+    "address_line": "Suite 400",
     "city": "San Jose",
     "state": "CA",
     "country": "USA",
     "zip_code": "94105"
   },
+  "country_id": "60c9g...",
+  "tax": 7.5,
+  "next_invoice_number": 1,
+  "next_receipt_number": 1,
+  "created_at": "2026-02-15T10:00:00Z",
+  "updated_at": "2026-02-15T14:30:00Z"
+}
   "created_at": "2026-02-15T10:00:00Z",
   "updated_at": "2026-02-15T14:30:00Z"
 }
@@ -2329,6 +2357,19 @@ Invoice status automatically updates to `paid` after the final receipt.
 ---
 
 ## 15. Tenant Updates
+
+### Address Fields
+
+The Address struct now includes:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `street` | string | Street address |
+| `address_line` | string | Additional address line (e.g., suite, floor) |
+| `city` | string | City |
+| `state` | string | State/Province |
+| `zip_code` | string | ZIP/Postal code |
+| `country` | string | Country name |
 
 ### Tenant Fields for Products & Invoices
 

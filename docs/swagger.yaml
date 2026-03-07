@@ -189,6 +189,8 @@ definitions:
         type: integer
       offset:
         type: integer
+      search:
+        type: string
     type: object
   github_com_abdulshakoor02_goCrmBackend_internal_core_ports.LoginRequest:
     properties:

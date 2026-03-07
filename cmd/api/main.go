@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/abdulshakoor02/goCrmBackend/config"
-	_ "github.com/abdulshakoor02/goCrmBackend/docs"
+	"github.com/abdulshakoor02/goCrmBackend/docs"
 	"github.com/abdulshakoor02/goCrmBackend/internal/adapters/handler"
 	"github.com/abdulshakoor02/goCrmBackend/internal/adapters/storage"
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/services"
@@ -39,6 +39,8 @@ func main() {
 	cfg := config.LoadConfig()
 
 	logger.InitLogger(cfg)
+
+	docs.SwaggerInfo.Host = "localhost:" + cfg.ServerPort
 
 	mongoClient, err := database.ConnectMongoDB(cfg)
 	if err != nil {

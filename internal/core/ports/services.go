@@ -353,3 +353,58 @@ type CountryService interface {
 	DeleteCountry(ctx context.Context, id primitive.ObjectID) error
 	ListCountries(ctx context.Context, req FilterRequest) ([]*domain.Country, int64, error)
 }
+
+type CreateProductRequest struct {
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Price       float64 `json:"price"`
+}
+
+type UpdateProductRequest struct {
+	Name        string  `json:"name,omitempty"`
+	Description string  `json:"description,omitempty"`
+	Price       float64 `json:"price,omitempty"`
+}
+
+type ProductService interface {
+	CreateProduct(ctx context.Context, req CreateProductRequest) (*domain.Product, error)
+	GetProduct(ctx context.Context, id primitive.ObjectID) (*domain.Product, error)
+	UpdateProduct(ctx context.Context, id primitive.ObjectID, req UpdateProductRequest) (*domain.Product, error)
+	DeleteProduct(ctx context.Context, id primitive.ObjectID) error
+	ListProducts(ctx context.Context, req FilterRequest) ([]*domain.Product, int64, error)
+}
+
+type CreateInvoiceItemRequest struct {
+	ProductID string `json:"product_id"`
+	Quantity  int    `json:"quantity"`
+}
+
+type CreateInvoiceRequest struct {
+	LeadID   string                     `json:"lead_id"`
+	Items    []CreateInvoiceItemRequest `json:"items"`
+	Discount float64                    `json:"discount"`
+	DueDate  *time.Time                 `json:"due_date,omitempty"`
+}
+
+type UpdateInvoiceDueDateRequest struct {
+	DueDate time.Time `json:"due_date"`
+}
+
+type InvoiceService interface {
+	CreateInvoice(ctx context.Context, req CreateInvoiceRequest) (*domain.Invoice, error)
+	GetInvoice(ctx context.Context, id primitive.ObjectID) (*domain.Invoice, error)
+	UpdateInvoiceDueDate(ctx context.Context, id primitive.ObjectID, req UpdateInvoiceDueDateRequest) (*domain.Invoice, error)
+	ListInvoices(ctx context.Context, req FilterRequest) ([]*domain.Invoice, int64, error)
+	GetInvoicesByLeadID(ctx context.Context, leadID primitive.ObjectID) ([]*domain.Invoice, error)
+}
+
+type CreateReceiptRequest struct {
+	AmountPaid  float64   `json:"amount_paid"`
+	PaymentDate time.Time `json:"payment_date"`
+}
+
+type ReceiptService interface {
+	CreateReceipt(ctx context.Context, invoiceID primitive.ObjectID, req CreateReceiptRequest) (*domain.Receipt, error)
+	GetReceipt(ctx context.Context, id primitive.ObjectID) (*domain.Receipt, error)
+	ListReceiptsByInvoiceID(ctx context.Context, invoiceID primitive.ObjectID) ([]*domain.Receipt, error)
+}

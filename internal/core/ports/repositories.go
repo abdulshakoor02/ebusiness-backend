@@ -103,3 +103,31 @@ type CountryRepository interface {
 	Update(ctx context.Context, country *domain.Country) error
 	Delete(ctx context.Context, id primitive.ObjectID) error
 }
+
+type ProductRepository interface {
+	Create(ctx context.Context, product *domain.Product) error
+	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.Product, error)
+	GetByIDAndTenant(ctx context.Context, id, tenantID primitive.ObjectID) (*domain.Product, error)
+	List(ctx context.Context, filter interface{}, offset, limit int64) ([]*domain.Product, int64, error)
+	Update(ctx context.Context, product *domain.Product) error
+	Delete(ctx context.Context, id primitive.ObjectID) error
+}
+
+type InvoiceRepository interface {
+	Create(ctx context.Context, invoice *domain.Invoice) error
+	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.Invoice, error)
+	GetByIDAndTenant(ctx context.Context, id, tenantID primitive.ObjectID) (*domain.Invoice, error)
+	GetByLeadID(ctx context.Context, leadID primitive.ObjectID) ([]*domain.Invoice, error)
+	List(ctx context.Context, filter interface{}, offset, limit int64) ([]*domain.Invoice, int64, error)
+	Update(ctx context.Context, invoice *domain.Invoice) error
+	IncrementInvoiceNumber(ctx context.Context, tenantID primitive.ObjectID) (int64, error)
+}
+
+type ReceiptRepository interface {
+	Create(ctx context.Context, receipt *domain.Receipt) error
+	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.Receipt, error)
+	GetByIDAndTenant(ctx context.Context, id, tenantID primitive.ObjectID) (*domain.Receipt, error)
+	GetByInvoiceID(ctx context.Context, invoiceID primitive.ObjectID) ([]*domain.Receipt, error)
+	SumPaidAmountByInvoiceID(ctx context.Context, invoiceID primitive.ObjectID) (float64, float64, error)
+	IncrementReceiptNumber(ctx context.Context, tenantID primitive.ObjectID) (int64, error)
+}

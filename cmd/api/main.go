@@ -62,6 +62,9 @@ func main() {
 	leadAppointmentRepo := storage.NewMongoLeadAppointmentRepository(db)
 	qualificationRepo := storage.NewMongoQualificationRepository(db)
 	countryRepo := storage.NewMongoCountryRepository(db)
+	productRepo := storage.NewMongoProductRepository(db)
+	invoiceRepo := storage.NewMongoInvoiceRepository(db)
+	receiptRepo := storage.NewMongoReceiptRepository(db)
 
 	tenantService := services.NewTenantService(tenantRepo, userRepo)
 	userService := services.NewUserService(userRepo)
@@ -73,6 +76,9 @@ func main() {
 	leadAppointmentService := services.NewLeadAppointmentService(leadAppointmentRepo, leadRepo)
 	qualificationService := services.NewQualificationService(qualificationRepo)
 	countryService := services.NewCountryService(countryRepo)
+	productService := services.NewProductService(productRepo, tenantRepo)
+	invoiceService := services.NewInvoiceService(invoiceRepo, productRepo, tenantRepo, leadRepo, receiptRepo)
+	receiptService := services.NewReceiptService(receiptRepo, invoiceRepo, tenantRepo)
 
 	permissionRuleRepo := storage.NewMongoPermissionRuleRepository(db)
 	rolePermissionRepo := storage.NewMongoRolePermissionRepository(db)
@@ -186,6 +192,25 @@ func main() {
 	protected.Put("/leads/:lead_id/appointments/:id", authz, leadAppointmentHandler.UpdateLeadAppointment)
 	protected.Delete("/leads/:lead_id/appointments/:id", authz, leadAppointmentHandler.DeleteLeadAppointment)
 	protected.Post("/leads/:lead_id/appointments/list", authz, leadAppointmentHandler.ListLeadAppointments)
+
+	productHandler := handler.NewProductHandler(productService)
+	protected.Post("/products", authz, productHandler.CreateProduct)
+	protected.Get("/products/:id", authz, productHandler.GetProduct)
+	protected.Put("/products/:id", authz, productHandler.UpdateProduct)
+	protected.Delete("/products/:id", authz, productHandler.DeleteProduct)
+	protected.Post("/products/list", authz, productHandler.ListProducts)
+
+	invoiceHandler := handler.NewInvoiceHandler(invoiceService)
+	protected.Post("/leads/:lead_id/invoices", authz, invoiceHandler.CreateInvoice)
+	protected.Get("/invoices/:id", authz, invoiceHandler.GetInvoice)
+	protected.Put("/invoices/:id/due-date", authz, invoiceHandler.UpdateDueDate)
+	protected.Post("/invoices/list", authz, invoiceHandler.ListInvoices)
+	protected.Get("/leads/:lead_id/invoices", authz, invoiceHandler.GetInvoicesByLeadID)
+
+	receiptHandler := handler.NewReceiptHandler(receiptService)
+	protected.Post("/invoices/:invoice_id/receipts", authz, receiptHandler.CreateReceipt)
+	protected.Get("/receipts/:id", authz, receiptHandler.GetReceipt)
+	protected.Post("/invoices/:invoice_id/receipts/list", authz, receiptHandler.ListReceiptsByInvoiceID)
 
 	slog.Info("Starting server", "port", cfg.ServerPort)
 	if err := app.Listen(":" + cfg.ServerPort); err != nil {

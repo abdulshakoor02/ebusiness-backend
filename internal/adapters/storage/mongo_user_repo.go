@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/domain"
+	"github.com/abdulshakoor02/goCrmBackend/pkg/middleware"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -55,8 +56,11 @@ func (r *MongoUserRepository) GetByID(ctx context.Context, id primitive.ObjectID
 	// Validation: Ensure the user belongs to the tenant in context, unless context has no tenant (e.g. system admin or login)
 	filter := bson.M{"_id": id}
 
-	if tenantID, ok := getTenantIDFromContext(ctx); ok {
-		filter["tenant_id"] = tenantID
+	scopeFilter := middleware.GetScopeFilter(ctx)
+	if !scopeFilter.IsSystemAdmin {
+		if tenantID, ok := getTenantIDFromContext(ctx); ok {
+			filter["tenant_id"] = tenantID
+		}
 	}
 
 	var user domain.User
@@ -82,8 +86,11 @@ func (r *MongoUserRepository) GetByEmail(ctx context.Context, email string) (*do
 	// Note: We might NOT want to filter by tenant_id here if this is used for Login where we don't know the tenant yet.
 	// However, if specific tenant context is provided, we should respect it.
 
-	if tenantID, ok := getTenantIDFromContext(ctx); ok {
-		filter["tenant_id"] = tenantID
+	scopeFilter := middleware.GetScopeFilter(ctx)
+	if !scopeFilter.IsSystemAdmin {
+		if tenantID, ok := getTenantIDFromContext(ctx); ok {
+			filter["tenant_id"] = tenantID
+		}
 	}
 
 	var user domain.User
@@ -98,16 +105,17 @@ func (r *MongoUserRepository) GetByEmail(ctx context.Context, email string) (*do
 }
 
 func (r *MongoUserRepository) List(ctx context.Context, filter interface{}, offset, limit int64) ([]*domain.User, int64, error) {
-	tenantID, ok := getTenantIDFromContext(ctx)
-	if !ok {
-		slog.Warn("List users called without tenant context")
-		// Should we return error or empty list?
-		// For safety, return empty or error.
-		// Unless it's a super-admin context which we haven't defined yet.
-		return nil, 0, errors.New("tenant context required")
-	}
+	scopeFilter := middleware.GetScopeFilter(ctx)
+	query := bson.M{}
 
-	query := bson.M{"tenant_id": tenantID}
+	if !scopeFilter.IsSystemAdmin {
+		tenantID, ok := getTenantIDFromContext(ctx)
+		if !ok {
+			slog.Warn("List users called without tenant context")
+			return nil, 0, errors.New("tenant context required")
+		}
+		query["tenant_id"] = tenantID
+	}
 
 	if f, ok := filter.(map[string]interface{}); ok {
 		for k, v := range f {
@@ -142,13 +150,18 @@ func (r *MongoUserRepository) List(ctx context.Context, filter interface{}, offs
 func (r *MongoUserRepository) Update(ctx context.Context, user *domain.User) error {
 	filter := bson.M{"_id": user.ID}
 
-	if tenantID, ok := getTenantIDFromContext(ctx); ok {
-		filter["tenant_id"] = tenantID
+	scopeFilter := middleware.GetScopeFilter(ctx)
+	if !scopeFilter.IsSystemAdmin {
+		if tenantID, ok := getTenantIDFromContext(ctx); ok {
+			filter["tenant_id"] = tenantID
+		}
 	}
 
 	update := bson.M{
 		"$set": bson.M{
 			"name":       user.Name,
+			"email":      user.Email,
+			"mobile":     user.Mobile,
 			"role":       user.Role,
 			"updated_at": time.Now(),
 		},

@@ -36,13 +36,10 @@ import (
 // @in header
 // @name Authorization
 func main() {
-	// 1. Load Config
 	cfg := config.LoadConfig()
 
-	// 2. Init Logger
 	logger.InitLogger(cfg)
 
-	// 3. Connect Database
 	mongoClient, err := database.ConnectMongoDB(cfg)
 	if err != nil {
 		slog.Error("Failed to connect to MongoDB", "error", err)
@@ -52,21 +49,39 @@ func main() {
 
 	db := mongoClient.Database(cfg.DBName)
 
-	// 4. Init Repositories
+	if err := database.RunMigrations(context.Background(), db, cfg); err != nil {
+		slog.Error("Failed to run migrations", "error", err)
+	}
+
 	tenantRepo := storage.NewMongoTenantRepository(db)
 	userRepo := storage.NewMongoUserRepository(db)
+	leadRepo := storage.NewMongoLeadRepository(db)
+	leadCategoryRepo := storage.NewMongoLeadCategoryRepository(db)
+	leadSourceRepo := storage.NewMongoLeadSourceRepository(db)
+	leadCommentRepo := storage.NewMongoLeadCommentRepository(db)
+	leadAppointmentRepo := storage.NewMongoLeadAppointmentRepository(db)
+	qualificationRepo := storage.NewMongoQualificationRepository(db)
+	countryRepo := storage.NewMongoCountryRepository(db)
 
-	// 5. Init Services
 	tenantService := services.NewTenantService(tenantRepo, userRepo)
 	userService := services.NewUserService(userRepo)
 	authService := services.NewAuthService(userRepo, cfg)
+	leadService := services.NewLeadService(leadRepo)
+	leadCategoryService := services.NewLeadCategoryService(leadCategoryRepo)
+	leadSourceService := services.NewLeadSourceService(leadSourceRepo)
+	leadCommentService := services.NewLeadCommentService(leadCommentRepo, leadRepo)
+	leadAppointmentService := services.NewLeadAppointmentService(leadAppointmentRepo, leadRepo)
+	qualificationService := services.NewQualificationService(qualificationRepo)
+	countryService := services.NewCountryService(countryRepo)
 
-	// 6. Init Handlers
-	tenantHandler := handler.NewTenantHandler(tenantService)
-	userHandler := handler.NewUserHandler(userService)
-	authHandler := handler.NewAuthHandler(authService)
+	permissionRuleRepo := storage.NewMongoPermissionRuleRepository(db)
+	rolePermissionRepo := storage.NewMongoRolePermissionRepository(db)
+	permissionService := services.NewPermissionService(permissionRuleRepo, rolePermissionRepo)
 
-	// 7. Setup Fiber
+	permissionHandler := handler.NewPermissionHandler(permissionService)
+
+	authz := middleware.NewAuthMiddleware(rolePermissionRepo)
+
 	app := fiber.New(fiber.Config{
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
@@ -80,39 +95,98 @@ func main() {
 		},
 	})
 
-	// Middleware
 	app.Use(recover.New())
-	app.Use(cors.New()) // Default CORS
+	app.Use(cors.New())
 	app.Use(middleware.RequestLogger())
 
-	// Swagger
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
-	// 8. Routes
 	api := app.Group("/api/v1")
 
-	// Public Routes
-	api.Post("/tenants", tenantHandler.RegisterTenant)
-	api.Post("/auth/login", authHandler.Login)
+	api.Post("/auth/login", handler.NewAuthHandler(authService).Login)
 	api.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"status": "ok"})
 	})
 
-	// Protected Routes
-	protected := api.Group("/", middleware.Protected(cfg.JWTSecret))
+	qualificationHandler := handler.NewQualificationHandler(qualificationService)
+	api.Post("/qualifications", qualificationHandler.CreateQualification)
+	api.Get("/qualifications/:id", qualificationHandler.GetQualification)
+	api.Put("/qualifications/:id", qualificationHandler.UpdateQualification)
+	api.Delete("/qualifications/:id", qualificationHandler.DeleteQualification)
+	api.Post("/qualifications/list", qualificationHandler.ListQualifications)
 
-	// Tenant Management (Protected)
-	protected.Get("/tenants/:id", tenantHandler.GetTenant)
-	protected.Put("/tenants/:id", tenantHandler.UpdateTenant)
-	protected.Post("/tenants/list", tenantHandler.ListTenants)
+	countryHandler := handler.NewCountryHandler(countryService)
+	api.Post("/countries", countryHandler.CreateCountry)
+	api.Get("/countries/:id", countryHandler.GetCountry)
+	api.Put("/countries/:id", countryHandler.UpdateCountry)
+	api.Delete("/countries/:id", countryHandler.DeleteCountry)
+	api.Post("/countries/list", countryHandler.ListCountries)
 
-	// User Management (Protected)
-	protected.Post("/users", userHandler.CreateUser)
-	protected.Get("/users/:id", userHandler.GetUser)
-	protected.Put("/users/:id", userHandler.UpdateUser)
-	protected.Post("/users/list", userHandler.ListUsers)
+	protected := api.Group("/", middleware.Protected(cfg.JWTSecret), middleware.NewFilterContextMiddleware(permissionService, rolePermissionRepo))
 
-	// 9. Start Server
+	protected.Get("/permissions/my-permissions", permissionHandler.GetPermissions)
+
+	protected.Post("/permissions", authz, permissionHandler.AddPermission)
+	protected.Delete("/permissions", authz, permissionHandler.RemovePermission)
+	protected.Get("/permissions", authz, permissionHandler.GetAllPermissions)
+	protected.Post("/permissions/roles/inherit", authz, permissionHandler.AssignRoleInheritance)
+	protected.Get("/permissions/roles/inherit", authz, permissionHandler.GetRoleInheritances)
+
+	protected.Get("/permissions/available-rules", authz, permissionHandler.GetAvailableRules)
+	protected.Post("/permissions/rules", authz, permissionHandler.CreatePermissionRule)
+	protected.Put("/permissions/rules/:id", authz, permissionHandler.UpdatePermissionRule)
+	protected.Delete("/permissions/rules/:id", authz, permissionHandler.DeletePermissionRule)
+
+	protected.Get("/permissions/roles", authz, permissionHandler.GetAllRoles)
+	protected.Get("/permissions/roles/:role", authz, permissionHandler.GetRolePermissions)
+	protected.Post("/permissions/roles/:role/bulk", authz, permissionHandler.BulkUpdateRolePermissions)
+
+	tenantHandler := handler.NewTenantHandler(tenantService)
+	protected.Post("/tenants", authz, tenantHandler.RegisterTenant)
+	protected.Get("/tenants/:id", authz, tenantHandler.GetTenant)
+	protected.Put("/tenants/:id", authz, tenantHandler.UpdateTenant)
+	protected.Post("/tenants/list", authz, tenantHandler.ListTenants)
+
+	userHandler := handler.NewUserHandler(userService)
+	protected.Post("/users", authz, userHandler.CreateUser)
+	protected.Get("/users/:id", authz, userHandler.GetUser)
+	protected.Put("/users/:id", authz, userHandler.UpdateUser)
+	protected.Post("/users/list", authz, userHandler.ListUsers)
+
+	leadHandler := handler.NewLeadHandler(leadService)
+	protected.Post("/leads", authz, leadHandler.CreateLead)
+	protected.Get("/leads/:id", authz, leadHandler.GetLead)
+	protected.Put("/leads/:id", authz, leadHandler.UpdateLead)
+	protected.Post("/leads/list", authz, leadHandler.ListLeads)
+
+	leadCategoryHandler := handler.NewLeadCategoryHandler(leadCategoryService)
+	protected.Post("/lead-categories", authz, leadCategoryHandler.CreateLeadCategory)
+	protected.Get("/lead-categories/:id", authz, leadCategoryHandler.GetLeadCategory)
+	protected.Put("/lead-categories/:id", authz, leadCategoryHandler.UpdateLeadCategory)
+	protected.Delete("/lead-categories/:id", authz, leadCategoryHandler.DeleteLeadCategory)
+	protected.Post("/lead-categories/list", authz, leadCategoryHandler.ListLeadCategories)
+
+	leadSourceHandler := handler.NewLeadSourceHandler(leadSourceService)
+	protected.Post("/lead-sources", authz, leadSourceHandler.CreateLeadSource)
+	protected.Get("/lead-sources/:id", authz, leadSourceHandler.GetLeadSource)
+	protected.Put("/lead-sources/:id", authz, leadSourceHandler.UpdateLeadSource)
+	protected.Delete("/lead-sources/:id", authz, leadSourceHandler.DeleteLeadSource)
+	protected.Post("/lead-sources/list", authz, leadSourceHandler.ListLeadSources)
+
+	leadCommentHandler := handler.NewLeadCommentHandler(leadCommentService)
+	protected.Post("/leads/:lead_id/comments", authz, leadCommentHandler.CreateLeadComment)
+	protected.Get("/leads/:lead_id/comments/:id", authz, leadCommentHandler.GetLeadComment)
+	protected.Put("/leads/:lead_id/comments/:id", authz, leadCommentHandler.UpdateLeadComment)
+	protected.Delete("/leads/:lead_id/comments/:id", authz, leadCommentHandler.DeleteLeadComment)
+	protected.Post("/leads/:lead_id/comments/list", authz, leadCommentHandler.ListLeadComments)
+
+	leadAppointmentHandler := handler.NewLeadAppointmentHandler(leadAppointmentService)
+	protected.Post("/leads/:lead_id/appointments", authz, leadAppointmentHandler.CreateLeadAppointment)
+	protected.Get("/leads/:lead_id/appointments/:id", authz, leadAppointmentHandler.GetLeadAppointment)
+	protected.Put("/leads/:lead_id/appointments/:id", authz, leadAppointmentHandler.UpdateLeadAppointment)
+	protected.Delete("/leads/:lead_id/appointments/:id", authz, leadAppointmentHandler.DeleteLeadAppointment)
+	protected.Post("/leads/:lead_id/appointments/list", authz, leadAppointmentHandler.ListLeadAppointments)
+
 	slog.Info("Starting server", "port", cfg.ServerPort)
 	if err := app.Listen(":" + cfg.ServerPort); err != nil {
 		slog.Error("Server failed to start", "error", err)

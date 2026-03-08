@@ -192,6 +192,49 @@ The system supports **row-level security** via permission rules. Each permission
 
 ---
 
+## 1.5. User Tenant
+
+*Endpoints for the currently authenticated user to view their own tenant information.*
+
+### Get Current User's Tenant
+**Endpoint:** `GET /user/tenant`
+**Auth Required:** JWT + RBAC: Admin & User
+
+*Returns the tenant information for the currently authenticated user based on their JWT token.*
+
+**Response (200 OK):**
+```json
+{
+  "id": "60a7e...",
+  "name": "ebusiness",
+  "email": "admin@ebusiness.com",
+  "logo_url": "https://example.com/logo.png",
+  "address": {
+    "street": "123 Tech Lane",
+    "address_line": "Suite 400",
+    "city": "Dubai",
+    "state": "Dubai",
+    "country": "UAE",
+    "zip_code": "12345"
+  },
+  "country_id": "60c9g...",
+  "tax": 5.0,
+  "next_invoice_number": 1,
+  "next_receipt_number": 1,
+  "created_at": "2026-02-15T10:00:00Z",
+  "updated_at": "2026-02-15T10:00:00Z"
+}
+```
+
+**Response (401 Unauthorized):**
+```json
+{
+  "error": "unauthorized"
+}
+```
+
+---
+
 ## 2. Tenants (Organizations)
 
 ### Register a New Tenant

@@ -147,3 +147,33 @@ func (h *TenantHandler) ListTenants(c *fiber.Ctx) error {
 		"limit":  req.Limit,
 	})
 }
+
+// GetUserTenant godoc
+// @Summary      Get current user's tenant
+// @Description  Retrieves the tenant information for the currently authenticated user
+// @Tags         user
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  domain.Tenant
+// @Failure      401  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Security     Bearer
+// @Router       /user/tenant [get]
+func (h *TenantHandler) GetUserTenant(c *fiber.Ctx) error {
+	tenantIDStr, ok := c.Locals("tenant_id").(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+	}
+
+	tenantID, err := primitive.ObjectIDFromHex(tenantIDStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid tenant id"})
+	}
+
+	tenant, err := h.service.GetTenant(c.Context(), tenantID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "tenant not found"})
+	}
+
+	return c.JSON(tenant)
+}

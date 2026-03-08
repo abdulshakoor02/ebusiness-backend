@@ -156,12 +156,18 @@ func seedPermissionRules(ctx context.Context, collection *mongo.Collection) erro
 	tenantList := domain.NewPermissionRule("tenants", "Tenant Management", "list", "List Tenants", "/api/v1/tenants/list", "POST", "List all tenants", true)
 	tenantList.RequiresRole = "superadmin"
 
+	// User Tenant View (for admin and user roles to view their own tenant)
+	userTenantView := domain.NewPermissionRule("user-tenants", "User Tenant View", "view", "View Own Tenant", "/api/v1/user/tenant", "GET", "View current user's tenant", true)
+
 	rules := []domain.PermissionRule{
 		// Tenant Management
 		*tenantView,
 		*tenantUpdate,
 		*tenantCreate,
 		*tenantList,
+
+		// User Tenant View
+		*userTenantView,
 
 		// User Management
 		*domain.NewPermissionRule("users", "User Management", "create", "Create User", "/api/v1/users", "POST", "Create a new user", true),
@@ -359,8 +365,13 @@ func seedRolePermissions(ctx context.Context, rolePermsCollection, permRulesColl
 		{role: "admin", resource: "receipts", action: "delete"},
 		{role: "admin", resource: "receipts", action: "list"},
 
+		// User Tenant View (admin and user roles)
+		{role: "admin", resource: "user-tenants", action: "view"},
+		{role: "admin", resource: "tenants", action: "view"},
+
 		// User permissions (scoped — user sees only own data where applicable)
 		{role: "user", resource: "tenants", action: "view"},
+		{role: "user", resource: "user-tenants", action: "view"},
 		{role: "user", resource: "users", action: "view"},
 		{role: "user", resource: "leads", action: "create"},
 		{role: "user", resource: "leads", action: "view_own"},

@@ -105,6 +105,73 @@ func (s *InvoiceService) GetInvoice(ctx context.Context, id primitive.ObjectID) 
 	return s.invoiceRepo.GetByIDAndTenant(ctx, id, tenantID)
 }
 
+func (s *InvoiceService) UpdateInvoice(ctx context.Context, id primitive.ObjectID, req ports.UpdateInvoiceRequest) (*domain.Invoice, error) {
+	tenantID, ok := getTenantIDFromContext(ctx)
+	if !ok {
+		return nil, errors.New("tenant context required to update invoice")
+	}
+
+	invoice, err := s.invoiceRepo.GetByIDAndTenant(ctx, id, tenantID)
+	if err != nil {
+		return nil, err
+	}
+
+	if invoice.Status == domain.InvoiceStatusPaid {
+		return nil, errors.New("cannot update a fully paid invoice")
+	}
+
+	tenant, err := s.tenantRepo.GetByID(ctx, tenantID)
+	if err != nil {
+		return nil, errors.New("tenant not found")
+	}
+
+	if len(req.Items) > 0 {
+		var items []domain.InvoiceItem
+		for _, itemReq := range req.Items {
+			productID, err := primitive.ObjectIDFromHex(itemReq.ProductID)
+			if err != nil {
+				return nil, fmt.Errorf("invalid product_id: %s", itemReq.ProductID)
+			}
+
+			product, err := s.productRepo.GetByIDAndTenant(ctx, productID, tenantID)
+			if err != nil {
+				return nil, fmt.Errorf("product not found: %s", itemReq.ProductID)
+			}
+
+			items = append(items, domain.InvoiceItem{
+				ProductID:   productID,
+				ProductName: product.Name,
+				Quantity:    itemReq.Quantity,
+				UnitPrice:   product.Price,
+				Total:       float64(itemReq.Quantity) * product.Price,
+			})
+		}
+		invoice.Items = items
+	}
+
+	if req.Discount > 0 || req.Discount == 0 {
+		invoice.Discount = req.Discount
+	}
+
+	if req.DueDate != nil {
+		invoice.DueDate = req.DueDate
+	}
+
+	subtotal := domain.CalculateSubtotal(invoice.Items)
+	taxableAmount := subtotal - invoice.Discount
+	invoice.TaxAmount = taxableAmount * (tenant.Tax / 100)
+	invoice.TotalAmount = taxableAmount + invoice.TaxAmount
+	invoice.TaxPercentage = tenant.Tax
+	invoice.Subtotal = subtotal
+	invoice.UpdatedAt = time.Now()
+
+	if err := s.invoiceRepo.Update(ctx, invoice); err != nil {
+		return nil, err
+	}
+
+	return invoice, nil
+}
+
 func (s *InvoiceService) UpdateInvoiceDueDate(ctx context.Context, id primitive.ObjectID, req ports.UpdateInvoiceDueDateRequest) (*domain.Invoice, error) {
 	tenantID, ok := getTenantIDFromContext(ctx)
 	if !ok {

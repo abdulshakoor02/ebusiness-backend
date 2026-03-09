@@ -11,21 +11,24 @@ import (
 )
 
 type AuthService struct {
-	userRepo ports.UserRepository
-	config   *config.Config
+	userRepo    ports.UserRepository
+	tenantRepo  ports.TenantRepository
+	countryRepo ports.CountryRepository
+	config      *config.Config
 }
 
-func NewAuthService(userRepo ports.UserRepository, config *config.Config) *AuthService {
+func NewAuthService(userRepo ports.UserRepository, tenantRepo ports.TenantRepository, countryRepo ports.CountryRepository, config *config.Config) *AuthService {
 	return &AuthService{
-		userRepo: userRepo,
-		config:   config,
+		userRepo:    userRepo,
+		tenantRepo:  tenantRepo,
+		countryRepo: countryRepo,
+		config:      config,
 	}
 }
 
 func (s *AuthService) Login(ctx context.Context, req ports.LoginRequest) (*ports.LoginResponse, error) {
 	user, err := s.userRepo.GetByEmail(ctx, req.Email)
 	if err != nil {
-		// Generic error to avoid enumeration
 		return nil, errors.New("invalid credentials")
 	}
 
@@ -46,8 +49,25 @@ func (s *AuthService) Login(ctx context.Context, req ports.LoginRequest) (*ports
 		return nil, err
 	}
 
-	return &ports.LoginResponse{
+	response := &ports.LoginResponse{
 		Token: token,
 		User:  user,
-	}, nil
+	}
+
+	if user.Role != "superadmin" {
+		tenant, err := s.tenantRepo.GetByID(ctx, user.TenantID)
+		if err == nil && tenant != nil {
+			response.Tax = tenant.Tax
+			response.NextCloudFolder = tenant.Name
+
+			if !tenant.CountryID.IsZero() {
+				country, err := s.countryRepo.GetByID(ctx, tenant.CountryID)
+				if err == nil && country != nil {
+					response.Currency = country.Currency
+				}
+			}
+		}
+	}
+
+	return response, nil
 }

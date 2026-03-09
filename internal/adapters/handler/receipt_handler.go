@@ -52,6 +52,42 @@ func (h *ReceiptHandler) GetReceipt(c *fiber.Ctx) error {
 	return c.JSON(receipt)
 }
 
+func (h *ReceiptHandler) UpdateReceipt(c *fiber.Ctx) error {
+	idParam := c.Params("id")
+	id, err := primitive.ObjectIDFromHex(idParam)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid receipt ID"})
+	}
+
+	var req ports.UpdateReceiptRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	receipt, err := h.service.UpdateReceipt(c.Context(), id, req)
+	if err != nil {
+		slog.Error("Failed to update receipt", "error", err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(receipt)
+}
+
+func (h *ReceiptHandler) DeleteReceipt(c *fiber.Ctx) error {
+	idParam := c.Params("id")
+	id, err := primitive.ObjectIDFromHex(idParam)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid receipt ID"})
+	}
+
+	if err := h.service.DeleteReceipt(c.Context(), id); err != nil {
+		slog.Error("Failed to delete receipt", "error", err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{"message": "Receipt deleted successfully"})
+}
+
 func (h *ReceiptHandler) ListReceiptsByInvoiceID(c *fiber.Ctx) error {
 	invoiceIDParam := c.Params("invoice_id")
 	invoiceID, err := primitive.ObjectIDFromHex(invoiceIDParam)

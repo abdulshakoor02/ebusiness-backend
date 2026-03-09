@@ -70,7 +70,7 @@ func main() {
 
 	tenantService := services.NewTenantService(tenantRepo, userRepo)
 	userService := services.NewUserService(userRepo)
-	authService := services.NewAuthService(userRepo, cfg)
+	authService := services.NewAuthService(userRepo, tenantRepo, countryRepo, cfg)
 	leadService := services.NewLeadService(leadRepo)
 	leadCategoryService := services.NewLeadCategoryService(leadCategoryRepo)
 	leadSourceService := services.NewLeadSourceService(leadSourceRepo)
@@ -80,7 +80,7 @@ func main() {
 	countryService := services.NewCountryService(countryRepo)
 	productService := services.NewProductService(productRepo, tenantRepo)
 	invoiceService := services.NewInvoiceService(invoiceRepo, productRepo, tenantRepo, leadRepo, receiptRepo)
-	receiptService := services.NewReceiptService(receiptRepo, invoiceRepo, tenantRepo)
+	receiptService := services.NewReceiptService(receiptRepo, invoiceRepo, tenantRepo, leadRepo)
 
 	permissionRuleRepo := storage.NewMongoPermissionRuleRepository(db)
 	rolePermissionRepo := storage.NewMongoRolePermissionRepository(db)
@@ -154,6 +154,7 @@ func main() {
 	protected.Get("/tenants/:id", authz, tenantHandler.GetTenant)
 	protected.Put("/tenants/:id", authz, tenantHandler.UpdateTenant)
 	protected.Post("/tenants/list", authz, tenantHandler.ListTenants)
+	protected.Get("/user/tenant", authz, tenantHandler.GetUserTenant)
 
 	userHandler := handler.NewUserHandler(userService)
 	protected.Post("/users", authz, userHandler.CreateUser)
@@ -165,6 +166,7 @@ func main() {
 	protected.Post("/leads", authz, leadHandler.CreateLead)
 	protected.Get("/leads/:id", authz, leadHandler.GetLead)
 	protected.Put("/leads/:id", authz, leadHandler.UpdateLead)
+	protected.Put("/leads/:id/status", authz, leadHandler.UpdateLeadStatus)
 	protected.Post("/leads/list", authz, leadHandler.ListLeads)
 
 	leadCategoryHandler := handler.NewLeadCategoryHandler(leadCategoryService)
@@ -205,6 +207,7 @@ func main() {
 	invoiceHandler := handler.NewInvoiceHandler(invoiceService)
 	protected.Post("/leads/:lead_id/invoices", authz, invoiceHandler.CreateInvoice)
 	protected.Get("/invoices/:id", authz, invoiceHandler.GetInvoice)
+	protected.Put("/invoices/:id", authz, invoiceHandler.UpdateInvoice)
 	protected.Put("/invoices/:id/due-date", authz, invoiceHandler.UpdateDueDate)
 	protected.Post("/invoices/list", authz, invoiceHandler.ListInvoices)
 	protected.Get("/leads/:lead_id/invoices", authz, invoiceHandler.GetInvoicesByLeadID)
@@ -212,6 +215,8 @@ func main() {
 	receiptHandler := handler.NewReceiptHandler(receiptService)
 	protected.Post("/invoices/:invoice_id/receipts", authz, receiptHandler.CreateReceipt)
 	protected.Get("/receipts/:id", authz, receiptHandler.GetReceipt)
+	protected.Put("/receipts/:id", authz, receiptHandler.UpdateReceipt)
+	protected.Delete("/receipts/:id", authz, receiptHandler.DeleteReceipt)
 	protected.Post("/invoices/:invoice_id/receipts/list", authz, receiptHandler.ListReceiptsByInvoiceID)
 
 	slog.Info("Starting server", "port", cfg.ServerPort)

@@ -7,6 +7,12 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+const (
+	LeadStatusLead     = "lead"
+	LeadStatusActive   = "active"
+	LeadStatusInactive = "inactive"
+)
+
 type Lead struct {
 	ID              primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	TenantID        primitive.ObjectID `bson:"tenant_id" json:"tenant_id"`
@@ -20,7 +26,10 @@ type Lead struct {
 	Designation     string             `bson:"designation,omitempty" json:"designation,omitempty"`
 	Email           string             `bson:"email" json:"email"`
 	Phone           string             `bson:"phone" json:"phone"`
+	Address         Address            `bson:"address" json:"address"`
+	Status          string             `bson:"status" json:"status"`
 	SearchText      string             `bson:"search_text" json:"-"`
+	ConvertedAt     *time.Time         `bson:"converted_at,omitempty" json:"converted_at,omitempty"`
 	CreatedAt       time.Time          `bson:"created_at" json:"created_at"`
 	UpdatedAt       time.Time          `bson:"updated_at" json:"updated_at"`
 }
@@ -40,6 +49,7 @@ func NewLead(tenantID primitive.ObjectID, firstName, lastName, designation, emai
 		Designation: designation,
 		Email:       email,
 		Phone:       phone,
+		Status:      LeadStatusLead,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}

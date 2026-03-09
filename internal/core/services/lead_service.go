@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/domain"
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/ports"
@@ -72,6 +73,10 @@ func (s *LeadService) CreateLead(ctx context.Context, req ports.CreateLeadReques
 			return nil, errors.New("invalid qualification_id format")
 		}
 		lead.QualificationID = qualificationID
+	}
+
+	if req.Address.Street != "" || req.Address.City != "" || req.Address.State != "" || req.Address.Country != "" || req.Address.ZipCode != "" || req.Address.AddressLine != "" {
+		lead.Address = req.Address
 	}
 
 	lead.BuildSearchText()
@@ -149,6 +154,10 @@ func (s *LeadService) UpdateLead(ctx context.Context, id primitive.ObjectID, req
 		lead.QualificationID = qualificationID
 	}
 
+	if req.Address.Street != "" || req.Address.City != "" || req.Address.State != "" || req.Address.Country != "" || req.Address.ZipCode != "" || req.Address.AddressLine != "" {
+		lead.Address = req.Address
+	}
+
 	lead.BuildSearchText()
 
 	if err := s.leadRepo.Update(ctx, lead); err != nil {
@@ -160,4 +169,30 @@ func (s *LeadService) UpdateLead(ctx context.Context, id primitive.ObjectID, req
 
 func (s *LeadService) ListLeads(ctx context.Context, req ports.FilterRequest) ([]*ports.LeadListItem, int64, error) {
 	return s.leadRepo.List(ctx, req.Filters, req.Search, req.Offset, req.Limit)
+}
+
+func (s *LeadService) UpdateLeadStatus(ctx context.Context, id primitive.ObjectID, req ports.UpdateLeadStatusRequest) (*domain.Lead, error) {
+	lead, err := s.leadRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Only allow toggling between active and inactive
+	if req.Status != domain.LeadStatusActive && req.Status != domain.LeadStatusInactive {
+		return nil, errors.New("status must be 'active' or 'inactive'")
+	}
+
+	// Cannot toggle if still a lead (not yet converted)
+	if lead.Status == domain.LeadStatusLead {
+		return nil, errors.New("lead has not been converted to a client yet")
+	}
+
+	lead.Status = req.Status
+	lead.UpdatedAt = time.Now()
+
+	if err := s.leadRepo.Update(ctx, lead); err != nil {
+		return nil, err
+	}
+
+	return lead, nil
 }

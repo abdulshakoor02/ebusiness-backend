@@ -14,13 +14,15 @@ type ReceiptService struct {
 	receiptRepo ports.ReceiptRepository
 	invoiceRepo ports.InvoiceRepository
 	tenantRepo  ports.TenantRepository
+	leadRepo    ports.LeadRepository
 }
 
-func NewReceiptService(receiptRepo ports.ReceiptRepository, invoiceRepo ports.InvoiceRepository, tenantRepo ports.TenantRepository) *ReceiptService {
+func NewReceiptService(receiptRepo ports.ReceiptRepository, invoiceRepo ports.InvoiceRepository, tenantRepo ports.TenantRepository, leadRepo ports.LeadRepository) *ReceiptService {
 	return &ReceiptService{
 		receiptRepo: receiptRepo,
 		invoiceRepo: invoiceRepo,
 		tenantRepo:  tenantRepo,
+		leadRepo:    leadRepo,
 	}
 }
 
@@ -104,6 +106,123 @@ func (s *ReceiptService) GetReceipt(ctx context.Context, id primitive.ObjectID) 
 	}
 
 	return s.receiptRepo.GetByIDAndTenant(ctx, id, tenantID)
+}
+
+func (s *ReceiptService) UpdateReceipt(ctx context.Context, id primitive.ObjectID, req ports.UpdateReceiptRequest) (*domain.Receipt, error) {
+	tenantID, ok := getTenantIDFromContext(ctx)
+	if !ok {
+		return nil, errors.New("tenant context required to update receipt")
+	}
+
+	receipt, err := s.receiptRepo.GetByIDAndTenant(ctx, id, tenantID)
+	if err != nil {
+		return nil, err
+	}
+
+	invoice, err := s.invoiceRepo.GetByIDAndTenant(ctx, receipt.InvoiceID, tenantID)
+	if err != nil {
+		return nil, errors.New("invoice not found")
+	}
+
+	if req.AmountPaid > 0 {
+		receipt.AmountPaid = req.AmountPaid
+		receipt.TaxAmount = req.AmountPaid * (invoice.TaxPercentage / 100)
+		receipt.TotalPaid = receipt.AmountPaid + receipt.TaxAmount
+	}
+
+	if !req.PaymentDate.IsZero() {
+		receipt.PaymentDate = req.PaymentDate
+	}
+
+	otherReceipts, err := s.receiptRepo.GetByInvoiceID(ctx, invoice.ID)
+	if err != nil {
+		return nil, errors.New("failed to get other receipts")
+	}
+
+	var otherPaidAmount float64
+	for _, r := range otherReceipts {
+		if r.ID != receipt.ID {
+			otherPaidAmount += r.AmountPaid
+		}
+	}
+
+	newTotalPaid := otherPaidAmount + receipt.AmountPaid
+	newTotalPaidVat := newTotalPaid + (newTotalPaid * invoice.TaxPercentage / 100)
+
+	if newTotalPaidVat > invoice.TotalAmount {
+		return nil, errors.New("updated payment exceeds remaining invoice amount")
+	}
+
+	if err := s.receiptRepo.Update(ctx, receipt); err != nil {
+		return nil, err
+	}
+
+	invoice.PaidAmount = otherPaidAmount + receipt.AmountPaid
+	invoice.PaidAmountVat = invoice.PaidAmount + (invoice.PaidAmount * invoice.TaxPercentage / 100)
+
+	if invoice.PaidAmountVat >= invoice.TotalAmount {
+		invoice.Status = domain.InvoiceStatusPaid
+	} else if invoice.PaidAmount > 0 {
+		invoice.Status = domain.InvoiceStatusPartial
+	} else {
+		invoice.Status = domain.InvoiceStatusPending
+	}
+
+	invoice.UpdatedAt = time.Now()
+
+	if err := s.invoiceRepo.Update(ctx, invoice); err != nil {
+		return nil, err
+	}
+
+	return receipt, nil
+}
+
+func (s *ReceiptService) DeleteReceipt(ctx context.Context, id primitive.ObjectID) error {
+	tenantID, ok := getTenantIDFromContext(ctx)
+	if !ok {
+		return errors.New("tenant context required to delete receipt")
+	}
+
+	receipt, err := s.receiptRepo.GetByIDAndTenant(ctx, id, tenantID)
+	if err != nil {
+		return err
+	}
+
+	invoice, err := s.invoiceRepo.GetByIDAndTenant(ctx, receipt.InvoiceID, tenantID)
+	if err != nil {
+		return errors.New("invoice not found")
+	}
+
+	if err := s.receiptRepo.Delete(ctx, id); err != nil {
+		return err
+	}
+
+	otherReceipts, err := s.receiptRepo.GetByInvoiceID(ctx, invoice.ID)
+	if err != nil {
+		return errors.New("failed to get other receipts")
+	}
+
+	var otherPaidAmount float64
+	for _, r := range otherReceipts {
+		if r.ID != receipt.ID {
+			otherPaidAmount += r.AmountPaid
+		}
+	}
+
+	invoice.PaidAmount = otherPaidAmount
+	invoice.PaidAmountVat = otherPaidAmount + (otherPaidAmount * invoice.TaxPercentage / 100)
+
+	if invoice.PaidAmountVat >= invoice.TotalAmount {
+		invoice.Status = domain.InvoiceStatusPaid
+	} else if invoice.PaidAmount > 0 {
+		invoice.Status = domain.InvoiceStatusPartial
+	} else {
+		invoice.Status = domain.InvoiceStatusPending
+	}
+
+	invoice.UpdatedAt = time.Now()
+
+	return s.invoiceRepo.Update(ctx, invoice)
 }
 
 func (s *ReceiptService) ListReceiptsByInvoiceID(ctx context.Context, invoiceID primitive.ObjectID) ([]*domain.Receipt, error) {

@@ -40,7 +40,7 @@ const (
 )
 
 func NewInvoice(tenantID, leadID primitive.ObjectID, invoiceNumber int64, items []InvoiceItem, discount, taxPercentage float64) *Invoice {
-	subtotal := calculateSubtotal(items)
+	subtotal := CalculateSubtotal(items)
 	taxableAmount := subtotal - discount
 	taxAmount := taxableAmount * (taxPercentage / 100)
 	totalAmount := taxableAmount + taxAmount
@@ -64,7 +64,7 @@ func NewInvoice(tenantID, leadID primitive.ObjectID, invoiceNumber int64, items 
 	}
 }
 
-func calculateSubtotal(items []InvoiceItem) float64 {
+func CalculateSubtotal(items []InvoiceItem) float64 {
 	var subtotal float64
 	for _, item := range items {
 		subtotal += item.Total

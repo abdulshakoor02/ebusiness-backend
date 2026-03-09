@@ -48,8 +48,11 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	Token string       `json:"token"`
-	User  *domain.User `json:"user"`
+	Token           string       `json:"token"`
+	User            *domain.User `json:"user"`
+	Tax             float64      `json:"tax,omitempty"`
+	Currency        string       `json:"currency,omitempty"`
+	NextCloudFolder string       `json:"next_cloud_folder,omitempty"`
 }
 
 type FilterRequest struct {
@@ -168,29 +171,31 @@ type PermissionService interface {
 }
 
 type CreateLeadRequest struct {
-	CategoryID      string `json:"category_id,omitempty"`
-	SourceID        string `json:"source_id,omitempty"`
-	AssignedTo      string `json:"assigned_to,omitempty"`
-	CountryID       string `json:"country_id,omitempty"`
-	QualificationID string `json:"qualification_id,omitempty"`
-	FirstName       string `json:"first_name"`
-	LastName        string `json:"last_name"`
-	Designation     string `json:"designation,omitempty"`
-	Email           string `json:"email"`
-	Phone           string `json:"phone"`
+	CategoryID      string         `json:"category_id,omitempty"`
+	SourceID        string         `json:"source_id,omitempty"`
+	AssignedTo      string         `json:"assigned_to,omitempty"`
+	CountryID       string         `json:"country_id,omitempty"`
+	QualificationID string         `json:"qualification_id,omitempty"`
+	FirstName       string         `json:"first_name"`
+	LastName        string         `json:"last_name"`
+	Designation     string         `json:"designation,omitempty"`
+	Email           string         `json:"email"`
+	Phone           string         `json:"phone"`
+	Address         domain.Address `json:"address,omitempty"`
 }
 
 type UpdateLeadRequest struct {
-	CategoryID      string `json:"category_id,omitempty"`
-	SourceID        string `json:"source_id,omitempty"`
-	AssignedTo      string `json:"assigned_to,omitempty"`
-	CountryID       string `json:"country_id,omitempty"`
-	QualificationID string `json:"qualification_id,omitempty"`
-	FirstName       string `json:"first_name,omitempty"`
-	LastName        string `json:"last_name,omitempty"`
-	Designation     string `json:"designation,omitempty"`
-	Email           string `json:"email,omitempty"`
-	Phone           string `json:"phone,omitempty"`
+	CategoryID      string         `json:"category_id,omitempty"`
+	SourceID        string         `json:"source_id,omitempty"`
+	AssignedTo      string         `json:"assigned_to,omitempty"`
+	CountryID       string         `json:"country_id,omitempty"`
+	QualificationID string         `json:"qualification_id,omitempty"`
+	FirstName       string         `json:"first_name,omitempty"`
+	LastName        string         `json:"last_name,omitempty"`
+	Designation     string         `json:"designation,omitempty"`
+	Email           string         `json:"email,omitempty"`
+	Phone           string         `json:"phone,omitempty"`
+	Address         domain.Address `json:"address,omitempty"`
 }
 
 // LeadRefItem is a lightweight reference to a related entity (category, source, qualification)
@@ -227,14 +232,21 @@ type LeadListItem struct {
 	AssignedToUser *LeadUserRef       `json:"assigned_to_user,omitempty" bson:"assigned_to_user,omitempty"`
 	Country        *LeadCountryRef    `json:"country,omitempty" bson:"country,omitempty"`
 	Qualification  *LeadRefItem       `json:"qualification,omitempty" bson:"qualification,omitempty"`
+	Status         string             `json:"status" bson:"status"`
+	ConvertedAt    *time.Time         `json:"converted_at,omitempty" bson:"converted_at,omitempty"`
 	CreatedAt      time.Time          `json:"created_at" bson:"created_at"`
 	UpdatedAt      time.Time          `json:"updated_at" bson:"updated_at"`
+}
+
+type UpdateLeadStatusRequest struct {
+	Status string `json:"status"`
 }
 
 type LeadService interface {
 	CreateLead(ctx context.Context, req CreateLeadRequest) (*domain.Lead, error)
 	GetLead(ctx context.Context, id primitive.ObjectID) (*domain.Lead, error)
 	UpdateLead(ctx context.Context, id primitive.ObjectID, req UpdateLeadRequest) (*domain.Lead, error)
+	UpdateLeadStatus(ctx context.Context, id primitive.ObjectID, req UpdateLeadStatusRequest) (*domain.Lead, error)
 	ListLeads(ctx context.Context, req FilterRequest) ([]*LeadListItem, int64, error)
 }
 
@@ -420,9 +432,16 @@ type UpdateInvoiceDueDateRequest struct {
 	DueDate time.Time `json:"due_date"`
 }
 
+type UpdateInvoiceRequest struct {
+	Items    []CreateInvoiceItemRequest `json:"items,omitempty"`
+	Discount float64                    `json:"discount,omitempty"`
+	DueDate  *time.Time                 `json:"due_date,omitempty"`
+}
+
 type InvoiceService interface {
 	CreateInvoice(ctx context.Context, req CreateInvoiceRequest) (*domain.Invoice, error)
 	GetInvoice(ctx context.Context, id primitive.ObjectID) (*domain.Invoice, error)
+	UpdateInvoice(ctx context.Context, id primitive.ObjectID, req UpdateInvoiceRequest) (*domain.Invoice, error)
 	UpdateInvoiceDueDate(ctx context.Context, id primitive.ObjectID, req UpdateInvoiceDueDateRequest) (*domain.Invoice, error)
 	ListInvoices(ctx context.Context, req FilterRequest) ([]*domain.Invoice, int64, error)
 	GetInvoicesByLeadID(ctx context.Context, leadID primitive.ObjectID) ([]*domain.Invoice, error)
@@ -433,8 +452,15 @@ type CreateReceiptRequest struct {
 	PaymentDate time.Time `json:"payment_date"`
 }
 
+type UpdateReceiptRequest struct {
+	AmountPaid  float64   `json:"amount_paid,omitempty"`
+	PaymentDate time.Time `json:"payment_date,omitempty"`
+}
+
 type ReceiptService interface {
 	CreateReceipt(ctx context.Context, invoiceID primitive.ObjectID, req CreateReceiptRequest) (*domain.Receipt, error)
 	GetReceipt(ctx context.Context, id primitive.ObjectID) (*domain.Receipt, error)
+	UpdateReceipt(ctx context.Context, id primitive.ObjectID, req UpdateReceiptRequest) (*domain.Receipt, error)
+	DeleteReceipt(ctx context.Context, id primitive.ObjectID) error
 	ListReceiptsByInvoiceID(ctx context.Context, invoiceID primitive.ObjectID) ([]*domain.Receipt, error)
 }

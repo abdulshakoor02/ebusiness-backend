@@ -75,6 +75,10 @@ func (s *LeadService) CreateLead(ctx context.Context, req ports.CreateLeadReques
 		lead.QualificationID = qualificationID
 	}
 
+	if req.Address.Street != "" || req.Address.City != "" || req.Address.State != "" || req.Address.Country != "" || req.Address.ZipCode != "" || req.Address.AddressLine != "" {
+		lead.Address = req.Address
+	}
+
 	lead.BuildSearchText()
 
 	if err := s.leadRepo.Create(ctx, lead); err != nil {
@@ -148,6 +152,10 @@ func (s *LeadService) UpdateLead(ctx context.Context, id primitive.ObjectID, req
 			return nil, errors.New("invalid qualification_id format")
 		}
 		lead.QualificationID = qualificationID
+	}
+
+	if req.Address.Street != "" || req.Address.City != "" || req.Address.State != "" || req.Address.Country != "" || req.Address.ZipCode != "" || req.Address.AddressLine != "" {
+		lead.Address = req.Address
 	}
 
 	lead.BuildSearchText()

@@ -921,7 +921,15 @@ The system supports **row-level security** via permission rules. Each permission
   "last_name": "Johnson",
   "designation": "Software Engineer",
   "email": "alice@techinnovations.com",
-  "phone": "+1987654321"
+  "phone": "+1987654321",
+  "address": {
+    "street": "123 Tech Street",
+    "address_line": "Suite 400",
+    "city": "Dubai",
+    "state": "Dubai",
+    "zip_code": "12345",
+    "country": "UAE"
+  }
 }
 ```
 
@@ -940,6 +948,14 @@ The system supports **row-level security** via permission rules. Each permission
   "designation": "Software Engineer",
   "email": "alice@techinnovations.com",
   "phone": "+1987654321",
+  "address": {
+    "street": "123 Tech Street",
+    "address_line": "Suite 400",
+    "city": "Dubai",
+    "state": "Dubai",
+    "zip_code": "12345",
+    "country": "UAE"
+  },
   "created_at": "2026-02-15T12:00:00Z",
   "updated_at": "2026-02-15T12:00:00Z"
 }
@@ -979,7 +995,11 @@ The system supports **row-level security** via permission rules. Each permission
 {
   "source_id": "60b8f...",
   "category_id": "60b8f...",
-  "designation": "Senior Software Engineer"
+  "designation": "Senior Software Engineer",
+  "address": {
+    "city": "Abu Dhabi",
+    "country": "UAE"
+  }
 }
 ```
 
@@ -998,6 +1018,14 @@ The system supports **row-level security** via permission rules. Each permission
   "designation": "Senior Software Engineer",
   "email": "alice@techinnovations.com",
   "phone": "+1987654321",
+  "address": {
+    "street": "123 Tech Street",
+    "address_line": "Suite 400",
+    "city": "Abu Dhabi",
+    "state": "Abu Dhabi",
+    "zip_code": "12345",
+    "country": "UAE"
+  },
   "status": "lead",
   "created_at": "2026-02-15T12:00:00Z",
   "updated_at": "2026-02-15T14:30:00Z"

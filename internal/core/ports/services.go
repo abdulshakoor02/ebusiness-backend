@@ -171,29 +171,31 @@ type PermissionService interface {
 }
 
 type CreateLeadRequest struct {
-	CategoryID      string `json:"category_id,omitempty"`
-	SourceID        string `json:"source_id,omitempty"`
-	AssignedTo      string `json:"assigned_to,omitempty"`
-	CountryID       string `json:"country_id,omitempty"`
-	QualificationID string `json:"qualification_id,omitempty"`
-	FirstName       string `json:"first_name"`
-	LastName        string `json:"last_name"`
-	Designation     string `json:"designation,omitempty"`
-	Email           string `json:"email"`
-	Phone           string `json:"phone"`
+	CategoryID      string         `json:"category_id,omitempty"`
+	SourceID        string         `json:"source_id,omitempty"`
+	AssignedTo      string         `json:"assigned_to,omitempty"`
+	CountryID       string         `json:"country_id,omitempty"`
+	QualificationID string         `json:"qualification_id,omitempty"`
+	FirstName       string         `json:"first_name"`
+	LastName        string         `json:"last_name"`
+	Designation     string         `json:"designation,omitempty"`
+	Email           string         `json:"email"`
+	Phone           string         `json:"phone"`
+	Address         domain.Address `json:"address,omitempty"`
 }
 
 type UpdateLeadRequest struct {
-	CategoryID      string `json:"category_id,omitempty"`
-	SourceID        string `json:"source_id,omitempty"`
-	AssignedTo      string `json:"assigned_to,omitempty"`
-	CountryID       string `json:"country_id,omitempty"`
-	QualificationID string `json:"qualification_id,omitempty"`
-	FirstName       string `json:"first_name,omitempty"`
-	LastName        string `json:"last_name,omitempty"`
-	Designation     string `json:"designation,omitempty"`
-	Email           string `json:"email,omitempty"`
-	Phone           string `json:"phone,omitempty"`
+	CategoryID      string         `json:"category_id,omitempty"`
+	SourceID        string         `json:"source_id,omitempty"`
+	AssignedTo      string         `json:"assigned_to,omitempty"`
+	CountryID       string         `json:"country_id,omitempty"`
+	QualificationID string         `json:"qualification_id,omitempty"`
+	FirstName       string         `json:"first_name,omitempty"`
+	LastName        string         `json:"last_name,omitempty"`
+	Designation     string         `json:"designation,omitempty"`
+	Email           string         `json:"email,omitempty"`
+	Phone           string         `json:"phone,omitempty"`
+	Address         domain.Address `json:"address,omitempty"`
 }
 
 // LeadRefItem is a lightweight reference to a related entity (category, source, qualification)

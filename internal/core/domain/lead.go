@@ -26,6 +26,7 @@ type Lead struct {
 	Designation     string             `bson:"designation,omitempty" json:"designation,omitempty"`
 	Email           string             `bson:"email" json:"email"`
 	Phone           string             `bson:"phone" json:"phone"`
+	Address         Address            `bson:"address" json:"address"`
 	Status          string             `bson:"status" json:"status"`
 	SearchText      string             `bson:"search_text" json:"-"`
 	ConvertedAt     *time.Time         `bson:"converted_at,omitempty" json:"converted_at,omitempty"`

@@ -234,6 +234,70 @@ The system supports **row-level security** via permission rules. Each permission
 }
 ```
 
+### Update Current User's Tenant
+**Endpoint:** `PUT /user/tenant`
+**Auth Required:** JWT + RBAC: Admin only
+
+*Allows admin to update their own tenant's information (logo, stamp, address, name, email).*
+
+**Request:**
+```json
+{
+  "name": "Acme Corp",
+  "logo_url": "https://example.com/newlogo.png",
+  "stamp_url": "https://example.com/newstamp.png",
+  "address": {
+    "street": "123 Tech Lane",
+    "address_line": "Suite 400",
+    "city": "San Francisco",
+    "state": "CA",
+    "country": "USA",
+    "zip_code": "94105"
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Tenant name (optional) |
+| `logo_url` | string | URL to tenant logo (optional) |
+| `stamp_url` | string | URL to tenant stamp (optional) |
+| `address` | object | Tenant address (optional, all fields optional) |
+
+**Note:** Tax and country_id can only be updated by superadmin via `/tenants/:id` endpoint.
+
+**Response (200 OK):**
+```json
+{
+  "id": "60a7e...",
+  "name": "Acme Corp",
+  "email": "admin@acmecorp.com",
+  "logo_url": "https://example.com/newlogo.png",
+  "stamp_url": "https://example.com/newstamp.png",
+  "address": {
+    "street": "123 Tech Lane",
+    "address_line": "Suite 400",
+    "city": "San Francisco",
+    "state": "CA",
+    "country": "USA",
+    "zip_code": "94105"
+  },
+  "country_id": "60c9g...",
+  "tax": 5.0,
+  "next_invoice_number": 1,
+  "next_receipt_number": 1,
+  "created_at": "2026-02-15T10:00:00Z",
+  "updated_at": "2026-02-16T10:00:00Z"
+}
+```
+
+**Response (401 Unauthorized):**
+```json
+{
+  "error": "unauthorized"
+}
+```
+
 ---
 
 ## 2. Tenants (Organizations)

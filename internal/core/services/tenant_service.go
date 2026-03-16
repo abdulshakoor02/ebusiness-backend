@@ -25,6 +25,7 @@ func NewTenantService(tenantRepo ports.TenantRepository, userRepo ports.UserRepo
 func (s *TenantService) RegisterTenant(ctx context.Context, req ports.CreateTenantRequest) (*domain.Tenant, *domain.User, error) {
 	tenant := domain.NewTenant(req.Name, req.Email)
 	tenant.LogoURL = req.LogoURL
+	tenant.StampURL = req.StampURL
 	tenant.Address = req.Address
 
 	if req.CountryID != "" {
@@ -82,6 +83,9 @@ func (s *TenantService) UpdateTenant(ctx context.Context, id primitive.ObjectID,
 	if req.LogoURL != "" {
 		tenant.LogoURL = req.LogoURL
 	}
+	if req.StampURL != "" {
+		tenant.StampURL = req.StampURL
+	}
 	if req.Address.Street != "" || req.Address.City != "" || req.Address.State != "" || req.Address.Country != "" || req.Address.ZipCode != "" {
 		tenant.Address = req.Address
 	}
@@ -107,6 +111,35 @@ func (s *TenantService) UpdateTenant(ctx context.Context, id primitive.ObjectID,
 
 func (s *TenantService) ListTenants(ctx context.Context, req ports.FilterRequest) ([]*domain.Tenant, int64, error) {
 	return s.tenantRepo.List(ctx, req.Filters, req.Offset, req.Limit)
+}
+
+func (s *TenantService) UpdateMyTenant(ctx context.Context, tenantID primitive.ObjectID, req ports.UpdateTenantRequest) (*domain.Tenant, error) {
+	tenant, err := s.tenantRepo.GetByID(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+
+	if req.Name != "" {
+		tenant.Name = req.Name
+	}
+	if req.Email != "" {
+		tenant.Email = req.Email
+	}
+	if req.LogoURL != "" {
+		tenant.LogoURL = req.LogoURL
+	}
+	if req.StampURL != "" {
+		tenant.StampURL = req.StampURL
+	}
+	if req.Address.Street != "" || req.Address.City != "" || req.Address.State != "" || req.Address.Country != "" || req.Address.ZipCode != "" || req.Address.AddressLine != "" {
+		tenant.Address = req.Address
+	}
+
+	if err := s.tenantRepo.Update(ctx, tenant); err != nil {
+		return nil, err
+	}
+
+	return tenant, nil
 }
 
 func hashPassword(password string) (string, error) {

@@ -159,6 +159,9 @@ func seedPermissionRules(ctx context.Context, collection *mongo.Collection) erro
 	// User Tenant View (for admin and user roles to view their own tenant)
 	userTenantView := domain.NewPermissionRule("user-tenants", "User Tenant View", "view", "View Own Tenant", "/api/v1/user/tenant", "GET", "View current user's tenant", true)
 
+	// User Tenant Update (for admin role to update their own tenant)
+	userTenantUpdate := domain.NewPermissionRule("user-tenants", "User Tenant Management", "update", "Update Own Tenant", "/api/v1/user/tenant", "PUT", "Update current user's tenant information", true)
+
 	rules := []domain.PermissionRule{
 		// Tenant Management
 		*tenantView,
@@ -168,6 +171,7 @@ func seedPermissionRules(ctx context.Context, collection *mongo.Collection) erro
 
 		// User Tenant View
 		*userTenantView,
+		*userTenantUpdate,
 
 		// User Management
 		*domain.NewPermissionRule("users", "User Management", "create", "Create User", "/api/v1/users", "POST", "Create a new user", true),
@@ -367,6 +371,7 @@ func seedRolePermissions(ctx context.Context, rolePermsCollection, permRulesColl
 
 		// User Tenant View (admin and user roles)
 		{role: "admin", resource: "user-tenants", action: "view"},
+		{role: "admin", resource: "user-tenants", action: "update"},
 		{role: "admin", resource: "tenants", action: "view"},
 
 		// User permissions (scoped — user sees only own data where applicable)

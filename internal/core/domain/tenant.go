@@ -20,9 +20,10 @@ type Tenant struct {
 	Name              string             `bson:"name" json:"name"`
 	Email             string             `bson:"email" json:"email"`
 	LogoURL           string             `bson:"logo_url" json:"logo_url"`
+	StampURL          string             `bson:"stamp_url" json:"stamp_url"`
 	Address           Address            `bson:"address" json:"address"`
 	CountryID         primitive.ObjectID `bson:"country_id,omitempty" json:"country_id,omitempty"`
-	Tax               float64            `bson:"tax" json:"tax"` // Tax percentage (e.g., 5.0 for 5%)
+	Tax               float64            `bson:"tax" json:"tax"`
 	NextInvoiceNumber int64              `bson:"next_invoice_number" json:"next_invoice_number"`
 	NextReceiptNumber int64              `bson:"next_receipt_number" json:"next_receipt_number"`
 	CreatedAt         time.Time          `bson:"created_at" json:"created_at"`

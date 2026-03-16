@@ -209,6 +209,7 @@ The system supports **row-level security** via permission rules. Each permission
   "name": "ebusiness",
   "email": "admin@ebusiness.com",
   "logo_url": "https://example.com/logo.png",
+  "stamp_url": "https://example.com/stamp.png",
   "address": {
     "street": "123 Tech Lane",
     "address_line": "Suite 400",
@@ -247,6 +248,7 @@ The system supports **row-level security** via permission rules. Each permission
   "name": "Acme Corp",
   "email": "admin@acmecorp.com",
   "logo_url": "https://example.com/logo.png",
+  "stamp_url": "https://example.com/stamp.png",
   "address": {
     "street": "123 Tech Lane",
     "address_line": "Suite 400",
@@ -300,6 +302,7 @@ The system supports **row-level security** via permission rules. Each permission
   "name": "Acme Corp",
   "email": "admin@acmecorp.com",
   "logo_url": "https://example.com/logo.png",
+  "stamp_url": "https://example.com/stamp.png",
   "address": {
     "street": "123 Tech Lane",
     "address_line": "Suite 400",
@@ -326,6 +329,7 @@ The system supports **row-level security** via permission rules. Each permission
 {
   "name": "Acme Corporation Inc",
   "logo_url": "https://example.com/newlogo.png",
+  "stamp_url": "https://example.com/newstamp.png",
   "address": {
     "city": "San Jose"
   },
@@ -346,6 +350,7 @@ The system supports **row-level security** via permission rules. Each permission
   "name": "Acme Corporation Inc",
   "email": "admin@acmecorp.com",
   "logo_url": "https://example.com/newlogo.png",
+  "stamp_url": "https://example.com/newstamp.png",
   "address": {
     "street": "123 Tech Lane",
     "address_line": "Suite 400",

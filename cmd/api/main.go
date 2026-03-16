@@ -155,6 +155,7 @@ func main() {
 	protected.Put("/tenants/:id", authz, tenantHandler.UpdateTenant)
 	protected.Post("/tenants/list", authz, tenantHandler.ListTenants)
 	protected.Get("/user/tenant", authz, tenantHandler.GetUserTenant)
+	protected.Put("/user/tenant", authz, tenantHandler.UpdateMyTenant)
 
 	userHandler := handler.NewUserHandler(userService)
 	protected.Post("/users", authz, userHandler.CreateUser)

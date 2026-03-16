@@ -177,3 +177,41 @@ func (h *TenantHandler) GetUserTenant(c *fiber.Ctx) error {
 
 	return c.JSON(tenant)
 }
+
+// UpdateMyTenant godoc
+// @Summary      Update current user's tenant
+// @Description  Admin updates their own tenant's information (logo, stamp, address)
+// @Tags         user
+// @Accept       json
+// @Produce      json
+// @Param        request body ports.UpdateTenantRequest true "Tenant Update Request"
+// @Success      200  {object}  domain.Tenant
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      401  {object}  map[string]interface{}
+// @Failure      403  {object}  map[string]interface{}
+// @Failure      404  {object}  map[string]interface{}
+// @Security     Bearer
+// @Router       /user/tenant [put]
+func (h *TenantHandler) UpdateMyTenant(c *fiber.Ctx) error {
+	tenantIDStr, ok := c.Locals("tenant_id").(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+	}
+
+	tenantID, err := primitive.ObjectIDFromHex(tenantIDStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid tenant id"})
+	}
+
+	var req ports.UpdateTenantRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	tenant, err := h.service.UpdateMyTenant(c.Context(), tenantID, req)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(tenant)
+}

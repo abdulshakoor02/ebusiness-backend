@@ -43,7 +43,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.LoginRequest"
+                            "$ref": "#/definitions/ports.LoginRequest"
                         }
                     }
                 ],
@@ -51,7 +51,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.LoginResponse"
+                            "$ref": "#/definitions/ports.LoginResponse"
                         }
                     },
                     "400": {
@@ -91,7 +91,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateCountryRequest"
+                            "$ref": "#/definitions/ports.CreateCountryRequest"
                         }
                     }
                 ],
@@ -140,7 +140,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
+                            "$ref": "#/definitions/ports.FilterRequest"
                         }
                     }
                 ],
@@ -241,7 +241,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateCountryRequest"
+                            "$ref": "#/definitions/ports.UpdateCountryRequest"
                         }
                     }
                 ],
@@ -354,7 +354,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadCategoryRequest"
+                            "$ref": "#/definitions/ports.CreateLeadCategoryRequest"
                         }
                     }
                 ],
@@ -408,7 +408,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
+                            "$ref": "#/definitions/ports.FilterRequest"
                         }
                     }
                 ],
@@ -519,7 +519,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadCategoryRequest"
+                            "$ref": "#/definitions/ports.UpdateLeadCategoryRequest"
                         }
                     }
                 ],
@@ -637,7 +637,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadSourceRequest"
+                            "$ref": "#/definitions/ports.CreateLeadSourceRequest"
                         }
                     }
                 ],
@@ -698,7 +698,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
+                            "$ref": "#/definitions/ports.FilterRequest"
                         }
                     }
                 ],
@@ -809,7 +809,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadSourceRequest"
+                            "$ref": "#/definitions/ports.UpdateLeadSourceRequest"
                         }
                     }
                 ],
@@ -916,7 +916,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadRequest"
+                            "$ref": "#/definitions/ports.CreateLeadRequest"
                         }
                     }
                 ],
@@ -977,7 +977,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
+                            "$ref": "#/definitions/ports.FilterRequest"
                         }
                     }
                 ],
@@ -1088,7 +1088,75 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadRequest"
+                            "$ref": "#/definitions/ports.UpdateLeadRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/leads/{id}/status": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Toggle a converted lead's status between active and inactive",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "leads"
+                ],
+                "summary": "Toggle lead client status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Lead ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update Lead Status Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ports.UpdateLeadStatusRequest"
                         }
                     }
                 ],
@@ -1156,7 +1224,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadAppointmentRequest"
+                            "$ref": "#/definitions/ports.CreateLeadAppointmentRequest"
                         }
                     }
                 ],
@@ -1217,7 +1285,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
+                            "$ref": "#/definitions/ports.FilterRequest"
                         }
                     }
                 ],
@@ -1342,7 +1410,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadAppointmentRequest"
+                            "$ref": "#/definitions/ports.UpdateLeadAppointmentRequest"
                         }
                     }
                 ],
@@ -1474,7 +1542,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadCommentRequest"
+                            "$ref": "#/definitions/ports.CreateLeadCommentRequest"
                         }
                     }
                 ],
@@ -1535,7 +1603,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
+                            "$ref": "#/definitions/ports.FilterRequest"
                         }
                     }
                 ],
@@ -1660,7 +1728,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadCommentRequest"
+                            "$ref": "#/definitions/ports.UpdateLeadCommentRequest"
                         }
                     }
                 ],
@@ -1823,7 +1891,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.AddPermissionRequest"
+                            "$ref": "#/definitions/ports.AddPermissionRequest"
                         }
                     }
                 ],
@@ -1875,7 +1943,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.RemovePermissionRequest"
+                            "$ref": "#/definitions/ports.RemovePermissionRequest"
                         }
                     }
                 ],
@@ -2031,7 +2099,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.AssignRoleInheritanceRequest"
+                            "$ref": "#/definitions/ports.AssignRoleInheritanceRequest"
                         }
                     }
                 ],
@@ -2124,7 +2192,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.BulkUpdateRolePermissionsRequest"
+                            "$ref": "#/definitions/ports.BulkUpdateRolePermissionsRequest"
                         }
                     }
                 ],
@@ -2178,7 +2246,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreatePermissionRuleRequest"
+                            "$ref": "#/definitions/ports.CreatePermissionRuleRequest"
                         }
                     }
                 ],
@@ -2239,7 +2307,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdatePermissionRuleRequest"
+                            "$ref": "#/definitions/ports.UpdatePermissionRuleRequest"
                         }
                     }
                 ],
@@ -2335,7 +2403,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateQualificationRequest"
+                            "$ref": "#/definitions/ports.CreateQualificationRequest"
                         }
                     }
                 ],
@@ -2384,7 +2452,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
+                            "$ref": "#/definitions/ports.FilterRequest"
                         }
                     }
                 ],
@@ -2485,7 +2553,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateQualificationRequest"
+                            "$ref": "#/definitions/ports.UpdateQualificationRequest"
                         }
                     }
                 ],
@@ -2593,7 +2661,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateTenantRequest"
+                            "$ref": "#/definitions/ports.CreateTenantRequest"
                         }
                     }
                 ],
@@ -2647,7 +2715,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
+                            "$ref": "#/definitions/ports.FilterRequest"
                         }
                     }
                 ],
@@ -2758,7 +2826,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateTenantRequest"
+                            "$ref": "#/definitions/ports.UpdateTenantRequest"
                         }
                     }
                 ],
@@ -2794,6 +2862,113 @@ const docTemplate = `{
                 }
             }
         },
+        "/user/tenant": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Retrieves the tenant information for the currently authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Get current user's tenant",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.Tenant"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Admin updates their own tenant's information (logo, stamp, address)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Update current user's tenant",
+                "parameters": [
+                    {
+                        "description": "Tenant Update Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ports.UpdateTenantRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.Tenant"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/users": {
             "post": {
                 "security": [
@@ -2819,7 +2994,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateUserRequest"
+                            "$ref": "#/definitions/ports.CreateUserRequest"
                         }
                     }
                 ],
@@ -2873,7 +3048,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest"
+                            "$ref": "#/definitions/ports.FilterRequest"
                         }
                     }
                 ],
@@ -2977,7 +3152,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateUserRequest"
+                            "$ref": "#/definitions/ports.UpdateUserRequest"
                         }
                     }
                 ],
@@ -3015,9 +3190,12 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_domain.Address": {
+        "domain.Address": {
             "type": "object",
             "properties": {
+                "address_line": {
+                    "type": "string"
+                },
                 "city": {
                     "type": "string"
                 },
@@ -3035,7 +3213,48 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_domain.User": {
+        "domain.Tenant": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "$ref": "#/definitions/domain.Address"
+                },
+                "country_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "logo_url": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "next_invoice_number": {
+                    "type": "integer"
+                },
+                "next_receipt_number": {
+                    "type": "integer"
+                },
+                "stamp_url": {
+                    "type": "string"
+                },
+                "tax": {
+                    "type": "number"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.User": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -3066,7 +3285,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.AddPermissionRequest": {
+        "ports.AddPermissionRequest": {
             "type": "object",
             "properties": {
                 "permission_rule_id": {
@@ -3077,7 +3296,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.AssignRoleInheritanceRequest": {
+        "ports.AssignRoleInheritanceRequest": {
             "type": "object",
             "properties": {
                 "child_role": {
@@ -3088,18 +3307,18 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.BulkUpdateRolePermissionsRequest": {
+        "ports.BulkUpdateRolePermissionsRequest": {
             "type": "object",
             "properties": {
                 "permissions": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.RolePermission"
+                        "$ref": "#/definitions/ports.RolePermission"
                     }
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateCountryRequest": {
+        "ports.CreateCountryRequest": {
             "type": "object",
             "properties": {
                 "currency": {
@@ -3122,7 +3341,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadAppointmentRequest": {
+        "ports.CreateLeadAppointmentRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -3143,7 +3362,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadCategoryRequest": {
+        "ports.CreateLeadCategoryRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -3154,7 +3373,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadCommentRequest": {
+        "ports.CreateLeadCommentRequest": {
             "type": "object",
             "properties": {
                 "content": {
@@ -3162,9 +3381,12 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadRequest": {
+        "ports.CreateLeadRequest": {
             "type": "object",
             "properties": {
+                "address": {
+                    "$ref": "#/definitions/domain.Address"
+                },
                 "assigned_to": {
                     "type": "string"
                 },
@@ -3197,7 +3419,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadSourceRequest": {
+        "ports.CreateLeadSourceRequest": {
             "type": "object",
             "required": [
                 "name"
@@ -3211,7 +3433,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreatePermissionRuleRequest": {
+        "ports.CreatePermissionRuleRequest": {
             "type": "object",
             "properties": {
                 "action": {
@@ -3243,7 +3465,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateQualificationRequest": {
+        "ports.CreateQualificationRequest": {
             "type": "object",
             "properties": {
                 "name": {
@@ -3251,14 +3473,17 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateTenantRequest": {
+        "ports.CreateTenantRequest": {
             "type": "object",
             "properties": {
                 "address": {
-                    "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_domain.Address"
+                    "$ref": "#/definitions/domain.Address"
                 },
                 "admin_user": {
-                    "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateUserRequest"
+                    "$ref": "#/definitions/ports.CreateUserRequest"
+                },
+                "country_id": {
+                    "type": "string"
                 },
                 "email": {
                     "type": "string"
@@ -3268,10 +3493,16 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "stamp_url": {
+                    "type": "string"
+                },
+                "tax": {
+                    "type": "number"
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateUserRequest": {
+        "ports.CreateUserRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -3291,7 +3522,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest": {
+        "ports.FilterRequest": {
             "type": "object",
             "properties": {
                 "filters": {
@@ -3309,7 +3540,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.LoginRequest": {
+        "ports.LoginRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -3320,18 +3551,27 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.LoginResponse": {
+        "ports.LoginResponse": {
             "type": "object",
             "properties": {
+                "currency": {
+                    "type": "string"
+                },
+                "next_cloud_folder": {
+                    "type": "string"
+                },
+                "tax": {
+                    "type": "number"
+                },
                 "token": {
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_domain.User"
+                    "$ref": "#/definitions/domain.User"
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.RemovePermissionRequest": {
+        "ports.RemovePermissionRequest": {
             "type": "object",
             "properties": {
                 "permission_rule_id": {
@@ -3342,7 +3582,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.RolePermission": {
+        "ports.RolePermission": {
             "type": "object",
             "properties": {
                 "action": {
@@ -3395,7 +3635,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateCountryRequest": {
+        "ports.UpdateCountryRequest": {
             "type": "object",
             "properties": {
                 "currency": {
@@ -3421,7 +3661,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadAppointmentRequest": {
+        "ports.UpdateLeadAppointmentRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -3441,7 +3681,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadCategoryRequest": {
+        "ports.UpdateLeadCategoryRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -3452,7 +3692,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadCommentRequest": {
+        "ports.UpdateLeadCommentRequest": {
             "type": "object",
             "properties": {
                 "content": {
@@ -3460,9 +3700,12 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadRequest": {
+        "ports.UpdateLeadRequest": {
             "type": "object",
             "properties": {
+                "address": {
+                    "$ref": "#/definitions/domain.Address"
+                },
                 "assigned_to": {
                     "type": "string"
                 },
@@ -3495,7 +3738,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadSourceRequest": {
+        "ports.UpdateLeadSourceRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -3506,7 +3749,15 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdatePermissionRuleRequest": {
+        "ports.UpdateLeadStatusRequest": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "ports.UpdatePermissionRuleRequest": {
             "type": "object",
             "properties": {
                 "action_label": {
@@ -3532,7 +3783,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateQualificationRequest": {
+        "ports.UpdateQualificationRequest": {
             "type": "object",
             "properties": {
                 "is_active": {
@@ -3543,11 +3794,14 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateTenantRequest": {
+        "ports.UpdateTenantRequest": {
             "type": "object",
             "properties": {
                 "address": {
-                    "$ref": "#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_domain.Address"
+                    "$ref": "#/definitions/domain.Address"
+                },
+                "country_id": {
+                    "type": "string"
                 },
                 "email": {
                     "type": "string"
@@ -3557,10 +3811,16 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "stamp_url": {
+                    "type": "string"
+                },
+                "tax": {
+                    "type": "number"
                 }
             }
         },
-        "github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateUserRequest": {
+        "ports.UpdateUserRequest": {
             "type": "object",
             "properties": {
                 "email": {

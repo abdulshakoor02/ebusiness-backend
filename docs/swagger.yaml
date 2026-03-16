@@ -1,7 +1,9 @@
 basePath: /api/v1
 definitions:
-  github_com_abdulshakoor02_goCrmBackend_internal_core_domain.Address:
+  domain.Address:
     properties:
+      address_line:
+        type: string
       city:
         type: string
       country:
@@ -13,7 +15,34 @@ definitions:
       zip_code:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_domain.User:
+  domain.Tenant:
+    properties:
+      address:
+        $ref: '#/definitions/domain.Address'
+      country_id:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      logo_url:
+        type: string
+      name:
+        type: string
+      next_invoice_number:
+        type: integer
+      next_receipt_number:
+        type: integer
+      stamp_url:
+        type: string
+      tax:
+        type: number
+      updated_at:
+        type: string
+    type: object
+  domain.User:
     properties:
       created_at:
         type: string
@@ -34,28 +63,28 @@ definitions:
       updated_at:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.AddPermissionRequest:
+  ports.AddPermissionRequest:
     properties:
       permission_rule_id:
         type: string
       role:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.AssignRoleInheritanceRequest:
+  ports.AssignRoleInheritanceRequest:
     properties:
       child_role:
         type: string
       parent_role:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.BulkUpdateRolePermissionsRequest:
+  ports.BulkUpdateRolePermissionsRequest:
     properties:
       permissions:
         items:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.RolePermission'
+          $ref: '#/definitions/ports.RolePermission'
         type: array
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateCountryRequest:
+  ports.CreateCountryRequest:
     properties:
       currency:
         type: string
@@ -70,7 +99,7 @@ definitions:
       phone_code:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadAppointmentRequest:
+  ports.CreateLeadAppointmentRequest:
     properties:
       description:
         type: string
@@ -84,20 +113,22 @@ definitions:
       title:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadCategoryRequest:
+  ports.CreateLeadCategoryRequest:
     properties:
       description:
         type: string
       name:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadCommentRequest:
+  ports.CreateLeadCommentRequest:
     properties:
       content:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadRequest:
+  ports.CreateLeadRequest:
     properties:
+      address:
+        $ref: '#/definitions/domain.Address'
       assigned_to:
         type: string
       category_id:
@@ -119,7 +150,7 @@ definitions:
       source_id:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadSourceRequest:
+  ports.CreateLeadSourceRequest:
     properties:
       description:
         type: string
@@ -128,7 +159,7 @@ definitions:
     required:
     - name
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreatePermissionRuleRequest:
+  ports.CreatePermissionRuleRequest:
     properties:
       action:
         type: string
@@ -149,25 +180,31 @@ definitions:
       scope_type:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateQualificationRequest:
+  ports.CreateQualificationRequest:
     properties:
       name:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateTenantRequest:
+  ports.CreateTenantRequest:
     properties:
       address:
-        $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_domain.Address'
+        $ref: '#/definitions/domain.Address'
       admin_user:
-        $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateUserRequest'
+        $ref: '#/definitions/ports.CreateUserRequest'
+      country_id:
+        type: string
       email:
         type: string
       logo_url:
         type: string
       name:
         type: string
+      stamp_url:
+        type: string
+      tax:
+        type: number
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateUserRequest:
+  ports.CreateUserRequest:
     properties:
       email:
         type: string
@@ -180,7 +217,7 @@ definitions:
       role:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest:
+  ports.FilterRequest:
     properties:
       filters:
         additionalProperties: true
@@ -192,28 +229,34 @@ definitions:
       search:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.LoginRequest:
+  ports.LoginRequest:
     properties:
       email:
         type: string
       password:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.LoginResponse:
+  ports.LoginResponse:
     properties:
+      currency:
+        type: string
+      next_cloud_folder:
+        type: string
+      tax:
+        type: number
       token:
         type: string
       user:
-        $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_domain.User'
+        $ref: '#/definitions/domain.User'
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.RemovePermissionRequest:
+  ports.RemovePermissionRequest:
     properties:
       permission_rule_id:
         type: string
       role:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.RolePermission:
+  ports.RolePermission:
     properties:
       action:
         type: string
@@ -249,7 +292,7 @@ definitions:
       updated_at:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateCountryRequest:
+  ports.UpdateCountryRequest:
     properties:
       currency:
         type: string
@@ -266,7 +309,7 @@ definitions:
       phone_code:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadAppointmentRequest:
+  ports.UpdateLeadAppointmentRequest:
     properties:
       description:
         type: string
@@ -279,20 +322,22 @@ definitions:
       title:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadCategoryRequest:
+  ports.UpdateLeadCategoryRequest:
     properties:
       description:
         type: string
       name:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadCommentRequest:
+  ports.UpdateLeadCommentRequest:
     properties:
       content:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadRequest:
+  ports.UpdateLeadRequest:
     properties:
+      address:
+        $ref: '#/definitions/domain.Address'
       assigned_to:
         type: string
       category_id:
@@ -314,14 +359,19 @@ definitions:
       source_id:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadSourceRequest:
+  ports.UpdateLeadSourceRequest:
     properties:
       description:
         type: string
       name:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdatePermissionRuleRequest:
+  ports.UpdateLeadStatusRequest:
+    properties:
+      status:
+        type: string
+    type: object
+  ports.UpdatePermissionRuleRequest:
     properties:
       action_label:
         type: string
@@ -338,25 +388,31 @@ definitions:
       scope_type:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateQualificationRequest:
+  ports.UpdateQualificationRequest:
     properties:
       is_active:
         type: boolean
       name:
         type: string
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateTenantRequest:
+  ports.UpdateTenantRequest:
     properties:
       address:
-        $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_domain.Address'
+        $ref: '#/definitions/domain.Address'
+      country_id:
+        type: string
       email:
         type: string
       logo_url:
         type: string
       name:
         type: string
+      stamp_url:
+        type: string
+      tax:
+        type: number
     type: object
-  github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateUserRequest:
+  ports.UpdateUserRequest:
     properties:
       email:
         type: string
@@ -391,14 +447,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.LoginRequest'
+          $ref: '#/definitions/ports.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.LoginResponse'
+            $ref: '#/definitions/ports.LoginResponse'
         "400":
           description: Bad Request
           schema:
@@ -423,7 +479,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateCountryRequest'
+          $ref: '#/definitions/ports.CreateCountryRequest'
       produces:
       - application/json
       responses:
@@ -528,7 +584,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateCountryRequest'
+          $ref: '#/definitions/ports.UpdateCountryRequest'
       produces:
       - application/json
       responses:
@@ -566,7 +622,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest'
+          $ref: '#/definitions/ports.FilterRequest'
       produces:
       - application/json
       responses:
@@ -599,7 +655,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadCategoryRequest'
+          $ref: '#/definitions/ports.CreateLeadCategoryRequest'
       produces:
       - application/json
       responses:
@@ -710,7 +766,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadCategoryRequest'
+          $ref: '#/definitions/ports.UpdateLeadCategoryRequest'
       produces:
       - application/json
       responses:
@@ -750,7 +806,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest'
+          $ref: '#/definitions/ports.FilterRequest'
       produces:
       - application/json
       responses:
@@ -786,7 +842,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadSourceRequest'
+          $ref: '#/definitions/ports.CreateLeadSourceRequest'
       produces:
       - application/json
       responses:
@@ -894,7 +950,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadSourceRequest'
+          $ref: '#/definitions/ports.UpdateLeadSourceRequest'
       produces:
       - application/json
       responses:
@@ -934,7 +990,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest'
+          $ref: '#/definitions/ports.FilterRequest'
       produces:
       - application/json
       responses:
@@ -969,7 +1025,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadRequest'
+          $ref: '#/definitions/ports.CreateLeadRequest'
       produces:
       - application/json
       responses:
@@ -1047,7 +1103,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadRequest'
+          $ref: '#/definitions/ports.UpdateLeadRequest'
       produces:
       - application/json
       responses:
@@ -1076,6 +1132,51 @@ paths:
       summary: Update a lead
       tags:
       - leads
+  /leads/{id}/status:
+    put:
+      consumes:
+      - application/json
+      description: Toggle a converted lead's status between active and inactive
+      parameters:
+      - description: Lead ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update Lead Status Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/ports.UpdateLeadStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Toggle lead client status
+      tags:
+      - leads
   /leads/{lead_id}/appointments:
     post:
       consumes:
@@ -1092,7 +1193,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadAppointmentRequest'
+          $ref: '#/definitions/ports.CreateLeadAppointmentRequest'
       produces:
       - application/json
       responses:
@@ -1218,7 +1319,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadAppointmentRequest'
+          $ref: '#/definitions/ports.UpdateLeadAppointmentRequest'
       produces:
       - application/json
       responses:
@@ -1264,7 +1365,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest'
+          $ref: '#/definitions/ports.FilterRequest'
       produces:
       - application/json
       responses:
@@ -1304,7 +1405,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateLeadCommentRequest'
+          $ref: '#/definitions/ports.CreateLeadCommentRequest'
       produces:
       - application/json
       responses:
@@ -1435,7 +1536,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateLeadCommentRequest'
+          $ref: '#/definitions/ports.UpdateLeadCommentRequest'
       produces:
       - application/json
       responses:
@@ -1485,7 +1586,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest'
+          $ref: '#/definitions/ports.FilterRequest'
       produces:
       - application/json
       responses:
@@ -1520,7 +1621,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest'
+          $ref: '#/definitions/ports.FilterRequest'
       produces:
       - application/json
       responses:
@@ -1555,7 +1656,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.RemovePermissionRequest'
+          $ref: '#/definitions/ports.RemovePermissionRequest'
       produces:
       - application/json
       responses:
@@ -1604,7 +1705,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.AddPermissionRequest'
+          $ref: '#/definitions/ports.AddPermissionRequest'
       produces:
       - application/json
       responses:
@@ -1716,7 +1817,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.BulkUpdateRolePermissionsRequest'
+          $ref: '#/definitions/ports.BulkUpdateRolePermissionsRequest'
       produces:
       - application/json
       responses:
@@ -1766,7 +1867,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.AssignRoleInheritanceRequest'
+          $ref: '#/definitions/ports.AssignRoleInheritanceRequest'
       produces:
       - application/json
       responses:
@@ -1801,7 +1902,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreatePermissionRuleRequest'
+          $ref: '#/definitions/ports.CreatePermissionRuleRequest'
       produces:
       - application/json
       responses:
@@ -1873,7 +1974,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdatePermissionRuleRequest'
+          $ref: '#/definitions/ports.UpdatePermissionRuleRequest'
       produces:
       - application/json
       responses:
@@ -1908,7 +2009,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateQualificationRequest'
+          $ref: '#/definitions/ports.CreateQualificationRequest'
       produces:
       - application/json
       responses:
@@ -2013,7 +2114,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateQualificationRequest'
+          $ref: '#/definitions/ports.UpdateQualificationRequest'
       produces:
       - application/json
       responses:
@@ -2051,7 +2152,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest'
+          $ref: '#/definitions/ports.FilterRequest'
       produces:
       - application/json
       responses:
@@ -2084,7 +2185,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateTenantRequest'
+          $ref: '#/definitions/ports.CreateTenantRequest'
       produces:
       - application/json
       responses:
@@ -2155,7 +2256,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateTenantRequest'
+          $ref: '#/definitions/ports.UpdateTenantRequest'
       produces:
       - application/json
       responses:
@@ -2195,7 +2296,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest'
+          $ref: '#/definitions/ports.FilterRequest'
       produces:
       - application/json
       responses:
@@ -2219,6 +2320,77 @@ paths:
       summary: List tenants
       tags:
       - tenants
+  /user/tenant:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves the tenant information for the currently authenticated
+        user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Tenant'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get current user's tenant
+      tags:
+      - user
+    put:
+      consumes:
+      - application/json
+      description: Admin updates their own tenant's information (logo, stamp, address)
+      parameters:
+      - description: Tenant Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/ports.UpdateTenantRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Tenant'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Update current user's tenant
+      tags:
+      - user
   /users:
     post:
       consumes:
@@ -2231,7 +2403,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.CreateUserRequest'
+          $ref: '#/definitions/ports.CreateUserRequest'
       produces:
       - application/json
       responses:
@@ -2304,7 +2476,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.UpdateUserRequest'
+          $ref: '#/definitions/ports.UpdateUserRequest'
       produces:
       - application/json
       responses:
@@ -2344,7 +2516,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_abdulshakoor02_goCrmBackend_internal_core_ports.FilterRequest'
+          $ref: '#/definitions/ports.FilterRequest'
       produces:
       - application/json
       responses:

@@ -12,6 +12,7 @@ type CreateTenantRequest struct {
 	Name      string            `json:"name"`
 	Email     string            `json:"email"`
 	LogoURL   string            `json:"logo_url"`
+	StampURL  string            `json:"stamp_url"`
 	Address   domain.Address    `json:"address"`
 	CountryID string            `json:"country_id"`
 	Tax       float64           `json:"tax"`
@@ -22,6 +23,7 @@ type UpdateTenantRequest struct {
 	Name      string         `json:"name"`
 	Email     string         `json:"email"`
 	LogoURL   string         `json:"logo_url"`
+	StampURL  string         `json:"stamp_url"`
 	Address   domain.Address `json:"address"`
 	CountryID string         `json:"country_id"`
 	Tax       float64        `json:"tax"`
@@ -66,6 +68,7 @@ type TenantService interface {
 	RegisterTenant(ctx context.Context, req CreateTenantRequest) (*domain.Tenant, *domain.User, error)
 	GetTenant(ctx context.Context, id primitive.ObjectID) (*domain.Tenant, error)
 	UpdateTenant(ctx context.Context, id primitive.ObjectID, req UpdateTenantRequest) (*domain.Tenant, error)
+	UpdateMyTenant(ctx context.Context, id primitive.ObjectID, req UpdateTenantRequest) (*domain.Tenant, error)
 	ListTenants(ctx context.Context, req FilterRequest) ([]*domain.Tenant, int64, error)
 }
 

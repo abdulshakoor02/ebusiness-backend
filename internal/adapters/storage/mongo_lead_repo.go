@@ -74,8 +74,43 @@ func (r *MongoLeadRepository) List(ctx context.Context, filter interface{}, sear
 		"qualification_id": true,
 	}
 
+	// Date range filter parameters (not document fields)
+	dateRangeFields := map[string]bool{
+		"date_from":  true,
+		"date_to":    true,
+		"date_field": true,
+	}
+
+	// Variables for date range filtering
+	var dateFrom, dateTo time.Time
+	var dateField string = "created_at" // default to created_at
+
 	if f, ok := filter.(map[string]interface{}); ok {
 		for k, v := range f {
+			// Skip date range parameters - they need special handling
+			if dateRangeFields[k] {
+				switch k {
+				case "date_from":
+					if strVal, ok := v.(string); ok && strVal != "" {
+						if parsed, err := time.Parse(time.RFC3339, strVal); err == nil {
+							dateFrom = parsed
+						}
+					}
+				case "date_to":
+					if strVal, ok := v.(string); ok && strVal != "" {
+						if parsed, err := time.Parse(time.RFC3339, strVal); err == nil {
+							dateTo = parsed
+						}
+					}
+				case "date_field":
+					if strVal, ok := v.(string); ok && strVal != "" {
+						dateField = strVal
+					}
+				}
+				continue
+			}
+
+			// Handle ObjectID fields
 			if objectIDFields[k] {
 				if strVal, ok := v.(string); ok && strVal != "" {
 					oid, err := primitive.ObjectIDFromHex(strVal)
@@ -87,6 +122,18 @@ func (r *MongoLeadRepository) List(ctx context.Context, filter interface{}, sear
 			}
 			query[k] = v
 		}
+	}
+
+	// Apply date range filter if provided
+	if !dateFrom.IsZero() || !dateTo.IsZero() {
+		dateQuery := bson.M{}
+		if !dateFrom.IsZero() {
+			dateQuery["$gte"] = dateFrom
+		}
+		if !dateTo.IsZero() {
+			dateQuery["$lte"] = dateTo
+		}
+		query[dateField] = dateQuery
 	}
 
 	// Apply search on the derived search_text field

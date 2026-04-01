@@ -27,6 +27,7 @@ type LeadRepository interface {
 	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.Lead, error)
 	List(ctx context.Context, filter interface{}, search string, offset, limit int64) ([]*LeadListItem, int64, error)
 	Update(ctx context.Context, lead *domain.Lead) error
+	UpdateComments(ctx context.Context, leadID primitive.ObjectID, comments string) error
 }
 
 type LeadCategoryRepository interface {
@@ -40,6 +41,7 @@ type LeadCategoryRepository interface {
 type LeadCommentRepository interface {
 	Create(ctx context.Context, comment *domain.LeadComment) error
 	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.LeadComment, error)
+	GetLatestByLeadID(ctx context.Context, leadID primitive.ObjectID) (*domain.LeadComment, error)
 	ListByLeadID(ctx context.Context, leadID primitive.ObjectID, filter interface{}, offset, limit int64) ([]*CommentListItem, int64, error)
 	Update(ctx context.Context, comment *domain.LeadComment) error
 	Delete(ctx context.Context, id primitive.ObjectID) error
@@ -50,6 +52,14 @@ type LeadAppointmentRepository interface {
 	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.LeadAppointment, error)
 	ListByLeadID(ctx context.Context, leadID primitive.ObjectID, filter interface{}, offset, limit int64) ([]*AppointmentListItem, int64, error)
 	Update(ctx context.Context, appointment *domain.LeadAppointment) error
+	Delete(ctx context.Context, id primitive.ObjectID) error
+}
+
+type LeadFollowUpRepository interface {
+	Create(ctx context.Context, followUp *domain.LeadFollowUp) error
+	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.LeadFollowUp, error)
+	ListByLeadID(ctx context.Context, leadID primitive.ObjectID, filter interface{}, offset, limit int64) ([]*FollowUpListItem, int64, error)
+	Update(ctx context.Context, followUp *domain.LeadFollowUp) error
 	Delete(ctx context.Context, id primitive.ObjectID) error
 }
 

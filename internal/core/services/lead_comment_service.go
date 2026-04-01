@@ -49,6 +49,8 @@ func (s *LeadCommentService) CreateLeadComment(ctx context.Context, leadID primi
 		return nil, err
 	}
 
+	s.leadRepo.UpdateComments(ctx, leadID, comment.Content)
+
 	return comment, nil
 }
 
@@ -62,17 +64,11 @@ func (s *LeadCommentService) UpdateLeadComment(ctx context.Context, id primitive
 		return nil, err
 	}
 
-	// Check if the current user is the author or an admin
-	// For simplicity, we assume auth middleware injects role eventually, or we just let it pass if domain logic expects Handlers to govern this via RBAC.
-	// We'll enforce that AuthorID must match current user, assuming no "admin overrides" built below the handler just yet.
-
 	userID, ok := getUserIDFromContext(ctx)
 	if !ok {
 		return nil, errors.New("user context required")
 	}
 
-	// Ideally we'd check if user is admin, but for now strict: only author can update.
-	// RBAC protects the endpoint, but this domain check ensures tenant safety.
 	if comment.AuthorID != userID {
 		return nil, errors.New("unauthorized to update this comment")
 	}
@@ -84,6 +80,8 @@ func (s *LeadCommentService) UpdateLeadComment(ctx context.Context, id primitive
 	if err := s.commentRepo.Update(ctx, comment); err != nil {
 		return nil, err
 	}
+
+	s.leadRepo.UpdateComments(ctx, comment.LeadID, comment.Content)
 
 	return comment, nil
 }
@@ -99,12 +97,26 @@ func (s *LeadCommentService) DeleteLeadComment(ctx context.Context, id primitive
 		return errors.New("user context required")
 	}
 
-	// Same author-only protection
 	if comment.AuthorID != userID {
 		return errors.New("unauthorized to delete this comment")
 	}
 
-	return s.commentRepo.Delete(ctx, id)
+	if err := s.commentRepo.Delete(ctx, id); err != nil {
+		return err
+	}
+
+	latestComment, err := s.commentRepo.GetLatestByLeadID(ctx, comment.LeadID)
+	if err != nil {
+		return nil
+	}
+
+	if latestComment != nil {
+		s.leadRepo.UpdateComments(ctx, comment.LeadID, latestComment.Content)
+	} else {
+		s.leadRepo.UpdateComments(ctx, comment.LeadID, "")
+	}
+
+	return nil
 }
 
 func (s *LeadCommentService) ListLeadComments(ctx context.Context, leadID primitive.ObjectID, req ports.FilterRequest) ([]*ports.CommentListItem, int64, error) {

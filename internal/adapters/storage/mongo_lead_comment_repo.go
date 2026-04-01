@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type MongoLeadCommentRepository struct {
@@ -44,6 +45,29 @@ func (r *MongoLeadCommentRepository) GetByID(ctx context.Context, id primitive.O
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, errors.New("lead comment not found")
+		}
+		return nil, err
+	}
+	return &comment, nil
+}
+
+func (r *MongoLeadCommentRepository) GetLatestByLeadID(ctx context.Context, leadID primitive.ObjectID) (*domain.LeadComment, error) {
+	filter := bson.M{"lead_id": leadID}
+
+	scopeFilter := middleware.GetScopeFilter(ctx)
+	if !scopeFilter.IsSystemAdmin {
+		if tenantID, ok := getTenantIDFromContext(ctx); ok {
+			filter["tenant_id"] = tenantID
+		}
+	}
+
+	opts := options.FindOne().SetSort(bson.D{{Key: "updated_at", Value: -1}})
+
+	var comment domain.LeadComment
+	err := r.collection.FindOne(ctx, filter, opts).Decode(&comment)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
 		}
 		return nil, err
 	}

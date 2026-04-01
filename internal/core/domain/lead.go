@@ -28,6 +28,7 @@ type Lead struct {
 	Phone           string             `bson:"phone" json:"phone"`
 	Address         Address            `bson:"address" json:"address"`
 	Status          string             `bson:"status" json:"status"`
+	Comments        string             `bson:"comments,omitempty" json:"comments,omitempty"`
 	SearchText      string             `bson:"search_text" json:"-"`
 	ConvertedAt     *time.Time         `bson:"converted_at,omitempty" json:"converted_at,omitempty"`
 	CreatedAt       time.Time          `bson:"created_at" json:"created_at"`

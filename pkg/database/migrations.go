@@ -224,6 +224,16 @@ func seedPermissionRules(ctx context.Context, collection *mongo.Collection) erro
 		// Lead Appointment Management - Own Scope (for user role)
 		*domain.NewPermissionRule("lead-appointments", "Lead Appointments", "list_own", "List Own Appointments", "/api/v1/leads/:lead_id/appointments/list", "POST", "List appointments by self", true, "self", "created_by"),
 
+		// Lead Follow-Up Management
+		*domain.NewPermissionRule("lead-follow-ups", "Lead Follow-Ups", "create", "Create Follow-Up", "/api/v1/leads/:lead_id/follow-ups", "POST", "Create follow-up", true),
+		*domain.NewPermissionRule("lead-follow-ups", "Lead Follow-Ups", "view", "View Follow-Up", "/api/v1/leads/:lead_id/follow-ups/:id", "GET", "View follow-up details", true),
+		*domain.NewPermissionRule("lead-follow-ups", "Lead Follow-Ups", "update", "Update Follow-Up", "/api/v1/leads/:lead_id/follow-ups/:id", "PUT", "Update follow-up", true),
+		*domain.NewPermissionRule("lead-follow-ups", "Lead Follow-Ups", "delete", "Delete Follow-Up", "/api/v1/leads/:lead_id/follow-ups/:id", "DELETE", "Delete follow-up", true),
+		*domain.NewPermissionRule("lead-follow-ups", "Lead Follow-Ups", "list", "List Follow-Ups", "/api/v1/leads/:lead_id/follow-ups/list", "POST", "List all follow-ups", true),
+
+		// Lead Follow-Up Management - Own Scope (for user role)
+		*domain.NewPermissionRule("lead-follow-ups", "Lead Follow-Ups", "list_own", "List Own Follow-Ups", "/api/v1/leads/:lead_id/follow-ups/list", "POST", "List follow-ups by self", true, "self", "created_by"),
+
 		// Permission Management
 		*domain.NewPermissionRule("permissions", "Permission Management", "manage", "Manage Permissions", "/api/v1/permissions", "*", "Full permission management access", true),
 		*domain.NewPermissionRule("permissions", "Permission Management", "view", "View Permissions", "/api/v1/permissions", "GET", "View all permissions", true),

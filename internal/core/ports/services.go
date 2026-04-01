@@ -236,6 +236,7 @@ type LeadListItem struct {
 	Country        *LeadCountryRef    `json:"country,omitempty" bson:"country,omitempty"`
 	Qualification  *LeadRefItem       `json:"qualification,omitempty" bson:"qualification,omitempty"`
 	Status         string             `json:"status" bson:"status"`
+	Comments       string             `json:"comments,omitempty" bson:"comments,omitempty"`
 	ConvertedAt    *time.Time         `json:"converted_at,omitempty" bson:"converted_at,omitempty"`
 	CreatedAt      time.Time          `json:"created_at" bson:"created_at"`
 	UpdatedAt      time.Time          `json:"updated_at" bson:"updated_at"`

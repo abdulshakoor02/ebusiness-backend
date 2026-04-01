@@ -27,6 +27,7 @@ type LeadRepository interface {
 	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.Lead, error)
 	List(ctx context.Context, filter interface{}, search string, offset, limit int64) ([]*LeadListItem, int64, error)
 	Update(ctx context.Context, lead *domain.Lead) error
+	UpdateComments(ctx context.Context, leadID primitive.ObjectID, comments string) error
 }
 
 type LeadCategoryRepository interface {
@@ -40,6 +41,7 @@ type LeadCategoryRepository interface {
 type LeadCommentRepository interface {
 	Create(ctx context.Context, comment *domain.LeadComment) error
 	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.LeadComment, error)
+	GetLatestByLeadID(ctx context.Context, leadID primitive.ObjectID) (*domain.LeadComment, error)
 	ListByLeadID(ctx context.Context, leadID primitive.ObjectID, filter interface{}, offset, limit int64) ([]*CommentListItem, int64, error)
 	Update(ctx context.Context, comment *domain.LeadComment) error
 	Delete(ctx context.Context, id primitive.ObjectID) error

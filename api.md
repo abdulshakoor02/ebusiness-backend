@@ -1025,6 +1025,7 @@ The system supports **row-level security** via permission rules. Each permission
     "zip_code": "12345",
     "country": "UAE"
   },
+  "comments": "",
   "created_at": "2026-02-15T12:00:00Z",
   "updated_at": "2026-02-15T12:00:00Z"
 }
@@ -1050,6 +1051,7 @@ The system supports **row-level security** via permission rules. Each permission
   "email": "alice@techinnovations.com",
   "phone": "+1987654321",
   "status": "lead",
+  "comments": "Last note from call with Alice - very interested in our enterprise plan",
   "created_at": "2026-02-15T12:00:00Z",
   "updated_at": "2026-02-15T12:00:00Z"
 }
@@ -1096,6 +1098,7 @@ The system supports **row-level security** via permission rules. Each permission
     "country": "UAE"
   },
   "status": "lead",
+  "comments": "Last note from call with Alice - very interested in our enterprise plan",
   "created_at": "2026-02-15T12:00:00Z",
   "updated_at": "2026-02-15T14:30:00Z"
 }
@@ -1258,6 +1261,7 @@ The system supports **row-level security** via permission rules. Each permission
         "name": "Bachelor's Degree"
       },
       "status": "lead",
+      "comments": "Last note from call with Alice - very interested in our enterprise plan",
       "created_at": "2026-02-15T12:00:00Z",
       "updated_at": "2026-02-15T12:00:00Z"
     }

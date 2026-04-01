@@ -74,6 +74,11 @@ func (m *MockLeadRepo) Update(ctx context.Context, lead *domain.Lead) error {
 	return args.Error(0)
 }
 
+func (m *MockLeadRepo) UpdateComments(ctx context.Context, leadID primitive.ObjectID, comments string) error {
+	args := m.Called(ctx, leadID, comments)
+	return args.Error(0)
+}
+
 func TestCreateLeadFollowUp_Success(t *testing.T) {
 	mockFollowUpRepo := new(MockLeadFollowUpRepo)
 	mockLeadRepo := new(MockLeadRepo)

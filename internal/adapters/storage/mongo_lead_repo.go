@@ -271,3 +271,23 @@ func (r *MongoLeadRepository) Update(ctx context.Context, lead *domain.Lead) err
 	_, err := r.collection.UpdateOne(ctx, filter, update)
 	return err
 }
+
+func (r *MongoLeadRepository) UpdateComments(ctx context.Context, leadID primitive.ObjectID, comments string) error {
+	filter := bson.M{"_id": leadID}
+
+	scopeFilter := middleware.GetScopeFilter(ctx)
+	if !scopeFilter.IsSystemAdmin {
+		if tenantID, ok := getTenantIDFromContext(ctx); ok {
+			filter["tenant_id"] = tenantID
+		}
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"comments":   comments,
+			"updated_at": time.Now(),
+		},
+	}
+	_, err := r.collection.UpdateOne(ctx, filter, update)
+	return err
+}

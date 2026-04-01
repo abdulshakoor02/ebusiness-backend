@@ -1644,7 +1644,178 @@ The system supports **row-level security** via permission rules. Each permission
 
 ---
 
-## 9. Lead Sources
+## 9. Lead Follow-Ups
+
+### Create Follow-Up for Lead
+**Endpoint:** `POST /leads/:lead_id/follow-ups`
+**Auth Required:** JWT + RBAC: All (Admin & User)
+
+**Request:**
+```json
+{
+  "title": "Follow-up call",
+  "description": "Check on product interest",
+  "start_time": "2024-05-15T14:30:00Z",
+  "end_time": "2024-05-15T15:00:00Z",
+  "status": "active"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | string | Yes | Title of the follow-up |
+| `description` | string | No | Description of the follow-up |
+| `start_time` | string | Yes | Start time (ISO 8601 format) |
+| `end_time` | string | Yes | End time (ISO 8601 format) |
+| `status` | string | Yes | Status: `"active"` or `"closed"` |
+
+**Response (201 Created):**
+```json
+{
+  "id": "60f2j...",
+  "tenant_id": "60a7e...",
+  "lead_id": "60c9g...",
+  "creator_id": "60b8f...",
+  "title": "Follow-up call",
+  "description": "Check on product interest",
+  "start_time": "2024-05-15T14:30:00Z",
+  "end_time": "2024-05-15T15:00:00Z",
+  "status": "active",
+  "created_at": "2026-02-15T12:00:00Z",
+  "updated_at": "2026-02-15T12:00:00Z"
+}
+```
+
+### Get Lead Follow-Up by ID
+**Endpoint:** `GET /leads/:lead_id/follow-ups/:id`
+**Auth Required:** JWT + RBAC: All (Admin & User)
+
+**Response (200 OK):**
+```json
+{
+  "id": "60f2j...",
+  "tenant_id": "60a7e...",
+  "lead_id": "60c9g...",
+  "creator_id": "60b8f...",
+  "title": "Follow-up call",
+  "description": "Check on product interest",
+  "start_time": "2024-05-15T14:30:00Z",
+  "end_time": "2024-05-15T15:00:00Z",
+  "status": "active",
+  "created_at": "2026-02-15T12:00:00Z",
+  "updated_at": "2026-02-15T12:00:00Z"
+}
+```
+
+### Update Lead Follow-Up
+**Endpoint:** `PUT /leads/:lead_id/follow-ups/:id`
+**Auth Required:** JWT + RBAC: All (Admin & User)
+*Note: Any user with update permission can update the follow-up. Closed follow-ups cannot be updated.*
+
+**Request:**
+```json
+{
+  "title": "Follow-up call - Updated",
+  "status": "closed"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | string | No | Updated title |
+| `description` | string | No | Updated description |
+| `start_time` | string | No | Updated start time (ISO 8601) |
+| `end_time` | string | No | Updated end time (ISO 8601) |
+| `status` | string | No | Updated status (`"active"` or `"closed"`) |
+
+**Response (200 OK):**
+```json
+{
+  "id": "60f2j...",
+  "tenant_id": "60a7e...",
+  "lead_id": "60c9g...",
+  "creator_id": "60b8f...",
+  "title": "Follow-up call - Updated",
+  "description": "Check on product interest",
+  "start_time": "2024-05-15T14:30:00Z",
+  "end_time": "2024-05-15T15:00:00Z",
+  "status": "closed",
+  "created_at": "2026-02-15T12:00:00Z",
+  "updated_at": "2026-02-15T14:30:00Z"
+}
+```
+
+**Response (400 Bad Request - Closed Follow-Up):**
+```json
+{
+  "error": "cannot update closed follow-up"
+}
+```
+
+### Delete Lead Follow-Up
+**Endpoint:** `DELETE /leads/:lead_id/follow-ups/:id`
+**Auth Required:** JWT + RBAC: All (Admin & User)
+*Note: Any user with delete permission can delete the follow-up.*
+
+**Response (200 OK):**
+```json
+{
+  "message": "Lead follow-up deleted successfully"
+}
+```
+
+### List Lead Follow-Ups
+**Endpoint:** `POST /leads/:lead_id/follow-ups/list`
+**Auth Required:** JWT + RBAC: All (Admin & User)
+
+**Request:**
+```json
+{
+  "filters": {},
+  "offset": 0,
+  "limit": 50
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "id": "60f2j...",
+      "tenant_id": "60a7e...",
+      "lead_id": "60c9g...",
+      "creator": {
+        "id": "60b8f...",
+        "name": "John Doe"
+      },
+      "title": "Follow-up call",
+      "description": "Check on product interest",
+      "start_time": "2024-05-15T14:30:00Z",
+      "end_time": "2024-05-15T15:00:00Z",
+      "status": "active",
+      "created_at": "2026-02-15T12:00:00Z",
+      "updated_at": "2026-02-15T12:00:00Z"
+    }
+  ],
+  "total": 1,
+  "offset": 0,
+  "limit": 50
+}
+```
+
+**Key Differences from Lead Appointments:**
+
+| Aspect | Lead Appointments | Lead Follow-Ups |
+|--------|------------------|-----------------|
+| Creator Field | `organizer_id` | `creator_id` |
+| Status Values | `scheduled`, `completed`, `rescheduled`, `cancelled` | `active`, `closed` |
+| Update/Delete Auth | Only organizer or admin | Any user with permission |
+| Closed State | Can update completed/cancelled | Cannot update closed |
+
+---
+
+## 10. Lead Sources
 
 ### Create Lead Source
 **Endpoint:** `POST /lead-sources`
@@ -1754,7 +1925,7 @@ The system supports **row-level security** via permission rules. Each permission
 
 ---
 
-## 10. Qualifications
+## 11. Qualifications
 
 *Global reference data - shared across all tenants. No authentication required.*
 
@@ -1907,7 +2078,7 @@ The system supports **row-level security** via permission rules. Each permission
 
 ---
 
-## 11. Countries
+## 12. Countries
 
 *Global reference data - shared across all tenants. No authentication required.*
 
@@ -2105,7 +2276,7 @@ The system supports **row-level security** via permission rules. Each permission
 
 ---
 
-## 12. Products
+## 13. Products
 
 *Tenant-specific products for invoicing.*
 
@@ -2223,7 +2394,7 @@ The system supports **row-level security** via permission rules. Each permission
 
 ---
 
-## 13. Invoices
+## 14. Invoices
 
 *Invoices are linked to leads and contain products with automatic tax calculation based on tenant settings.*
 
@@ -2493,7 +2664,7 @@ Total Amount = Taxable Amount + Tax Amount
 
 ---
 
-## 14. Receipts
+## 15. Receipts
 
 *Receipts represent payments made against an invoice. Each payment includes tax automatically calculated based on the invoice's tax percentage.*
 
@@ -2695,7 +2866,7 @@ Invoice status automatically updates to `paid` after the final receipt.
 
 ---
 
-## 15. Tenant Updates
+## 16. Tenant Updates
 
 ### Address Fields
 
@@ -2725,7 +2896,7 @@ These fields are used internally for invoice/receipt numbering and tax calculati
 
 ---
 
-## 16. System
+## 17. System
 
 ### System Health Check
 **Endpoint:** `GET /health`

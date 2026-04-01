@@ -53,6 +53,14 @@ type LeadAppointmentRepository interface {
 	Delete(ctx context.Context, id primitive.ObjectID) error
 }
 
+type LeadFollowUpRepository interface {
+	Create(ctx context.Context, followUp *domain.LeadFollowUp) error
+	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.LeadFollowUp, error)
+	ListByLeadID(ctx context.Context, leadID primitive.ObjectID, filter interface{}, offset, limit int64) ([]*FollowUpListItem, int64, error)
+	Update(ctx context.Context, followUp *domain.LeadFollowUp) error
+	Delete(ctx context.Context, id primitive.ObjectID) error
+}
+
 type LeadSourceRepository interface {
 	Create(ctx context.Context, source *domain.LeadSource) error
 	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.LeadSource, error)

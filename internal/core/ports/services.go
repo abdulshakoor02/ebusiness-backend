@@ -355,6 +355,44 @@ type LeadAppointmentService interface {
 	ListLeadAppointments(ctx context.Context, leadID primitive.ObjectID, req FilterRequest) ([]*AppointmentListItem, int64, error)
 }
 
+type CreateLeadFollowUpRequest struct {
+	Title       string    `json:"title"`
+	Description string    `json:"description,omitempty"`
+	StartTime   time.Time `json:"start_time"`
+	EndTime     time.Time `json:"end_time"`
+	Status      string    `json:"status"`
+}
+
+type UpdateLeadFollowUpRequest struct {
+	Title       string    `json:"title,omitempty"`
+	Description string    `json:"description,omitempty"`
+	StartTime   time.Time `json:"start_time,omitempty"`
+	EndTime     time.Time `json:"end_time,omitempty"`
+	Status      string    `json:"status,omitempty"`
+}
+
+type FollowUpListItem struct {
+	ID          primitive.ObjectID    `json:"id" bson:"_id"`
+	TenantID    primitive.ObjectID    `json:"tenant_id" bson:"tenant_id"`
+	LeadID      primitive.ObjectID    `json:"lead_id" bson:"lead_id"`
+	Creator     *LeadUserRef          `json:"creator,omitempty" bson:"creator,omitempty"`
+	Title       string                `json:"title" bson:"title"`
+	Description string                `json:"description" bson:"description"`
+	StartTime   time.Time             `json:"start_time" bson:"start_time"`
+	EndTime     time.Time             `json:"end_time" bson:"end_time"`
+	Status      domain.FollowUpStatus `json:"status" bson:"status"`
+	CreatedAt   time.Time             `json:"created_at" bson:"created_at"`
+	UpdatedAt   time.Time             `json:"updated_at" bson:"updated_at"`
+}
+
+type LeadFollowUpService interface {
+	CreateLeadFollowUp(ctx context.Context, leadID primitive.ObjectID, req CreateLeadFollowUpRequest) (*domain.LeadFollowUp, error)
+	GetLeadFollowUp(ctx context.Context, id primitive.ObjectID) (*domain.LeadFollowUp, error)
+	UpdateLeadFollowUp(ctx context.Context, id primitive.ObjectID, req UpdateLeadFollowUpRequest) (*domain.LeadFollowUp, error)
+	DeleteLeadFollowUp(ctx context.Context, id primitive.ObjectID) error
+	ListLeadFollowUps(ctx context.Context, leadID primitive.ObjectID, req FilterRequest) ([]*FollowUpListItem, int64, error)
+}
+
 type CreateQualificationRequest struct {
 	Name string `json:"name"`
 }

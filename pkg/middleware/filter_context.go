@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"log/slog"
+	"strings"
 	"sync"
 
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/domain"
@@ -63,11 +64,6 @@ func NewFilterContextMiddleware(permissionService ports.PermissionService, roleP
 		method := c.Method()
 
 		scopeEntries := findScopeEntries(path, method)
-		if len(scopeEntries) == 0 {
-			// Try route pattern for parameterized paths
-			routePath := c.Route().Path
-			scopeEntries = findScopeEntries(routePath, method)
-		}
 		scopeRulesByPathMu.RUnlock()
 
 		// Check if this role is assigned any of the scoped rules for this path
@@ -98,12 +94,51 @@ func NewFilterContextMiddleware(permissionService ports.PermissionService, roleP
 	}
 }
 
-// findScopeEntries returns scope entries for the given path+method (must be called under RLock)
-func findScopeEntries(path, method string) []ScopeRuleEntry {
-	key := path + "_" + method
+// findScopeEntries returns scope entries for the given request path+method.
+// It uses template matching to handle parameterized paths (e.g., /api/v1/leads/:id).
+// Must be called under RLock.
+func findScopeEntries(requestPath, requestMethod string) []ScopeRuleEntry {
+	// Fast path: try exact match first (works for static paths like /api/v1/leads/list)
+	key := requestPath + "_" + requestMethod
 	if entries, ok := scopeRulesByPath[key]; ok {
 		return entries
 	}
+
+	// Slow path: template matching for parameterized paths
+	requestParts := strings.Split(requestPath, "/")
+	for mapKey, entries := range scopeRulesByPath {
+		// Each key is "rulePath_METHOD"
+		lastUnderscore := strings.LastIndex(mapKey, "_")
+		if lastUnderscore == -1 {
+			continue
+		}
+		ruleMethod := mapKey[lastUnderscore+1:]
+		rulePath := mapKey[:lastUnderscore]
+
+		if ruleMethod != requestMethod && ruleMethod != "*" {
+			continue
+		}
+
+		ruleParts := strings.Split(rulePath, "/")
+		if len(ruleParts) != len(requestParts) {
+			continue
+		}
+
+		match := true
+		for i, part := range ruleParts {
+			if strings.HasPrefix(part, ":") {
+				continue // parameter placeholder — matches any segment
+			}
+			if part != requestParts[i] {
+				match = false
+				break
+			}
+		}
+		if match {
+			return entries
+		}
+	}
+
 	return nil
 }
 

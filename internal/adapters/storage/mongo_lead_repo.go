@@ -42,6 +42,14 @@ func (r *MongoLeadRepository) GetByID(ctx context.Context, id primitive.ObjectID
 		}
 	}
 
+	// Apply scope filter (e.g., assigned_to = self)
+	if scopeFilter.ScopeType == "self" && scopeFilter.SelfUserID != "" && scopeFilter.FilterField != "" && !scopeFilter.IsSystemAdmin {
+		userOID, err := primitive.ObjectIDFromHex(scopeFilter.SelfUserID)
+		if err == nil {
+			filter[scopeFilter.FilterField] = userOID
+		}
+	}
+
 	var lead domain.Lead
 	err := r.collection.FindOne(ctx, filter).Decode(&lead)
 	if err != nil {
@@ -251,6 +259,14 @@ func (r *MongoLeadRepository) Update(ctx context.Context, lead *domain.Lead) err
 		}
 	}
 
+	// Apply scope filter (e.g., assigned_to = self)
+	if scopeFilter.ScopeType == "self" && scopeFilter.SelfUserID != "" && scopeFilter.FilterField != "" && !scopeFilter.IsSystemAdmin {
+		userOID, err := primitive.ObjectIDFromHex(scopeFilter.SelfUserID)
+		if err == nil {
+			filter[scopeFilter.FilterField] = userOID
+		}
+	}
+
 	update := bson.M{
 		"$set": bson.M{
 			"first_name":       lead.FirstName,
@@ -280,6 +296,14 @@ func (r *MongoLeadRepository) UpdateComments(ctx context.Context, leadID primiti
 	if !scopeFilter.IsSystemAdmin {
 		if tenantID, ok := getTenantIDFromContext(ctx); ok {
 			filter["tenant_id"] = tenantID
+		}
+	}
+
+	// Apply scope filter (e.g., assigned_to = self)
+	if scopeFilter.ScopeType == "self" && scopeFilter.SelfUserID != "" && scopeFilter.FilterField != "" && !scopeFilter.IsSystemAdmin {
+		userOID, err := primitive.ObjectIDFromHex(scopeFilter.SelfUserID)
+		if err == nil {
+			filter[scopeFilter.FilterField] = userOID
 		}
 	}
 

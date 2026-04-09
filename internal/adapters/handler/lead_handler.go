@@ -198,7 +198,28 @@ func (h *LeadHandler) UpdateLeadStatus(c *fiber.Ctx) error {
 // @Failure      500  {object}  map[string]interface{}
 // @Security     Bearer
 // @Router       /leads/import [post]
+// @Deprecated
 func (h *LeadHandler) ImportLeads(c *fiber.Ctx) error {
+	return c.Status(fiber.StatusGone).JSON(fiber.Map{
+		"error": "This endpoint is deprecated. Use /leads/import/preview and /leads/import/confirm instead.",
+	})
+}
+
+// PreviewImport godoc
+// @Summary      Preview lead import mapping
+// @Description  Uploads a file and returns suggested column mappings for review before import
+// @Tags         leads
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        file formData file true "Excel or CSV file"
+// @Success      200  {object}  ports.ImportPreviewResponse
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      401  {object}  map[string]interface{}
+// @Failure      403  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Security     Bearer
+// @Router       /leads/import/preview [post]
+func (h *LeadHandler) PreviewImport(c *fiber.Ctx) error {
 	file, err := c.FormFile("file")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "No file uploaded"})
@@ -222,19 +243,55 @@ func (h *LeadHandler) ImportLeads(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to read file content"})
 	}
 
+	result, err := h.service.PreviewImport(c.Context(), buf.Bytes(), ext)
+	if err != nil {
+		slog.Error("Failed to preview import", "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(result)
+}
+
+// ConfirmImport godoc
+// @Summary      Confirm and execute lead import
+// @Description  Confirms column mappings and proceeds with the lead import using a previously created session
+// @Tags         leads
+// @Accept       json
+// @Produce      json
+// @Param        request body ports.ImportConfirmRequest true "Confirm Import Request"
+// @Success      200  {object}  ports.ImportResult
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      401  {object}  map[string]interface{}
+// @Failure      403  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Security     Bearer
+// @Router       /leads/import/confirm [post]
+func (h *LeadHandler) ConfirmImport(c *fiber.Ctx) error {
+	var req ports.ImportConfirmRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	if req.SessionID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "session_id is required"})
+	}
+
+	if len(req.Mappings) == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "mappings are required"})
+	}
+
 	role, _ := c.Locals("role").(string)
 	userID, _ := c.Locals("user_id").(string)
 
-	assignedTo := ""
 	if role == "superadmin" || role == "admin" {
-		assignedTo = c.FormValue("assigned_to")
+		// keep assigned_to from request (may be empty)
 	} else {
-		assignedTo = userID
+		req.AssignedTo = userID
 	}
 
-	result, err := h.service.ImportLeads(c.Context(), buf.Bytes(), ext, assignedTo)
+	result, err := h.service.ConfirmImport(c.Context(), req)
 	if err != nil {
-		slog.Error("Failed to import leads", "error", err)
+		slog.Error("Failed to confirm import", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 

@@ -4,14 +4,14 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strconv"
 	"strings"
 	"time"
-
-	"strconv"
 
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/domain"
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/ports"
 	"github.com/abdulshakoor02/goCrmBackend/pkg/ai"
+	"github.com/abdulshakoor02/goCrmBackend/pkg/cache"
 	"github.com/abdulshakoor02/goCrmBackend/pkg/excel"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -26,9 +26,10 @@ type LeadService struct {
 	aiClient          *ai.Client
 	maxFileSize       int64
 	maxRows           int64
+	sessionCache      *cache.ImportSessionCache
 }
 
-func NewLeadService(leadRepo ports.LeadRepository, categoryRepo ports.LeadCategoryRepository, sourceRepo ports.LeadSourceRepository, qualificationRepo ports.QualificationRepository, countryRepo ports.CountryRepository, commentRepo ports.LeadCommentRepository, aiClient *ai.Client, maxFileSize, maxRows int64) *LeadService {
+func NewLeadService(leadRepo ports.LeadRepository, categoryRepo ports.LeadCategoryRepository, sourceRepo ports.LeadSourceRepository, qualificationRepo ports.QualificationRepository, countryRepo ports.CountryRepository, commentRepo ports.LeadCommentRepository, aiClient *ai.Client, maxFileSize, maxRows int64, sessionCache *cache.ImportSessionCache) *LeadService {
 	return &LeadService{
 		leadRepo:          leadRepo,
 		categoryRepo:      categoryRepo,
@@ -39,6 +40,7 @@ func NewLeadService(leadRepo ports.LeadRepository, categoryRepo ports.LeadCatego
 		aiClient:          aiClient,
 		maxFileSize:       maxFileSize,
 		maxRows:           maxRows,
+		sessionCache:      sessionCache,
 	}
 }
 
@@ -217,7 +219,7 @@ func (s *LeadService) UpdateLeadStatus(ctx context.Context, id primitive.ObjectI
 	return lead, nil
 }
 
-func (s *LeadService) ImportLeads(ctx context.Context, data []byte, ext string, assignedTo string) (*ports.ImportResult, error) {
+func (s *LeadService) PreviewImport(ctx context.Context, data []byte, ext string) (*ports.ImportPreviewResponse, error) {
 	tenantID, ok := getTenantIDFromContext(ctx)
 	if !ok {
 		return nil, errors.New("tenant context required to import leads")
@@ -232,12 +234,8 @@ func (s *LeadService) ImportLeads(ctx context.Context, data []byte, ext string, 
 		return nil, err
 	}
 
-	result := &ports.ImportResult{
-		TotalRows: len(rows),
-	}
-
 	if len(rows) == 0 {
-		return result, nil
+		return nil, errors.New("file contains no data rows")
 	}
 
 	if int64(len(rows)) > s.maxRows {
@@ -254,6 +252,72 @@ func (s *LeadService) ImportLeads(ctx context.Context, data []byte, ext string, 
 		slog.Warn("Column mapping failed, using heuristic", "error", err)
 	}
 
+	suggestedMappings := make([]ports.ColumnMapping, 0, len(colResult.Mappings))
+	for _, m := range colResult.Mappings {
+		suggestedMappings = append(suggestedMappings, ports.ColumnMapping{
+			ColumnIndex: m.ColumnIndex,
+			HeaderName:  m.HeaderName,
+			TargetField: m.TargetField,
+			Confidence:  m.Confidence,
+		})
+	}
+
+	existingCategories, _, _ := s.categoryRepo.List(ctx, nil, 0, 1000)
+	existingSources, _, _ := s.sourceRepo.List(ctx, nil, 0, 1000)
+	existingQualifications, _, _ := s.qualificationRepo.List(ctx, nil, 0, 1000)
+
+	_ = tenantID
+
+	session := s.sessionCache.Set(data, ext, headers, rows)
+
+	return &ports.ImportPreviewResponse{
+		SessionID:         session.ID,
+		ExpiresAt:         session.ExpiresAt,
+		Headers:           headers,
+		SampleRows:        sampleRows,
+		TotalRows:         len(rows),
+		SuggestedMappings: suggestedMappings,
+		AvailableTargetFields: []ports.TargetFieldInfo{
+			{Name: "first_name", Label: "First Name", Type: "string"},
+			{Name: "last_name", Label: "Last Name", Type: "string"},
+			{Name: "full_name", Label: "Full Name", Type: "string"},
+			{Name: "email", Label: "Email", Type: "string"},
+			{Name: "phone", Label: "Phone", Type: "string"},
+			{Name: "designation", Label: "Designation", Type: "string"},
+			{Name: "comments", Label: "Comments", Type: "string"},
+			{Name: "category_name", Label: "Category", Type: "reference", ReferenceType: "category"},
+			{Name: "source_name", Label: "Source", Type: "reference", ReferenceType: "source"},
+			{Name: "qualification_name", Label: "Qualification", Type: "reference", ReferenceType: "qualification"},
+			{Name: "country_name", Label: "Country", Type: "reference", ReferenceType: "country"},
+		},
+		ExistingCategories:     toRefOptsCategories(existingCategories),
+		ExistingSources:        toRefOptsSources(existingSources),
+		ExistingQualifications: toRefOptsQualifications(existingQualifications),
+	}, nil
+}
+
+func (s *LeadService) ConfirmImport(ctx context.Context, req ports.ImportConfirmRequest) (*ports.ImportResult, error) {
+	tenantID, ok := getTenantIDFromContext(ctx)
+	if !ok {
+		return nil, errors.New("tenant context required to import leads")
+	}
+
+	session, found := s.sessionCache.Get(req.SessionID)
+	if !found {
+		return nil, errors.New("import session not found or expired. Please re-upload your file.")
+	}
+	defer s.sessionCache.Delete(req.SessionID)
+
+	rows := session.Rows
+
+	result := &ports.ImportResult{
+		TotalRows: len(rows),
+	}
+
+	if len(rows) == 0 {
+		return result, nil
+	}
+
 	existingCategories, _, _ := s.categoryRepo.List(ctx, nil, 0, 1000)
 	existingSources, _, _ := s.sourceRepo.List(ctx, nil, 0, 1000)
 	existingQualifications, _, _ := s.qualificationRepo.List(ctx, nil, 0, 1000)
@@ -262,15 +326,15 @@ func (s *LeadService) ImportLeads(ctx context.Context, data []byte, ext string, 
 	srcOpts := toRefOptsSources(existingSources)
 	qualOpts := toRefOptsQualifications(existingQualifications)
 
-	catMap := make(map[string]excel.ReferenceOption)
+	catMap := make(map[string]ports.ReferenceOption)
 	for _, o := range catOpts {
 		catMap[strings.ToLower(o.Name)] = o
 	}
-	srcMap := make(map[string]excel.ReferenceOption)
+	srcMap := make(map[string]ports.ReferenceOption)
 	for _, o := range srcOpts {
 		srcMap[strings.ToLower(o.Name)] = o
 	}
-	qualMap := make(map[string]excel.ReferenceOption)
+	qualMap := make(map[string]ports.ReferenceOption)
 	for _, o := range qualOpts {
 		qualMap[strings.ToLower(o.Name)] = o
 	}
@@ -282,18 +346,28 @@ func (s *LeadService) ImportLeads(ctx context.Context, data []byte, ext string, 
 	}
 
 	var assignedToID primitive.ObjectID
-	if assignedTo != "" {
-		assignedToID, _ = primitive.ObjectIDFromHex(assignedTo)
+	if req.AssignedTo != "" {
+		assignedToID, _ = primitive.ObjectIDFromHex(req.AssignedTo)
 	}
 
 	leads := make([]*domain.Lead, 0, len(rows))
 	createdCategories := make([]string, 0)
 	createdSources := make([]string, 0)
 
+	mappings := make([]excel.ColumnMapping, 0, len(req.Mappings))
+	for _, m := range req.Mappings {
+		mappings = append(mappings, excel.ColumnMapping{
+			ColumnIndex: m.ColumnIndex,
+			HeaderName:  m.HeaderName,
+			TargetField: m.TargetField,
+			Confidence:  m.Confidence,
+		})
+	}
+
 	for i, row := range rows {
 		lead := domain.NewLead(tenantID, "", "", "", "", "")
 
-		for _, m := range colResult.Mappings {
+		for _, m := range mappings {
 			idx := m.ColumnIndex
 			if idx < 0 || idx >= len(row) {
 				continue
@@ -330,7 +404,7 @@ func (s *LeadService) ImportLeads(ctx context.Context, data []byte, ext string, 
 					newCat := domain.NewLeadCategory(tenantID, val, "Auto-created during import")
 					if err := s.categoryRepo.Create(ctx, newCat); err == nil {
 						lead.CategoryID = newCat.ID
-						catMap[strings.ToLower(val)] = excel.ReferenceOption{ID: newCat.ID.Hex(), Name: newCat.Name}
+						catMap[strings.ToLower(val)] = ports.ReferenceOption{ID: newCat.ID.Hex(), Name: newCat.Name}
 						createdCategories = append(createdCategories, newCat.Name)
 					}
 				}
@@ -342,7 +416,7 @@ func (s *LeadService) ImportLeads(ctx context.Context, data []byte, ext string, 
 					newSrc := domain.NewLeadSource(tenantID, val, "Auto-created during import")
 					if err := s.sourceRepo.Create(ctx, newSrc); err == nil {
 						lead.SourceID = newSrc.ID
-						srcMap[strings.ToLower(val)] = excel.ReferenceOption{ID: newSrc.ID.Hex(), Name: newSrc.Name}
+						srcMap[strings.ToLower(val)] = ports.ReferenceOption{ID: newSrc.ID.Hex(), Name: newSrc.Name}
 						createdSources = append(createdSources, newSrc.Name)
 					}
 				}
@@ -431,26 +505,26 @@ func (s *LeadService) ImportLeads(ctx context.Context, data []byte, ext string, 
 	return result, nil
 }
 
-func toRefOptsCategories(cats []*domain.LeadCategory) []excel.ReferenceOption {
-	opts := make([]excel.ReferenceOption, len(cats))
+func toRefOptsCategories(cats []*domain.LeadCategory) []ports.ReferenceOption {
+	opts := make([]ports.ReferenceOption, len(cats))
 	for i, c := range cats {
-		opts[i] = excel.ReferenceOption{ID: c.ID.Hex(), Name: c.Name}
+		opts[i] = ports.ReferenceOption{ID: c.ID.Hex(), Name: c.Name}
 	}
 	return opts
 }
 
-func toRefOptsSources(srcs []*domain.LeadSource) []excel.ReferenceOption {
-	opts := make([]excel.ReferenceOption, len(srcs))
+func toRefOptsSources(srcs []*domain.LeadSource) []ports.ReferenceOption {
+	opts := make([]ports.ReferenceOption, len(srcs))
 	for i, s := range srcs {
-		opts[i] = excel.ReferenceOption{ID: s.ID.Hex(), Name: s.Name}
+		opts[i] = ports.ReferenceOption{ID: s.ID.Hex(), Name: s.Name}
 	}
 	return opts
 }
 
-func toRefOptsQualifications(quals []*domain.Qualification) []excel.ReferenceOption {
-	opts := make([]excel.ReferenceOption, len(quals))
+func toRefOptsQualifications(quals []*domain.Qualification) []ports.ReferenceOption {
+	opts := make([]ports.ReferenceOption, len(quals))
 	for i, q := range quals {
-		opts[i] = excel.ReferenceOption{ID: q.ID.Hex(), Name: q.Name}
+		opts[i] = ports.ReferenceOption{ID: q.ID.Hex(), Name: q.Name}
 	}
 	return opts
 }

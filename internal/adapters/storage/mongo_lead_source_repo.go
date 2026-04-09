@@ -49,6 +49,23 @@ func (r *MongoLeadSourceRepository) GetByID(ctx context.Context, id primitive.Ob
 	return &source, nil
 }
 
+func (r *MongoLeadSourceRepository) FindByName(ctx context.Context, tenantID primitive.ObjectID, name string) (*domain.LeadSource, error) {
+	filter := bson.M{
+		"tenant_id": tenantID,
+		"name":      bson.M{"$regex": "^" + name + "$", "$options": "i"},
+	}
+
+	var source domain.LeadSource
+	err := r.collection.FindOne(ctx, filter).Decode(&source)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, err
+		}
+		return nil, err
+	}
+	return &source, nil
+}
+
 func (r *MongoLeadSourceRepository) List(ctx context.Context, filter interface{}, offset, limit int64) ([]*domain.LeadSource, int64, error) {
 	bsonFilter := bson.M{}
 	if filter != nil {

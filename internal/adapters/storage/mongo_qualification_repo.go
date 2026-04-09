@@ -41,6 +41,20 @@ func (r *MongoQualificationRepository) GetByID(ctx context.Context, id primitive
 	return &qualification, nil
 }
 
+func (r *MongoQualificationRepository) FindByName(ctx context.Context, name string) (*domain.Qualification, error) {
+	filter := bson.M{"name": bson.M{"$regex": "^" + name + "$", "$options": "i"}}
+
+	var qualification domain.Qualification
+	err := r.collection.FindOne(ctx, filter).Decode(&qualification)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, errors.New("qualification not found")
+		}
+		return nil, err
+	}
+	return &qualification, nil
+}
+
 func (r *MongoQualificationRepository) List(ctx context.Context, filter interface{}, offset, limit int64) ([]*domain.Qualification, int64, error) {
 	query := bson.M{}
 

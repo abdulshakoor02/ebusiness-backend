@@ -1274,6 +1274,137 @@ The system supports **row-level security** via permission rules. Each permission
 
 ---
 
+### Import Leads from File
+**Endpoint:** `POST /leads/import`
+**Auth Required:** JWT + RBAC: All (Admin & User)
+
+Imports leads from an uploaded Excel (.xlsx) or CSV (.csv) file. The backend uses AI-powered column mapping to handle varying spreadsheet formats automatically.
+
+**Request:** `multipart/form-data`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `file` | file | Yes | The Excel (.xlsx) or CSV (.csv) file to import |
+| `assigned_to` | string | No | User ID to assign all leads to (admin only, ignored for regular users) |
+
+**Example (JavaScript/FormData):**
+```javascript
+const formData = new FormData();
+formData.append('file', fileInput.files[0]);  // .xlsx or .csv file
+
+// Admin only: specify who to assign leads to
+formData.append('assigned_to', '60b8f...');  // optional
+
+const response = await fetch('/api/v1/leads/import', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${token}`
+  },
+  body: formData
+});
+
+const result = await response.json();
+```
+
+**Example (cURL):**
+```bash
+curl -X POST http://localhost:3000/api/v1/leads/import \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -F "file=@leads.xlsx" \
+  -F "assigned_to=60b8f..."
+```
+
+**File Format:**
+- First row must contain column headers
+- Headers are matched using AI (handles variations like "Full Name", "first_name", "Email Address", etc.)
+- Supported columns: first_name, last_name, email, phone, designation, category, source, qualification, country, comments
+
+**Assigned To Logic:**
+- **Admin**: Can specify `assigned_to` parameter to assign all imported leads to a specific user. If omitted, leads are created without assignment.
+- **User**: `assigned_to` is automatically set to the authenticated user's ID (leads are always assigned to themselves).
+
+**Response (200 OK):**
+```json
+{
+  "total_rows": 150,
+  "inserted": 145,
+  "skipped": 5,
+  "created_categories": ["WhatsApp Lead"],
+  "created_sources": ["Instagram"],
+  "created_qualifications": [],
+  "errors": [
+    {
+      "row": 23,
+      "field": "email",
+      "value": "not-an-email",
+      "reason": "invalid email format"
+    },
+    {
+      "row": 47,
+      "field": "contact",
+      "value": "",
+      "reason": "email or phone is required"
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `total_rows` | number | Total rows in the file (excluding header) |
+| `inserted` | number | Successfully imported leads |
+| `skipped` | number | Rows skipped due to validation errors |
+| `created_categories` | string[] | New categories auto-created during import |
+| `created_sources` | string[] | New sources auto-created during import |
+| `created_qualifications` | string[] | Always empty (qualifications must exist) |
+| `errors` | object[] | Array of errors for skipped rows |
+
+**Error Object:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `row` | number | Row number in the file (1-indexed, header is row 1) |
+| `field` | string | Field that caused the error |
+| `value` | string | The invalid value |
+| `reason` | string | Human-readable error message |
+
+**Behavior:**
+- **Country**: If no country column or value is empty, defaults to "United Arab Emirates"
+- **Categories**: Missing categories are auto-created (tenant-scoped)
+- **Sources**: Missing sources are auto-created (tenant-scoped)
+- **Qualifications**: Must exist in the system; rows with missing qualifications are skipped with error
+- **Duplicate handling**: No deduplication against existing leads; all valid rows are inserted
+- **Validation**: Each row must have at least first_name OR last_name, AND at least email OR phone
+
+**Response (400 Bad Request):**
+```json
+{
+  "error": "Unsupported format. Please upload .xlsx or .csv files."
+}
+```
+
+**Response (401 Unauthorized):**
+```json
+{
+  "error": "unauthorized"
+}
+```
+
+**Response (403 Forbidden):**
+```json
+{
+  "error": "Insufficient permissions"
+}
+```
+
+**Response (500 Internal Server Error):**
+```json
+{
+  "error": "file exceeds maximum size limit"
+}
+```
+
+---
+
 ## 6. Lead Categories
 
 ### Create Lead Category

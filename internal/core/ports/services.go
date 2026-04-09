@@ -252,6 +252,24 @@ type LeadService interface {
 	UpdateLead(ctx context.Context, id primitive.ObjectID, req UpdateLeadRequest) (*domain.Lead, error)
 	UpdateLeadStatus(ctx context.Context, id primitive.ObjectID, req UpdateLeadStatusRequest) (*domain.Lead, error)
 	ListLeads(ctx context.Context, req FilterRequest) ([]*LeadListItem, int64, error)
+	ImportLeads(ctx context.Context, data []byte, ext string, assignedTo string) (*ImportResult, error)
+}
+
+type ImportError struct {
+	Row    int    `json:"row"`
+	Field  string `json:"field"`
+	Value  string `json:"value"`
+	Reason string `json:"reason"`
+}
+
+type ImportResult struct {
+	TotalRows             int           `json:"total_rows"`
+	Inserted              int           `json:"inserted"`
+	Skipped               int           `json:"skipped"`
+	CreatedCategories     []string      `json:"created_categories"`
+	CreatedSources        []string      `json:"created_sources"`
+	CreatedQualifications []string      `json:"created_qualifications"`
+	Errors                []ImportError `json:"errors"`
 }
 
 type CreateLeadCategoryRequest struct {

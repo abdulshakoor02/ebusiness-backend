@@ -50,6 +50,20 @@ func (r *MongoLeadCategoryRepository) GetByID(ctx context.Context, id primitive.
 	return &category, nil
 }
 
+func (r *MongoLeadCategoryRepository) FindByName(ctx context.Context, tenantID primitive.ObjectID, name string) (*domain.LeadCategory, error) {
+	filter := bson.M{"tenant_id": tenantID, "name": bson.M{"$regex": "^" + name + "$", "$options": "i"}}
+
+	var category domain.LeadCategory
+	err := r.collection.FindOne(ctx, filter).Decode(&category)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, errors.New("lead category not found")
+		}
+		return nil, err
+	}
+	return &category, nil
+}
+
 func (r *MongoLeadCategoryRepository) List(ctx context.Context, filter interface{}, offset, limit int64) ([]*domain.LeadCategory, int64, error) {
 	scopeFilter := middleware.GetScopeFilter(ctx)
 	query := bson.M{}

@@ -32,6 +32,10 @@ func RunMigrations(ctx context.Context, db *mongo.Database, cfg *config.Config) 
 		return err
 	}
 
+	if err := migrateImportPermissionPath(ctx, db.Collection("permission_rules")); err != nil {
+		slog.Warn("Failed to migrate import permission path", "error", err)
+	}
+
 	if err := seedRolePermissions(ctx, db.Collection("role_permissions"), db.Collection("permission_rules")); err != nil {
 		slog.Error("Failed to seed role permissions", "error", err)
 		return err
@@ -184,6 +188,7 @@ func seedPermissionRules(ctx context.Context, collection *mongo.Collection) erro
 		*domain.NewPermissionRule("leads", "Lead Management", "view", "View Lead", "/api/v1/leads/:id", "GET", "View lead details", true),
 		*domain.NewPermissionRule("leads", "Lead Management", "update", "Update Lead", "/api/v1/leads/:id", "PUT", "Update lead information", true),
 		*domain.NewPermissionRule("leads", "Lead Management", "list", "List Leads", "/api/v1/leads/list", "POST", "List all leads", true),
+		*domain.NewPermissionRule("leads", "Lead Management", "import", "Import Leads", "/api/v1/leads/import*", "POST", "Import leads from Excel/CSV file", true),
 
 		// Lead Management - Own Scope (for user role)
 		*domain.NewPermissionRule("leads", "Lead Management", "list_own", "List Own Leads", "/api/v1/leads/list", "POST", "List leads assigned to self", true, "self", "assigned_to"),
@@ -292,6 +297,22 @@ func seedPermissionRules(ctx context.Context, collection *mongo.Collection) erro
 	return nil
 }
 
+func migrateImportPermissionPath(ctx context.Context, collection *mongo.Collection) error {
+	filter := bson.M{"resource": "leads", "action": "import", "path": "/api/v1/leads/import"}
+	update := bson.M{"$set": bson.M{"path": "/api/v1/leads/import*"}}
+
+	result, err := collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	if result.ModifiedCount > 0 {
+		slog.Info("Migrated import permission path from /api/v1/leads/import to /api/v1/leads/import*")
+	}
+
+	return nil
+}
+
 func seedRolePermissions(ctx context.Context, rolePermsCollection, permRulesCollection *mongo.Collection) error {
 	slog.Info("Seeding role permissions (incremental)...")
 
@@ -336,6 +357,7 @@ func seedRolePermissions(ctx context.Context, rolePermsCollection, permRulesColl
 		{role: "admin", resource: "leads", action: "view"},
 		{role: "admin", resource: "leads", action: "update"},
 		{role: "admin", resource: "leads", action: "list"},
+		{role: "admin", resource: "leads", action: "import"},
 		{role: "admin", resource: "lead-categories", action: "create"},
 		{role: "admin", resource: "lead-categories", action: "view"},
 		{role: "admin", resource: "lead-categories", action: "update"},
@@ -392,6 +414,7 @@ func seedRolePermissions(ctx context.Context, rolePermsCollection, permRulesColl
 		{role: "user", resource: "leads", action: "view_own"},
 		{role: "user", resource: "leads", action: "update_own"},
 		{role: "user", resource: "leads", action: "list_own"},
+		{role: "user", resource: "leads", action: "import"},
 		{role: "user", resource: "lead-categories", action: "view"},
 		{role: "user", resource: "lead-categories", action: "list"},
 		{role: "user", resource: "lead-sources", action: "view"},

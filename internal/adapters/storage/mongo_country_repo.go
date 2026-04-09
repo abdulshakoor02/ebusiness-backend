@@ -108,3 +108,21 @@ func (r *MongoCountryRepository) Delete(ctx context.Context, id primitive.Object
 
 	return nil
 }
+
+func (r *MongoCountryRepository) FindByName(ctx context.Context, name string) (*domain.Country, error) {
+	filter := bson.M{"name": bson.M{"$regex": "^" + name + "$", "$options": "i"}}
+
+	var country domain.Country
+	err := r.collection.FindOne(ctx, filter).Decode(&country)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, errors.New("country not found")
+		}
+		return nil, err
+	}
+	return &country, nil
+}
+
+func (r *MongoCountryRepository) GetDefaultCountry(ctx context.Context) (*domain.Country, error) {
+	return r.FindByName(ctx, "United Arab Emirates")
+}

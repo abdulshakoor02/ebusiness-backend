@@ -10,6 +10,8 @@ import (
 	"github.com/abdulshakoor02/goCrmBackend/internal/adapters/handler"
 	"github.com/abdulshakoor02/goCrmBackend/internal/adapters/storage"
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/services"
+	"github.com/abdulshakoor02/goCrmBackend/pkg/ai"
+	"github.com/abdulshakoor02/goCrmBackend/pkg/cache"
 	"github.com/abdulshakoor02/goCrmBackend/pkg/database"
 	"github.com/abdulshakoor02/goCrmBackend/pkg/logger"
 	"github.com/abdulshakoor02/goCrmBackend/pkg/middleware"
@@ -72,7 +74,10 @@ func main() {
 	tenantService := services.NewTenantService(tenantRepo, userRepo)
 	userService := services.NewUserService(userRepo)
 	authService := services.NewAuthService(userRepo, tenantRepo, countryRepo, cfg)
-	leadService := services.NewLeadService(leadRepo)
+
+	aiClient := ai.NewClient(cfg.AIURL, cfg.AIAPIKey, cfg.AIModel)
+	importSessionCache := cache.NewImportSessionCache(30 * time.Minute)
+	leadService := services.NewLeadService(leadRepo, leadCategoryRepo, leadSourceRepo, qualificationRepo, countryRepo, leadCommentRepo, aiClient, cfg.MaxImportFileSize, cfg.MaxImportRows, importSessionCache)
 	leadCategoryService := services.NewLeadCategoryService(leadCategoryRepo)
 	leadSourceService := services.NewLeadSourceService(leadSourceRepo)
 	leadCommentService := services.NewLeadCommentService(leadCommentRepo, leadRepo)
@@ -171,6 +176,9 @@ func main() {
 	protected.Put("/leads/:id", authz, leadHandler.UpdateLead)
 	protected.Put("/leads/:id/status", authz, leadHandler.UpdateLeadStatus)
 	protected.Post("/leads/list", authz, leadHandler.ListLeads)
+	protected.Post("/leads/import/preview", authz, leadHandler.PreviewImport)
+	protected.Post("/leads/import/confirm", authz, leadHandler.ConfirmImport)
+	protected.Post("/leads/import", authz, leadHandler.ImportLeads)
 
 	leadCategoryHandler := handler.NewLeadCategoryHandler(leadCategoryService)
 	protected.Post("/lead-categories", authz, leadCategoryHandler.CreateLeadCategory)

@@ -1,7 +1,11 @@
 package handler
 
 import (
+	"bytes"
+	"io"
 	"log/slog"
+	"path/filepath"
+	"strings"
 
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/ports"
 	"github.com/gofiber/fiber/v2"
@@ -177,4 +181,119 @@ func (h *LeadHandler) UpdateLeadStatus(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(lead)
+}
+
+// ImportLeads godoc
+// @Summary      Import leads from Excel/CSV
+// @Description  Imports leads from uploaded .xlsx or .csv file with AI-powered column mapping
+// @Tags         leads
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        file formData file true "Excel or CSV file"
+// @Param        assigned_to formData string false "User ID to assign leads to (admin only)"
+// @Success      200  {object}  ports.ImportResult
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      401  {object}  map[string]interface{}
+// @Failure      403  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Security     Bearer
+// @Router       /leads/import [post]
+// @Deprecated
+func (h *LeadHandler) ImportLeads(c *fiber.Ctx) error {
+	return c.Status(fiber.StatusGone).JSON(fiber.Map{
+		"error": "This endpoint is deprecated. Use /leads/import/preview and /leads/import/confirm instead.",
+	})
+}
+
+// PreviewImport godoc
+// @Summary      Preview lead import mapping
+// @Description  Uploads a file and returns suggested column mappings for review before import
+// @Tags         leads
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        file formData file true "Excel or CSV file"
+// @Success      200  {object}  ports.ImportPreviewResponse
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      401  {object}  map[string]interface{}
+// @Failure      403  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Security     Bearer
+// @Router       /leads/import/preview [post]
+func (h *LeadHandler) PreviewImport(c *fiber.Ctx) error {
+	file, err := c.FormFile("file")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "No file uploaded"})
+	}
+
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	if ext != ".xlsx" && ext != ".csv" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Unsupported format. Please upload .xlsx or .csv files.",
+		})
+	}
+
+	src, err := file.Open()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to read file"})
+	}
+	defer src.Close()
+
+	buf := new(bytes.Buffer)
+	if _, err := io.Copy(buf, src); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to read file content"})
+	}
+
+	result, err := h.service.PreviewImport(c.Context(), buf.Bytes(), ext)
+	if err != nil {
+		slog.Error("Failed to preview import", "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(result)
+}
+
+// ConfirmImport godoc
+// @Summary      Confirm and execute lead import
+// @Description  Confirms column mappings and proceeds with the lead import using a previously created session
+// @Tags         leads
+// @Accept       json
+// @Produce      json
+// @Param        request body ports.ImportConfirmRequest true "Confirm Import Request"
+// @Success      200  {object}  ports.ImportResult
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      401  {object}  map[string]interface{}
+// @Failure      403  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Security     Bearer
+// @Router       /leads/import/confirm [post]
+func (h *LeadHandler) ConfirmImport(c *fiber.Ctx) error {
+	var req ports.ImportConfirmRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	if req.SessionID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "session_id is required"})
+	}
+
+	if len(req.Mappings) == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "mappings are required"})
+	}
+
+	role, _ := c.Locals("role").(string)
+	userID, _ := c.Locals("user_id").(string)
+
+	if role == "superadmin" || role == "admin" {
+		// keep assigned_to from request (may be empty)
+	} else {
+		req.AssignedTo = userID
+	}
+
+	result, err := h.service.ConfirmImport(c.Context(), req)
+	if err != nil {
+		slog.Error("Failed to confirm import", "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(result)
 }

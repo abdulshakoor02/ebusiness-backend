@@ -25,14 +25,17 @@ type UserRepository interface {
 type LeadRepository interface {
 	Create(ctx context.Context, lead *domain.Lead) error
 	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.Lead, error)
+	FindByEmailOrPhone(ctx context.Context, tenantID primitive.ObjectID, email, phone string) (*domain.Lead, error)
 	List(ctx context.Context, filter interface{}, search string, offset, limit int64) ([]*LeadListItem, int64, error)
 	Update(ctx context.Context, lead *domain.Lead) error
 	UpdateComments(ctx context.Context, leadID primitive.ObjectID, comments string) error
+	BulkInsert(ctx context.Context, leads []*domain.Lead) (int, error)
 }
 
 type LeadCategoryRepository interface {
 	Create(ctx context.Context, category *domain.LeadCategory) error
 	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.LeadCategory, error)
+	FindByName(ctx context.Context, tenantID primitive.ObjectID, name string) (*domain.LeadCategory, error)
 	List(ctx context.Context, filter interface{}, offset, limit int64) ([]*domain.LeadCategory, int64, error)
 	Update(ctx context.Context, category *domain.LeadCategory) error
 	Delete(ctx context.Context, id primitive.ObjectID) error
@@ -66,6 +69,7 @@ type LeadFollowUpRepository interface {
 type LeadSourceRepository interface {
 	Create(ctx context.Context, source *domain.LeadSource) error
 	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.LeadSource, error)
+	FindByName(ctx context.Context, tenantID primitive.ObjectID, name string) (*domain.LeadSource, error)
 	List(ctx context.Context, filter interface{}, offset, limit int64) ([]*domain.LeadSource, int64, error)
 	Update(ctx context.Context, source *domain.LeadSource) error
 	Delete(ctx context.Context, id primitive.ObjectID) error
@@ -101,6 +105,7 @@ type RolePermissionRepository interface {
 type QualificationRepository interface {
 	Create(ctx context.Context, qualification *domain.Qualification) error
 	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.Qualification, error)
+	FindByName(ctx context.Context, name string) (*domain.Qualification, error)
 	List(ctx context.Context, filter interface{}, offset, limit int64) ([]*domain.Qualification, int64, error)
 	Update(ctx context.Context, qualification *domain.Qualification) error
 	Delete(ctx context.Context, id primitive.ObjectID) error
@@ -109,6 +114,7 @@ type QualificationRepository interface {
 type CountryRepository interface {
 	Create(ctx context.Context, country *domain.Country) error
 	GetByID(ctx context.Context, id primitive.ObjectID) (*domain.Country, error)
+	FindByName(ctx context.Context, name string) (*domain.Country, error)
 	List(ctx context.Context, filter interface{}, offset, limit int64) ([]*domain.Country, int64, error)
 	Update(ctx context.Context, country *domain.Country) error
 	Delete(ctx context.Context, id primitive.ObjectID) error

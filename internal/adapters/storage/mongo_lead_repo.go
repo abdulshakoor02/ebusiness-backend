@@ -14,6 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type MongoLeadRepository struct {
@@ -290,4 +291,49 @@ func (r *MongoLeadRepository) UpdateComments(ctx context.Context, leadID primiti
 	}
 	_, err := r.collection.UpdateOne(ctx, filter, update)
 	return err
+}
+
+func (r *MongoLeadRepository) BulkInsert(ctx context.Context, leads []*domain.Lead) (int, error) {
+	docs := make([]interface{}, len(leads))
+	for i, lead := range leads {
+		docs[i] = lead
+	}
+
+	opts := options.InsertMany().SetOrdered(false)
+	result, err := r.collection.InsertMany(ctx, docs, opts)
+	if err != nil {
+		return 0, err
+	}
+
+	return len(result.InsertedIDs), nil
+}
+
+func (r *MongoLeadRepository) FindByEmailOrPhone(ctx context.Context, tenantID primitive.ObjectID, email, phone string) (*domain.Lead, error) {
+	var filter bson.M
+
+	if email != "" && phone != "" {
+		filter = bson.M{
+			"tenant_id": tenantID,
+			"$or": []bson.M{
+				{"email": email},
+				{"phone": phone},
+			},
+		}
+	} else if email != "" {
+		filter = bson.M{"tenant_id": tenantID, "email": email}
+	} else if phone != "" {
+		filter = bson.M{"tenant_id": tenantID, "phone": phone}
+	} else {
+		return nil, errors.New("email or phone required for lookup")
+	}
+
+	var lead domain.Lead
+	err := r.collection.FindOne(ctx, filter).Decode(&lead)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &lead, nil
 }

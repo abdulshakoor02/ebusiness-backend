@@ -252,6 +252,63 @@ type LeadService interface {
 	UpdateLead(ctx context.Context, id primitive.ObjectID, req UpdateLeadRequest) (*domain.Lead, error)
 	UpdateLeadStatus(ctx context.Context, id primitive.ObjectID, req UpdateLeadStatusRequest) (*domain.Lead, error)
 	ListLeads(ctx context.Context, req FilterRequest) ([]*LeadListItem, int64, error)
+	PreviewImport(ctx context.Context, data []byte, ext string) (*ImportPreviewResponse, error)
+	ConfirmImport(ctx context.Context, req ImportConfirmRequest) (*ImportResult, error)
+}
+
+type ImportError struct {
+	Row    int    `json:"row"`
+	Field  string `json:"field"`
+	Value  string `json:"value"`
+	Reason string `json:"reason"`
+}
+
+type ImportResult struct {
+	TotalRows             int           `json:"total_rows"`
+	Inserted              int           `json:"inserted"`
+	Skipped               int           `json:"skipped"`
+	CreatedCategories     []string      `json:"created_categories"`
+	CreatedSources        []string      `json:"created_sources"`
+	CreatedQualifications []string      `json:"created_qualifications"`
+	Errors                []ImportError `json:"errors"`
+}
+
+type ColumnMapping struct {
+	ColumnIndex int     `json:"column_index"`
+	HeaderName  string  `json:"header_name"`
+	TargetField string  `json:"target_field"`
+	Confidence  float64 `json:"confidence"`
+}
+
+type TargetFieldInfo struct {
+	Name          string `json:"name"`
+	Label         string `json:"label"`
+	Type          string `json:"type"`
+	ReferenceType string `json:"reference_type,omitempty"`
+}
+
+type ImportPreviewResponse struct {
+	SessionID              string            `json:"session_id"`
+	ExpiresAt              time.Time         `json:"expires_at"`
+	Headers                []string          `json:"headers"`
+	SampleRows             [][]string        `json:"sample_rows"`
+	TotalRows              int               `json:"total_rows"`
+	SuggestedMappings      []ColumnMapping   `json:"suggested_mappings"`
+	AvailableTargetFields  []TargetFieldInfo `json:"available_target_fields"`
+	ExistingCategories     []ReferenceOption `json:"existing_categories"`
+	ExistingSources        []ReferenceOption `json:"existing_sources"`
+	ExistingQualifications []ReferenceOption `json:"existing_qualifications"`
+}
+
+type ReferenceOption struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type ImportConfirmRequest struct {
+	SessionID  string          `json:"session_id"`
+	AssignedTo string          `json:"assigned_to,omitempty"`
+	Mappings   []ColumnMapping `json:"mappings"`
 }
 
 type CreateLeadCategoryRequest struct {

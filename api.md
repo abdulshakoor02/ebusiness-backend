@@ -1274,6 +1274,318 @@ The system supports **row-level security** via permission rules. Each permission
 
 ---
 
+### Import Leads from File (Two-Step Process)
+
+The lead import API uses a two-step process that lets users review and confirm column mappings before importing:
+
+1. **Preview** — Upload the file and receive suggested column mappings
+2. **Confirm** — Review/edit mappings and execute the import
+
+> **Note:** The old single-step `POST /leads/import` endpoint is deprecated and returns `410 Gone`. Use the two-step flow below instead.
+
+---
+
+### Step 1: Preview Import
+**Endpoint:** `POST /leads/import/preview`
+**Auth Required:** JWT + RBAC: All (Admin & User)
+
+Uploads a file, runs AI-powered column mapping, and returns a preview with suggested mappings for the user to review. The file is cached server-side for 30 minutes using a session ID.
+
+**Request:** `multipart/form-data`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `file` | file | Yes | The Excel (.xlsx) or CSV (.csv) file to import |
+
+**Example (JavaScript/FormData):**
+```javascript
+const formData = new FormData();
+formData.append('file', fileInput.files[0]);
+
+const response = await fetch('/api/v1/leads/import/preview', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${token}`
+  },
+  body: formData
+});
+
+const preview = await response.json();
+// Store preview.session_id for Step 2
+// Show preview.suggested_mappings to the user for review/editing
+```
+
+**Example (cURL):**
+```bash
+curl -X POST http://localhost:3000/api/v1/leads/import/preview \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -F "file=@leads.xlsx"
+```
+
+**Response (200 OK):**
+```json
+{
+  "session_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "expires_at": "2026-04-09T12:30:00Z",
+  "headers": ["Name", "Email", "Phone", "Status", "Source"],
+  "sample_rows": [
+    ["John Doe", "john@email.com", "+123456", "Hot Lead", "Website"],
+    ["Jane Smith", "jane@email.com", "+789012", "Warm Lead", "Facebook"]
+  ],
+  "total_rows": 150,
+  "suggested_mappings": [
+    { "column_index": 0, "header_name": "Name", "target_field": "full_name", "confidence": 0.95 },
+    { "column_index": 1, "header_name": "Email", "target_field": "email", "confidence": 1.0 },
+    { "column_index": 2, "header_name": "Phone", "target_field": "phone", "confidence": 1.0 },
+    { "column_index": 3, "header_name": "Status", "target_field": "category_name", "confidence": 0.9 },
+    { "column_index": 4, "header_name": "Source", "target_field": "source_name", "confidence": 0.9 }
+  ],
+  "available_target_fields": [
+    { "name": "first_name", "label": "First Name", "type": "string" },
+    { "name": "last_name", "label": "Last Name", "type": "string" },
+    { "name": "full_name", "label": "Full Name", "type": "string" },
+    { "name": "email", "label": "Email", "type": "string" },
+    { "name": "phone", "label": "Phone", "type": "string" },
+    { "name": "designation", "label": "Designation", "type": "string" },
+    { "name": "comments", "label": "Comments", "type": "string" },
+    { "name": "category_name", "label": "Category", "type": "reference", "reference_type": "category" },
+    { "name": "source_name", "label": "Source", "type": "reference", "reference_type": "source" },
+    { "name": "qualification_name", "label": "Qualification", "type": "reference", "reference_type": "qualification" },
+    { "name": "country_name", "label": "Country", "type": "reference", "reference_type": "country" }
+  ],
+  "existing_categories": [
+    { "id": "60b8f...", "name": "Hot Lead" },
+    { "id": "60b8f...", "name": "Warm Lead" }
+  ],
+  "existing_sources": [
+    { "id": "60b8f...", "name": "Website" },
+    { "id": "60b8f...", "name": "Facebook" }
+  ],
+  "existing_qualifications": [
+    { "id": "60d0h...", "name": "Bachelor" },
+    { "id": "60d0h...", "name": "Master" }
+  ]
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `session_id` | string | Unique session ID — pass this to the confirm endpoint. Expires in 30 minutes. |
+| `expires_at` | string | ISO 8601 timestamp when the session expires |
+| `headers` | string[] | Column headers from the uploaded file |
+| `sample_rows` | string[][] | Up to 10 sample rows from the file for preview |
+| `total_rows` | number | Total data rows in the file (excluding header) |
+| `suggested_mappings` | object[] | AI-suggested column mappings (see below) |
+| `available_target_fields` | object[] | All possible CRM fields the user can map to |
+| `existing_categories` | object[] | Existing categories in the system (for reference fields) |
+| `existing_sources` | object[] | Existing sources in the system (for reference fields) |
+| `existing_qualifications` | object[] | Existing qualifications in the system (for reference fields) |
+
+**Suggested Mapping Object:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `column_index` | number | 0-based index of the column in the file |
+| `header_name` | string | Original header name from the file |
+| `target_field` | string | Suggested CRM field name (from `available_target_fields`) |
+| `confidence` | number | AI confidence score (0.0 - 1.0). Low values may need manual review. |
+
+**Target Field Object:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Internal field name (use as `target_field` in mappings) |
+| `label` | string | Human-readable label for the UI |
+| `type` | string | `"string"` for text fields, `"reference"` for lookup fields |
+| `reference_type` | string | Only for reference fields: `"category"`, `"source"`, `"qualification"`, or `"country"` |
+
+**Reference Option Object:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | MongoDB ObjectID of the existing record |
+| `name` | string | Display name of the existing record |
+
+---
+
+### Step 2: Confirm and Execute Import
+**Endpoint:** `POST /leads/import/confirm`
+**Auth Required:** JWT + RBAC: All (Admin & User)
+
+Sends the confirmed (or edited) column mappings along with the session ID to execute the import.
+
+**Request:** `application/json`
+
+```json
+{
+  "session_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "assigned_to": "60b8f...",
+  "mappings": [
+    { "column_index": 0, "header_name": "Name", "target_field": "full_name", "confidence": 0.95 },
+    { "column_index": 1, "header_name": "Email", "target_field": "email", "confidence": 1.0 },
+    { "column_index": 2, "header_name": "Phone", "target_field": "phone", "confidence": 1.0 },
+    { "column_index": 3, "header_name": "Status", "target_field": "category_name", "confidence": 0.9 },
+    { "column_index": 4, "header_name": "Source", "target_field": "source_name", "confidence": 0.9 }
+  ]
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `session_id` | string | Yes | Session ID from the preview response |
+| `assigned_to` | string | No | User ID to assign all leads to (admin only, ignored for regular users) |
+| `mappings` | object[] | Yes | Confirmed column mappings (same structure as `suggested_mappings`) |
+
+**Assigned To Logic:**
+- **Admin/Superadmin**: Can specify `assigned_to` parameter to assign all imported leads to a specific user. If omitted, leads are created without assignment.
+- **User**: `assigned_to` is automatically set to the authenticated user's ID (leads are always assigned to themselves).
+
+**Example (JavaScript):**
+```javascript
+const confirmResponse = await fetch('/api/v1/leads/import/confirm', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    session_id: preview.session_id,
+    assigned_to: selectedUserId,  // optional, admin only
+    mappings: confirmedMappings   // user-confirmed/edited mappings
+  })
+});
+
+const result = await confirmResponse.json();
+```
+
+**Example (cURL):**
+```bash
+curl -X POST http://localhost:3000/api/v1/leads/import/confirm \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "assigned_to": "60b8f...",
+    "mappings": [
+      {"column_index": 0, "header_name": "Name", "target_field": "full_name", "confidence": 0.95},
+      {"column_index": 1, "header_name": "Email", "target_field": "email", "confidence": 1.0}
+    ]
+  }'
+```
+
+**Response (200 OK):**
+```json
+{
+  "total_rows": 150,
+  "inserted": 145,
+  "skipped": 5,
+  "created_categories": ["WhatsApp Lead"],
+  "created_sources": ["Instagram"],
+  "created_qualifications": [],
+  "errors": [
+    {
+      "row": 23,
+      "field": "qualification",
+      "value": "PhD in CS",
+      "reason": "qualification not found in system"
+    },
+    {
+      "row": 47,
+      "field": "contact",
+      "value": "",
+      "reason": "email or phone is required"
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `total_rows` | number | Total rows in the file (excluding header) |
+| `inserted` | number | Successfully imported leads |
+| `skipped` | number | Rows skipped due to validation errors or duplicates |
+| `created_categories` | string[] | New categories auto-created during import |
+| `created_sources` | string[] | New sources auto-created during import |
+| `created_qualifications` | string[] | Always empty (qualifications must exist) |
+| `errors` | object[] | Array of errors for skipped rows |
+
+**Error Object:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `row` | number | Row number in the file (1-indexed, header is row 1) |
+| `field` | string | Field that caused the error |
+| `value` | string | The invalid value |
+| `reason` | string | Human-readable error message |
+
+**Behavior:**
+- **Country**: If no country column or value is empty, defaults to "United Arab Emirates"
+- **Categories**: Missing categories are auto-created (tenant-scoped)
+- **Sources**: Missing sources are auto-created (tenant-scoped)
+- **Qualifications**: Must exist in the system; rows with missing qualifications are skipped with error
+- **Duplicates**: If a lead with the same email or phone already exists, a comment is added to the existing lead and the row is skipped
+- **Validation**: Each row must have at least first_name OR last_name, AND at least email OR phone
+
+**Error Responses:**
+
+**Session not found or expired (400):**
+```json
+{
+  "error": "import session not found or expired. Please re-upload your file."
+}
+```
+
+**Missing session_id (400):**
+```json
+{
+  "error": "session_id is required"
+}
+```
+
+**Missing mappings (400):**
+```json
+{
+  "error": "mappings are required"
+}
+```
+
+**Unsupported file format (400):**
+```json
+{
+  "error": "Unsupported format. Please upload .xlsx or .csv files."
+}
+```
+
+---
+
+### Frontend Integration Guide — Import Flow
+
+Here's a recommended UI flow for the two-step import:
+
+1. **Upload Step**: Show a file upload input (`.xlsx` or `.csv`). On submit, call `POST /leads/import/preview`.
+
+2. **Mapping Review Step**: Display the preview data:
+   - Show `headers` and `sample_rows` in a table preview
+   - For each column, show a dropdown with `available_target_fields` as options
+   - Pre-select the `suggested_mappings` in each dropdown
+   - Highlight low-confidence mappings (e.g., `confidence < 0.8`) for manual review
+   - For reference-type fields (`type: "reference"`), show the `existing_*` lists so users know what values already exist in the system
+
+3. **Confirm Step**: On user confirmation, call `POST /leads/import/confirm` with:
+   - The `session_id` from the preview response
+   - The final `mappings` array (with any user edits applied)
+   - Optional `assigned_to` (for admin users)
+
+4. **Results Step**: Display the `ImportResult` — inserted count, skipped count, created references, and any row-level errors.
+
+**Important Notes:**
+- Sessions expire after 30 minutes. If the confirm call fails with a session expired error, the user must re-upload the file.
+- The `confidence` field in mappings is informational — it can be shown as a visual indicator but does not affect import behavior.
+- To skip a column from import, simply omit it from the `mappings` array in the confirm request.
+
+---
+
 ## 6. Lead Categories
 
 ### Create Lead Category

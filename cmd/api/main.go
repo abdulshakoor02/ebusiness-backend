@@ -76,6 +76,7 @@ func main() {
 	authService := services.NewAuthService(userRepo, tenantRepo, countryRepo, cfg)
 
 	aiClient := ai.NewClient(cfg.AIURL, cfg.AIAPIKey, cfg.AIModel)
+	chatClient := ai.NewChatClient(cfg.AIURL, cfg.AIAPIKey, cfg.AIModel)
 	importSessionCache := cache.NewImportSessionCache(30 * time.Minute)
 	leadService := services.NewLeadService(leadRepo, leadCategoryRepo, leadSourceRepo, qualificationRepo, countryRepo, leadCommentRepo, aiClient, cfg.MaxImportFileSize, cfg.MaxImportRows, importSessionCache)
 	leadCategoryService := services.NewLeadCategoryService(leadCategoryRepo)
@@ -88,6 +89,10 @@ func main() {
 	productService := services.NewProductService(productRepo, tenantRepo)
 	invoiceService := services.NewInvoiceService(invoiceRepo, productRepo, tenantRepo, leadRepo, receiptRepo)
 	receiptService := services.NewReceiptService(receiptRepo, invoiceRepo, tenantRepo, leadRepo)
+
+	chartService := services.NewChartService(leadAppointmentRepo, leadCommentRepo)
+
+	aiChatService := services.NewAIChatService(chatClient, leadRepo, invoiceRepo, receiptRepo, leadAppointmentRepo, leadFollowUpRepo)
 
 	permissionRuleRepo := storage.NewMongoPermissionRuleRepository(db)
 	rolePermissionRepo := storage.NewMongoRolePermissionRepository(db)
@@ -236,6 +241,12 @@ func main() {
 	protected.Put("/receipts/:id", authz, receiptHandler.UpdateReceipt)
 	protected.Delete("/receipts/:id", authz, receiptHandler.DeleteReceipt)
 	protected.Post("/invoices/:invoice_id/receipts/list", authz, receiptHandler.ListReceiptsByInvoiceID)
+
+	chartHandler := handler.NewChartHandler(chartService)
+	protected.Get("/charts/monthly-summary", authz, chartHandler.GetMonthlySummary)
+
+	aiChatHandler := handler.NewAIChatHandler(aiChatService)
+	protected.Post("/ai/chat", authz, aiChatHandler.Chat)
 
 	slog.Info("Starting server", "port", cfg.ServerPort)
 	if err := app.Listen(":" + cfg.ServerPort); err != nil {

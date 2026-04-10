@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/domain"
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/ports"
@@ -145,6 +146,42 @@ func (r *MongoReceiptRepository) Delete(ctx context.Context, id primitive.Object
 	filter := bson.M{"_id": id}
 	_, err := r.collection.DeleteOne(ctx, filter)
 	return err
+}
+
+// SumPaidByDateRange returns total amount paid and receipt count for a tenant within a date range.
+func (r *MongoReceiptRepository) SumPaidByDateRange(ctx context.Context, tenantID primitive.ObjectID, startDate, endDate time.Time) (float64, int64, error) {
+	match := bson.M{
+		"tenant_id":    tenantID,
+		"payment_date": bson.M{"$gte": startDate, "$lte": endDate},
+	}
+
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: match}},
+		{{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: nil},
+			{Key: "total_paid", Value: bson.D{{Key: "$sum", Value: "$amount_paid"}}},
+			{Key: "count", Value: bson.D{{Key: "$sum", Value: 1}}},
+		}}},
+	}
+
+	cursor, err := r.collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer cursor.Close(ctx)
+
+	if cursor.Next(ctx) {
+		var result struct {
+			TotalPaid float64 `bson:"total_paid"`
+			Count     int64   `bson:"count"`
+		}
+		if err := cursor.Decode(&result); err != nil {
+			return 0, 0, err
+		}
+		return result.TotalPaid, result.Count, nil
+	}
+
+	return 0, 0, nil
 }
 
 var _ ports.ReceiptRepository = (*MongoReceiptRepository)(nil)

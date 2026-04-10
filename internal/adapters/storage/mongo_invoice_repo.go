@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/domain"
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/ports"
@@ -142,6 +143,47 @@ func (r *MongoInvoiceRepository) IncrementInvoiceNumber(ctx context.Context, ten
 	}
 
 	return tenant.NextInvoiceNumber, nil
+}
+
+// AggregateByDateRange returns invoice counts by status and total amounts by status for a tenant within a date range.
+func (r *MongoInvoiceRepository) AggregateByDateRange(ctx context.Context, tenantID primitive.ObjectID, startDate, endDate time.Time) (map[string]int64, map[string]float64, error) {
+	match := bson.M{
+		"tenant_id":  tenantID,
+		"created_at": bson.M{"$gte": startDate, "$lte": endDate},
+	}
+
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: match}},
+		{{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: "$status"},
+			{Key: "count", Value: bson.D{{Key: "$sum", Value: 1}}},
+			{Key: "total_amount", Value: bson.D{{Key: "$sum", Value: "$total_amount"}}},
+		}}},
+	}
+
+	cursor, err := r.collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer cursor.Close(ctx)
+
+	countByStatus := make(map[string]int64)
+	amountByStatus := make(map[string]float64)
+
+	for cursor.Next(ctx) {
+		var result struct {
+			ID          string  `bson:"_id"`
+			Count       int64   `bson:"count"`
+			TotalAmount float64 `bson:"total_amount"`
+		}
+		if err := cursor.Decode(&result); err != nil {
+			return nil, nil, err
+		}
+		countByStatus[result.ID] = result.Count
+		amountByStatus[result.ID] = result.TotalAmount
+	}
+
+	return countByStatus, amountByStatus, nil
 }
 
 var _ ports.InvoiceRepository = (*MongoInvoiceRepository)(nil)

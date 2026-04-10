@@ -3212,7 +3212,169 @@ These fields are used internally for invoice/receipt numbering and tax calculati
 
 ---
 
-## 17. System
+## 17. Charts
+
+### Get Monthly Summary Chart Data
+**Endpoint:** `GET /charts/monthly-summary`
+**Auth Required:** JWT + RBAC: All (Admin & User)
+
+Returns daily counts of appointments booked and comments added for each day of a specified month. If month and year are not provided, defaults to the current month.
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|------------|------|----------|---------|-------------|
+| `month` | int | No | Current month | Month number (1-12) |
+| `year` | int | No | Current year | 4-digit year (e.g., 2026) |
+
+**Example Request:**
+```
+GET /charts/monthly-summary?month=4&year=2026
+```
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "date": "2026-04-01",
+      "appointments_booked": 3,
+      "comments_added": 12
+    },
+    {
+      "date": "2026-04-02",
+      "appointments_booked": 5,
+      "comments_added": 18
+    },
+    {
+      "date": "2026-04-03",
+      "appointments_booked": 0,
+      "comments_added": 0
+    }
+  ]
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `data` | array | Array of daily data points for the entire month |
+| `date` | string | Date in YYYY-MM-DD format |
+| `appointments_booked` | int | Number of appointments created on that date |
+| `comments_added` | int | Number of comments added on that date |
+
+**Behavior:**
+- Returns data for all days in the specified month (28-31 days depending on the month)
+- Days with no appointments or comments return `0` for both counts
+- Data is scoped to the authenticated user's tenant
+- Results are sorted by date in ascending order
+
+**Example - Current Month:**
+```
+GET /charts/monthly-summary
+```
+Returns data for the current month of the current year.
+
+---
+
+## 18. AI Chat
+
+### Chat with AI Assistant
+**Endpoint:** `POST /ai/chat`
+**Auth Required:** JWT + RBAC
+
+Ask natural language questions about your CRM data. The AI uses tool-calling to fetch real data from your database (scoped to your tenant) and returns a natural language answer.
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `message` | string | Yes | Your question in natural language |
+| `history` | array | No | Conversation history for multi-turn chat |
+
+**History Item:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `role` | string | `"user"` or `"assistant"` |
+| `content` | string | The message content |
+
+**Example Request:**
+```json
+{
+  "message": "What's the sales this month?",
+  "history": []
+}
+```
+
+**Example Request with History:**
+```json
+{
+  "message": "What about appointments?",
+  "history": [
+    { "role": "user", "content": "What's the sales this month?" },
+    { "role": "assistant", "content": "This month you've collected $12,500 in revenue across 8 receipts." }
+  ]
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "data": {
+    "answer": "This month you've collected $12,500.00 in total revenue across 8 receipts.",
+    "tool_calls": [
+      {
+        "tool_name": "get_sales_summary",
+        "data": {
+          "total_paid": 12500.00,
+          "receipt_count": 8,
+          "month": 6,
+          "year": 2025
+        }
+      }
+    ]
+  }
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `answer` | string | Natural language answer from the AI |
+| `tool_calls` | array | List of tools called (for transparency/debugging) |
+| `tool_calls[].tool_name` | string | Name of the tool that was executed |
+| `tool_calls[].data` | object | Raw data returned by the tool |
+
+**Available Tools (the AI decides which to call):**
+
+| Tool Name | Description | Parameters |
+|-----------|-------------|------------|
+| `get_sales_summary` | Total revenue collected | `month` (1-12), `year` |
+| `get_appointments_summary` | Appointment counts | `month` (1-12), `year`, `status` (scheduled/completed/rescheduled/cancelled) |
+| `get_leads_summary` | Lead counts by status | `month` (1-12), `year` |
+| `get_invoices_summary` | Invoice counts and amounts by status | `month` (1-12), `year` |
+| `get_followups_summary` | Follow-up counts by status | `month` (1-12), `year` |
+
+**Example Questions:**
+- "What's the sales this month?"
+- "How many appointments were booked in June 2025?"
+- "How many leads do we have this month?"
+- "What's the invoice status breakdown for this quarter?"
+- "How many follow-ups are still active?"
+
+**Behavior:**
+- All data is scoped to the authenticated user's tenant
+- If month/year are not specified in the question, defaults to the current month/year
+- The AI may call multiple tools in a single request to answer complex questions
+- Conversation history enables follow-up questions
+- Maximum 3 tool-calling rounds per request to prevent infinite loops
+
+---
+
+## 19. System
 
 ### System Health Check
 **Endpoint:** `GET /health`

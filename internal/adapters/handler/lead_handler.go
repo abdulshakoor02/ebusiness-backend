@@ -39,6 +39,13 @@ func (h *LeadHandler) CreateLead(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
+	role, _ := c.Locals("role").(string)
+	userID, _ := c.Locals("user_id").(string)
+
+	if role == "user" {
+		req.AssignedTo = userID
+	}
+
 	lead, err := h.service.CreateLead(c.Context(), req)
 	if err != nil {
 		slog.Error("Failed to create lead", "error", err)

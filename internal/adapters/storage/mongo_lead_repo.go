@@ -42,6 +42,14 @@ func (r *MongoLeadRepository) GetByID(ctx context.Context, id primitive.ObjectID
 		}
 	}
 
+	// Apply scope filter (e.g., assigned_to = self)
+	if scopeFilter.ScopeType == "self" && scopeFilter.SelfUserID != "" && scopeFilter.FilterField != "" && !scopeFilter.IsSystemAdmin {
+		userOID, err := primitive.ObjectIDFromHex(scopeFilter.SelfUserID)
+		if err == nil {
+			filter[scopeFilter.FilterField] = userOID
+		}
+	}
+
 	var lead domain.Lead
 	err := r.collection.FindOne(ctx, filter).Decode(&lead)
 	if err != nil {
@@ -251,6 +259,14 @@ func (r *MongoLeadRepository) Update(ctx context.Context, lead *domain.Lead) err
 		}
 	}
 
+	// Apply scope filter (e.g., assigned_to = self)
+	if scopeFilter.ScopeType == "self" && scopeFilter.SelfUserID != "" && scopeFilter.FilterField != "" && !scopeFilter.IsSystemAdmin {
+		userOID, err := primitive.ObjectIDFromHex(scopeFilter.SelfUserID)
+		if err == nil {
+			filter[scopeFilter.FilterField] = userOID
+		}
+	}
+
 	update := bson.M{
 		"$set": bson.M{
 			"first_name":       lead.FirstName,
@@ -280,6 +296,14 @@ func (r *MongoLeadRepository) UpdateComments(ctx context.Context, leadID primiti
 	if !scopeFilter.IsSystemAdmin {
 		if tenantID, ok := getTenantIDFromContext(ctx); ok {
 			filter["tenant_id"] = tenantID
+		}
+	}
+
+	// Apply scope filter (e.g., assigned_to = self)
+	if scopeFilter.ScopeType == "self" && scopeFilter.SelfUserID != "" && scopeFilter.FilterField != "" && !scopeFilter.IsSystemAdmin {
+		userOID, err := primitive.ObjectIDFromHex(scopeFilter.SelfUserID)
+		if err == nil {
+			filter[scopeFilter.FilterField] = userOID
 		}
 	}
 
@@ -336,4 +360,40 @@ func (r *MongoLeadRepository) FindByEmailOrPhone(ctx context.Context, tenantID p
 		return nil, err
 	}
 	return &lead, nil
+}
+
+// CountByStatusAndDateRange returns lead counts grouped by status for a tenant within a date range.
+func (r *MongoLeadRepository) CountByStatusAndDateRange(ctx context.Context, tenantID primitive.ObjectID, startDate, endDate time.Time) (map[string]int64, error) {
+	match := bson.M{
+		"tenant_id":  tenantID,
+		"created_at": bson.M{"$gte": startDate, "$lte": endDate},
+	}
+
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: match}},
+		{{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: "$status"},
+			{Key: "count", Value: bson.D{{Key: "$sum", Value: 1}}},
+		}}},
+	}
+
+	cursor, err := r.collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	result := make(map[string]int64)
+	for cursor.Next(ctx) {
+		var doc struct {
+			ID    string `bson:"_id"`
+			Count int64  `bson:"count"`
+		}
+		if err := cursor.Decode(&doc); err != nil {
+			return nil, err
+		}
+		result[doc.ID] = doc.Count
+	}
+
+	return result, nil
 }

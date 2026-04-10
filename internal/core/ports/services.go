@@ -563,3 +563,13 @@ type ReceiptService interface {
 	DeleteReceipt(ctx context.Context, id primitive.ObjectID) error
 	ListReceiptsByInvoiceID(ctx context.Context, invoiceID primitive.ObjectID) ([]*domain.Receipt, error)
 }
+
+type MonthlyChartDataPoint struct {
+	Date               string `json:"date"`
+	AppointmentsBooked int64  `json:"appointments_booked"`
+	CommentsAdded      int64  `json:"comments_added"`
+}
+
+type ChartService interface {
+	GetMonthlySummary(ctx context.Context, month, year int) ([]MonthlyChartDataPoint, error)
+}

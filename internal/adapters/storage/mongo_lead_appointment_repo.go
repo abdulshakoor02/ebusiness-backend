@@ -155,3 +155,74 @@ func (r *MongoLeadAppointmentRepository) Delete(ctx context.Context, id primitiv
 
 	return nil
 }
+
+func (r *MongoLeadAppointmentRepository) CountByDateRange(ctx context.Context, startDate, endDate time.Time) (map[string]int64, error) {
+	scopeFilter := middleware.GetScopeFilter(ctx)
+	match := bson.M{
+		"created_at": bson.M{
+			"$gte": startDate,
+			"$lte": endDate,
+		},
+	}
+
+	if !scopeFilter.IsSystemAdmin {
+		tenantID, ok := getTenantIDFromContext(ctx)
+		if !ok {
+			return nil, errors.New("tenant context required")
+		}
+		match["tenant_id"] = tenantID
+	}
+
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: match}},
+		{
+			{Key: "$group", Value: bson.D{
+				{Key: "_id", Value: bson.M{
+					"$dateToString": bson.M{
+						"format": "%Y-%m-%d",
+						"date":   "$created_at",
+					},
+				}},
+				{Key: "count", Value: bson.M{"$sum": 1}},
+			}},
+		},
+	}
+
+	cursor, err := r.collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	result := make(map[string]int64)
+	for cursor.Next(ctx) {
+		var doc struct {
+			ID    string `bson:"_id"`
+			Count int64  `bson:"count"`
+		}
+		if err := cursor.Decode(&doc); err != nil {
+			return nil, err
+		}
+		result[doc.ID] = doc.Count
+	}
+
+	return result, nil
+}
+
+// CountByTenantAndDateRange returns the count of appointments for a tenant within a date range,
+// optionally filtered by status.
+func (r *MongoLeadAppointmentRepository) CountByTenantAndDateRange(ctx context.Context, tenantID primitive.ObjectID, startDate, endDate time.Time, status string) (int64, error) {
+	filter := bson.M{
+		"tenant_id":  tenantID,
+		"created_at": bson.M{"$gte": startDate, "$lte": endDate},
+	}
+	if status != "" {
+		filter["status"] = status
+	}
+
+	count, err := r.collection.CountDocuments(ctx, filter)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}

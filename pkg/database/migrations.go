@@ -278,6 +278,9 @@ func seedPermissionRules(ctx context.Context, collection *mongo.Collection) erro
 
 		// Charts
 		*domain.NewPermissionRule("charts", "Charts", "view", "View Monthly Chart Summary", "/api/v1/charts/monthly-summary", "GET", "View monthly chart data for appointments and comments", true),
+
+		// AI
+		*domain.NewPermissionRule("ai", "AI Services", "chat", "Use AI Chat", "/api/v1/ai/chat", "POST", "Allow using the AI Chat with tool calling", true),
 	}
 
 	// Use upsert to incrementally add new rules (won't duplicate existing ones)
@@ -462,6 +465,9 @@ func seedRolePermissions(ctx context.Context, rolePermsCollection, permRulesColl
 		// Charts (admin and user)
 		{role: "admin", resource: "charts", action: "view"},
 		{role: "user", resource: "charts", action: "view"},
+
+		// AI
+		{role: "admin", resource: "ai", action: "chat"},
 	}
 
 	// Insert incrementally - check if role permission already exists before inserting

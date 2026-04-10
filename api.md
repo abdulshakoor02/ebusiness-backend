@@ -3278,7 +3278,103 @@ Returns data for the current month of the current year.
 
 ---
 
-## 18. System
+## 18. AI Chat
+
+### Chat with AI Assistant
+**Endpoint:** `POST /ai/chat`
+**Auth Required:** JWT + RBAC
+
+Ask natural language questions about your CRM data. The AI uses tool-calling to fetch real data from your database (scoped to your tenant) and returns a natural language answer.
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `message` | string | Yes | Your question in natural language |
+| `history` | array | No | Conversation history for multi-turn chat |
+
+**History Item:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `role` | string | `"user"` or `"assistant"` |
+| `content` | string | The message content |
+
+**Example Request:**
+```json
+{
+  "message": "What's the sales this month?",
+  "history": []
+}
+```
+
+**Example Request with History:**
+```json
+{
+  "message": "What about appointments?",
+  "history": [
+    { "role": "user", "content": "What's the sales this month?" },
+    { "role": "assistant", "content": "This month you've collected $12,500 in revenue across 8 receipts." }
+  ]
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "data": {
+    "answer": "This month you've collected $12,500.00 in total revenue across 8 receipts.",
+    "tool_calls": [
+      {
+        "tool_name": "get_sales_summary",
+        "data": {
+          "total_paid": 12500.00,
+          "receipt_count": 8,
+          "month": 6,
+          "year": 2025
+        }
+      }
+    ]
+  }
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `answer` | string | Natural language answer from the AI |
+| `tool_calls` | array | List of tools called (for transparency/debugging) |
+| `tool_calls[].tool_name` | string | Name of the tool that was executed |
+| `tool_calls[].data` | object | Raw data returned by the tool |
+
+**Available Tools (the AI decides which to call):**
+
+| Tool Name | Description | Parameters |
+|-----------|-------------|------------|
+| `get_sales_summary` | Total revenue collected | `month` (1-12), `year` |
+| `get_appointments_summary` | Appointment counts | `month` (1-12), `year`, `status` (scheduled/completed/rescheduled/cancelled) |
+| `get_leads_summary` | Lead counts by status | `month` (1-12), `year` |
+| `get_invoices_summary` | Invoice counts and amounts by status | `month` (1-12), `year` |
+| `get_followups_summary` | Follow-up counts by status | `month` (1-12), `year` |
+
+**Example Questions:**
+- "What's the sales this month?"
+- "How many appointments were booked in June 2025?"
+- "How many leads do we have this month?"
+- "What's the invoice status breakdown for this quarter?"
+- "How many follow-ups are still active?"
+
+**Behavior:**
+- All data is scoped to the authenticated user's tenant
+- If month/year are not specified in the question, defaults to the current month/year
+- The AI may call multiple tools in a single request to answer complex questions
+- Conversation history enables follow-up questions
+- Maximum 3 tool-calling rounds per request to prevent infinite loops
+
+---
+
+## 19. System
 
 ### System Health Check
 **Endpoint:** `GET /health`

@@ -46,6 +46,14 @@ func (m *MockLeadFollowUpRepo) Delete(ctx context.Context, id primitive.ObjectID
 	return args.Error(0)
 }
 
+func (m *MockLeadFollowUpRepo) CountByDateRange(ctx context.Context, tenantID primitive.ObjectID, startDate, endDate time.Time) (map[string]int64, error) {
+	args := m.Called(ctx, tenantID, startDate, endDate)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(map[string]int64), args.Error(1)
+}
+
 // Mock lead repository
 type MockLeadRepo struct {
 	mock.Mock
@@ -77,6 +85,27 @@ func (m *MockLeadRepo) Update(ctx context.Context, lead *domain.Lead) error {
 func (m *MockLeadRepo) UpdateComments(ctx context.Context, leadID primitive.ObjectID, comments string) error {
 	args := m.Called(ctx, leadID, comments)
 	return args.Error(0)
+}
+
+func (m *MockLeadRepo) FindByEmailOrPhone(ctx context.Context, tenantID primitive.ObjectID, email, phone string) (*domain.Lead, error) {
+	args := m.Called(ctx, tenantID, email, phone)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Lead), args.Error(1)
+}
+
+func (m *MockLeadRepo) BulkInsert(ctx context.Context, leads []*domain.Lead) (int, error) {
+	args := m.Called(ctx, leads)
+	return args.Int(0), args.Error(1)
+}
+
+func (m *MockLeadRepo) CountByStatusAndDateRange(ctx context.Context, tenantID primitive.ObjectID, startDate, endDate time.Time) (map[string]int64, error) {
+	args := m.Called(ctx, tenantID, startDate, endDate)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(map[string]int64), args.Error(1)
 }
 
 func TestCreateLeadFollowUp_Success(t *testing.T) {

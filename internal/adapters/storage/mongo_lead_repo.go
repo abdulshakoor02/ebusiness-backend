@@ -361,3 +361,39 @@ func (r *MongoLeadRepository) FindByEmailOrPhone(ctx context.Context, tenantID p
 	}
 	return &lead, nil
 }
+
+// CountByStatusAndDateRange returns lead counts grouped by status for a tenant within a date range.
+func (r *MongoLeadRepository) CountByStatusAndDateRange(ctx context.Context, tenantID primitive.ObjectID, startDate, endDate time.Time) (map[string]int64, error) {
+	match := bson.M{
+		"tenant_id":  tenantID,
+		"created_at": bson.M{"$gte": startDate, "$lte": endDate},
+	}
+
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: match}},
+		{{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: "$status"},
+			{Key: "count", Value: bson.D{{Key: "$sum", Value: 1}}},
+		}}},
+	}
+
+	cursor, err := r.collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	result := make(map[string]int64)
+	for cursor.Next(ctx) {
+		var doc struct {
+			ID    string `bson:"_id"`
+			Count int64  `bson:"count"`
+		}
+		if err := cursor.Decode(&doc); err != nil {
+			return nil, err
+		}
+		result[doc.ID] = doc.Count
+	}
+
+	return result, nil
+}

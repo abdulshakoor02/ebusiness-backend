@@ -31,6 +31,8 @@ type LeadRepository interface {
 	Update(ctx context.Context, lead *domain.Lead) error
 	UpdateComments(ctx context.Context, leadID primitive.ObjectID, comments string) error
 	BulkInsert(ctx context.Context, leads []*domain.Lead) (int, error)
+	// AI Chat aggregation
+	CountByStatusAndDateRange(ctx context.Context, tenantID primitive.ObjectID, startDate, endDate time.Time) (map[string]int64, error)
 }
 
 type LeadCategoryRepository interface {
@@ -59,6 +61,8 @@ type LeadAppointmentRepository interface {
 	Update(ctx context.Context, appointment *domain.LeadAppointment) error
 	Delete(ctx context.Context, id primitive.ObjectID) error
 	CountByDateRange(ctx context.Context, startDate, endDate time.Time) (map[string]int64, error)
+	// AI Chat aggregation
+	CountByTenantAndDateRange(ctx context.Context, tenantID primitive.ObjectID, startDate, endDate time.Time, status string) (int64, error)
 }
 
 type LeadFollowUpRepository interface {
@@ -67,6 +71,8 @@ type LeadFollowUpRepository interface {
 	ListByLeadID(ctx context.Context, leadID primitive.ObjectID, filter interface{}, offset, limit int64) ([]*FollowUpListItem, int64, error)
 	Update(ctx context.Context, followUp *domain.LeadFollowUp) error
 	Delete(ctx context.Context, id primitive.ObjectID) error
+	// AI Chat aggregation
+	CountByDateRange(ctx context.Context, tenantID primitive.ObjectID, startDate, endDate time.Time) (map[string]int64, error)
 }
 
 type LeadSourceRepository interface {
@@ -140,6 +146,8 @@ type InvoiceRepository interface {
 	List(ctx context.Context, filter interface{}, offset, limit int64) ([]*domain.Invoice, int64, error)
 	Update(ctx context.Context, invoice *domain.Invoice) error
 	IncrementInvoiceNumber(ctx context.Context, tenantID primitive.ObjectID) (int64, error)
+	// AI Chat aggregation
+	AggregateByDateRange(ctx context.Context, tenantID primitive.ObjectID, startDate, endDate time.Time) (map[string]int64, map[string]float64, error)
 }
 
 type ReceiptRepository interface {
@@ -151,4 +159,6 @@ type ReceiptRepository interface {
 	IncrementReceiptNumber(ctx context.Context, tenantID primitive.ObjectID) (int64, error)
 	Update(ctx context.Context, receipt *domain.Receipt) error
 	Delete(ctx context.Context, id primitive.ObjectID) error
+	// AI Chat aggregation
+	SumPaidByDateRange(ctx context.Context, tenantID primitive.ObjectID, startDate, endDate time.Time) (float64, int64, error)
 }

@@ -208,3 +208,21 @@ func (r *MongoLeadAppointmentRepository) CountByDateRange(ctx context.Context, s
 
 	return result, nil
 }
+
+// CountByTenantAndDateRange returns the count of appointments for a tenant within a date range,
+// optionally filtered by status.
+func (r *MongoLeadAppointmentRepository) CountByTenantAndDateRange(ctx context.Context, tenantID primitive.ObjectID, startDate, endDate time.Time, status string) (int64, error) {
+	filter := bson.M{
+		"tenant_id":  tenantID,
+		"created_at": bson.M{"$gte": startDate, "$lte": endDate},
+	}
+	if status != "" {
+		filter["status"] = status
+	}
+
+	count, err := r.collection.CountDocuments(ctx, filter)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}

@@ -275,6 +275,9 @@ func seedPermissionRules(ctx context.Context, collection *mongo.Collection) erro
 		*domain.NewPermissionRule("receipts", "Receipt Management", "update", "Update Receipt", "/api/v1/receipts/:id", "PUT", "Update receipt", true),
 		*domain.NewPermissionRule("receipts", "Receipt Management", "delete", "Delete Receipt", "/api/v1/receipts/:id", "DELETE", "Delete receipt", true),
 		*domain.NewPermissionRule("receipts", "Receipt Management", "list", "List Receipts", "/api/v1/invoices/:invoice_id/receipts/list", "POST", "List all receipts for an invoice", true),
+
+		// Charts
+		*domain.NewPermissionRule("charts", "Charts", "view", "View Monthly Chart Summary", "/api/v1/charts/monthly-summary", "GET", "View monthly chart data for appointments and comments", true),
 	}
 
 	// Use upsert to incrementally add new rules (won't duplicate existing ones)
@@ -455,6 +458,10 @@ func seedRolePermissions(ctx context.Context, rolePermsCollection, permRulesColl
 		{role: "admin", resource: "permissions", action: "view-role-permissions"},
 		{role: "admin", resource: "permissions", action: "bulk-update-roles"},
 		{role: "admin", resource: "permissions", action: "available-rules"},
+
+		// Charts (admin and user)
+		{role: "admin", resource: "charts", action: "view"},
+		{role: "user", resource: "charts", action: "view"},
 	}
 
 	// Insert incrementally - check if role permission already exists before inserting

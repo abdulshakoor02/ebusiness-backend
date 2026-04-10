@@ -89,6 +89,8 @@ func main() {
 	invoiceService := services.NewInvoiceService(invoiceRepo, productRepo, tenantRepo, leadRepo, receiptRepo)
 	receiptService := services.NewReceiptService(receiptRepo, invoiceRepo, tenantRepo, leadRepo)
 
+	chartService := services.NewChartService(leadAppointmentRepo, leadCommentRepo)
+
 	permissionRuleRepo := storage.NewMongoPermissionRuleRepository(db)
 	rolePermissionRepo := storage.NewMongoRolePermissionRepository(db)
 	permissionService := services.NewPermissionService(permissionRuleRepo, rolePermissionRepo)
@@ -236,6 +238,9 @@ func main() {
 	protected.Put("/receipts/:id", authz, receiptHandler.UpdateReceipt)
 	protected.Delete("/receipts/:id", authz, receiptHandler.DeleteReceipt)
 	protected.Post("/invoices/:invoice_id/receipts/list", authz, receiptHandler.ListReceiptsByInvoiceID)
+
+	chartHandler := handler.NewChartHandler(chartService)
+	protected.Get("/charts/monthly-summary", authz, chartHandler.GetMonthlySummary)
 
 	slog.Info("Starting server", "port", cfg.ServerPort)
 	if err := app.Listen(":" + cfg.ServerPort); err != nil {

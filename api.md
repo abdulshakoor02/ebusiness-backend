@@ -3212,7 +3212,73 @@ These fields are used internally for invoice/receipt numbering and tax calculati
 
 ---
 
-## 17. System
+## 17. Charts
+
+### Get Monthly Summary Chart Data
+**Endpoint:** `GET /charts/monthly-summary`
+**Auth Required:** JWT + RBAC: All (Admin & User)
+
+Returns daily counts of appointments booked and comments added for each day of a specified month. If month and year are not provided, defaults to the current month.
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|------------|------|----------|---------|-------------|
+| `month` | int | No | Current month | Month number (1-12) |
+| `year` | int | No | Current year | 4-digit year (e.g., 2026) |
+
+**Example Request:**
+```
+GET /charts/monthly-summary?month=4&year=2026
+```
+
+**Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "date": "2026-04-01",
+      "appointments_booked": 3,
+      "comments_added": 12
+    },
+    {
+      "date": "2026-04-02",
+      "appointments_booked": 5,
+      "comments_added": 18
+    },
+    {
+      "date": "2026-04-03",
+      "appointments_booked": 0,
+      "comments_added": 0
+    }
+  ]
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `data` | array | Array of daily data points for the entire month |
+| `date` | string | Date in YYYY-MM-DD format |
+| `appointments_booked` | int | Number of appointments created on that date |
+| `comments_added` | int | Number of comments added on that date |
+
+**Behavior:**
+- Returns data for all days in the specified month (28-31 days depending on the month)
+- Days with no appointments or comments return `0` for both counts
+- Data is scoped to the authenticated user's tenant
+- Results are sorted by date in ascending order
+
+**Example - Current Month:**
+```
+GET /charts/monthly-summary
+```
+Returns data for the current month of the current year.
+
+---
+
+## 18. System
 
 ### System Health Check
 **Endpoint:** `GET /health`

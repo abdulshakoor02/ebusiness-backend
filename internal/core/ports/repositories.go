@@ -2,6 +2,7 @@ package ports
 
 import (
 	"context"
+	"time"
 
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/domain"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -48,6 +49,7 @@ type LeadCommentRepository interface {
 	ListByLeadID(ctx context.Context, leadID primitive.ObjectID, filter interface{}, offset, limit int64) ([]*CommentListItem, int64, error)
 	Update(ctx context.Context, comment *domain.LeadComment) error
 	Delete(ctx context.Context, id primitive.ObjectID) error
+	CountByDateRange(ctx context.Context, startDate, endDate time.Time) (map[string]int64, error)
 }
 
 type LeadAppointmentRepository interface {
@@ -56,6 +58,7 @@ type LeadAppointmentRepository interface {
 	ListByLeadID(ctx context.Context, leadID primitive.ObjectID, filter interface{}, offset, limit int64) ([]*AppointmentListItem, int64, error)
 	Update(ctx context.Context, appointment *domain.LeadAppointment) error
 	Delete(ctx context.Context, id primitive.ObjectID) error
+	CountByDateRange(ctx context.Context, startDate, endDate time.Time) (map[string]int64, error)
 }
 
 type LeadFollowUpRepository interface {

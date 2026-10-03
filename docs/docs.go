@@ -3557,9 +3557,6 @@ const docTemplate = `{
                 "currency": {
                     "type": "string"
                 },
-                "next_cloud_folder": {
-                    "type": "string"
-                },
                 "tax": {
                     "type": "number"
                 },

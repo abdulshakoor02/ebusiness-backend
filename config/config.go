@@ -3,6 +3,8 @@ package config
 import (
 	"os"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -25,6 +27,17 @@ type Config struct {
 	AIModel           string
 	MaxImportFileSize int64 // bytes, default 10MB
 	MaxImportRows     int64 // max rows per import, default 10000
+
+	// Facebook OAuth Integration
+	FacebookAppID           string
+	FacebookAppSecret       string
+	FacebookRedirectURI     string
+	FacebookAPIVersion      string
+	FacebookScopes          []string
+	FacebookPostLoginURI    string
+	FacebookStateTTL        time.Duration
+	FacebookWebhookVerify   string
+	FacebookFrontendOrigin  string
 }
 
 func LoadConfig() *Config {
@@ -53,6 +66,15 @@ func LoadConfig() *Config {
 		AIModel:            getEnv("AI_MODEL", ""),
 		MaxImportFileSize:  getEnvInt64("MAX_IMPORT_FILE_SIZE", 10*1024*1024),
 		MaxImportRows:      getEnvInt64("MAX_IMPORT_ROWS", 10000),
+		FacebookAppID:        getEnv("FACEBOOK_APP_ID", ""),
+		FacebookAppSecret:    getEnv("FACEBOOK_APP_SECRET", ""),
+		FacebookRedirectURI:  getEnv("FACEBOOK_REDIRECT_URI", ""),
+		FacebookAPIVersion:   getEnv("FACEBOOK_API_VERSION", "v21.0"),
+		FacebookScopes:       getEnvSlice("FACEBOOK_SCOPES", []string{"ads_read", "business_management", "pages_show_list", "public_profile"}),
+		FacebookPostLoginURI: getEnv("FACEBOOK_POST_LOGIN_URI", "http://localhost:3000/dashboard/company-info"),
+		FacebookStateTTL:     getEnvDuration("FACEBOOK_STATE_TTL", "10m"),
+		FacebookWebhookVerify:  getEnv("FACEBOOK_WEBHOOK_VERIFY_TOKEN", ""),
+		FacebookFrontendOrigin: getEnv("FACEBOOK_FRONTEND_ORIGIN", "http://localhost:3000"),
 	}
 }
 
@@ -70,4 +92,34 @@ func getEnvInt64(key string, fallback int64) int64 {
 		}
 	}
 	return fallback
+}
+
+func getEnvSlice(key string, fallback []string) []string {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
+	}
+	parts := strings.Split(value, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if t := strings.TrimSpace(p); t != "" {
+			out = append(out, t)
+		}
+	}
+	if len(out) == 0 {
+		return fallback
+	}
+	return out
+}
+
+func getEnvDuration(key, fallback string) time.Duration {
+	value := os.Getenv(key)
+	if value == "" {
+		value = fallback
+	}
+	d, err := time.ParseDuration(value)
+	if err != nil {
+		return 10 * time.Minute
+	}
+	return d
 }

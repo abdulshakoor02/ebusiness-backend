@@ -7,12 +7,14 @@ import (
 
 	"github.com/abdulshakoor02/goCrmBackend/config"
 	"github.com/abdulshakoor02/goCrmBackend/docs"
+	"github.com/abdulshakoor02/goCrmBackend/internal/adapters/fbhandler"
 	"github.com/abdulshakoor02/goCrmBackend/internal/adapters/handler"
 	"github.com/abdulshakoor02/goCrmBackend/internal/adapters/storage"
 	"github.com/abdulshakoor02/goCrmBackend/internal/core/services"
 	"github.com/abdulshakoor02/goCrmBackend/pkg/ai"
 	"github.com/abdulshakoor02/goCrmBackend/pkg/cache"
 	"github.com/abdulshakoor02/goCrmBackend/pkg/database"
+	"github.com/abdulshakoor02/goCrmBackend/pkg/facebook"
 	"github.com/abdulshakoor02/goCrmBackend/pkg/logger"
 	"github.com/abdulshakoor02/goCrmBackend/pkg/middleware"
 	"github.com/gofiber/fiber/v2"
@@ -100,6 +102,18 @@ func main() {
 
 	permissionHandler := handler.NewPermissionHandler(permissionService)
 
+	// Facebook integration
+	fbRepo := storage.NewMongoFacebookConnectionRepository(db)
+	fbAssignRepo := storage.NewMongoFacebookAssignmentRepository(db)
+	fbClient := facebook.NewClient(cfg.FacebookAppID, cfg.FacebookAppSecret, cfg.FacebookRedirectURI, cfg.FacebookAPIVersion)
+	fbStateCache := cache.NewOAuthStateCache(cfg.FacebookStateTTL)
+	fbService := services.NewFacebookService(fbRepo, fbClient, fbStateCache, cfg.FacebookScopes, cfg.FacebookPostLoginURI)
+	fbHandler := fbhandler.NewFacebookHandler(fbService)
+	fbAdsService := services.NewFacebookAdsService(fbRepo, fbAssignRepo, userRepo, fbClient)
+	fbAdsHandler := fbhandler.NewFacebookAdsHandler(fbAdsService)
+	fbLeadService := services.NewFacebookLeadService(fbRepo, fbAssignRepo, leadRepo, leadSourceRepo, fbClient, cfg.FacebookWebhookVerify)
+	fbWebhookHandler := fbhandler.NewFacebookWebhookHandler(fbLeadService)
+
 	authz := middleware.NewAuthMiddleware(rolePermissionRepo)
 
 	app := fiber.New(fiber.Config{
@@ -127,6 +141,13 @@ func main() {
 	api.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"status": "ok"})
 	})
+
+	// Facebook OAuth — callback is public (Facebook redirects the browser here)
+	api.Get("/facebook/callback", fbHandler.Callback)
+
+	// Facebook Lead Ads webhook — public (called by Facebook's servers)
+	api.Get("/facebook/webhook", fbWebhookHandler.Verify)
+	api.Post("/facebook/webhook", fbWebhookHandler.Receive)
 
 	qualificationHandler := handler.NewQualificationHandler(qualificationService)
 	api.Post("/qualifications", qualificationHandler.CreateQualification)
@@ -247,6 +268,15 @@ func main() {
 
 	aiChatHandler := handler.NewAIChatHandler(aiChatService)
 	protected.Post("/ai/chat", authz, aiChatHandler.Chat)
+
+	protected.Get("/facebook/auth-url", authz, fbHandler.GetAuthURL)
+	protected.Post("/facebook/auth/start", authz, fbHandler.StartAuth)
+	protected.Get("/facebook/status", authz, fbHandler.Status)
+	protected.Delete("/facebook/disconnect", authz, fbHandler.Disconnect)
+
+	protected.Get("/facebook/campaigns", authz, fbAdsHandler.ListCampaigns)
+	protected.Post("/facebook/campaigns/assign", authz, fbAdsHandler.AssignCampaign)
+	protected.Delete("/facebook/campaigns/:campaign_id/assign", authz, fbAdsHandler.UnassignCampaign)
 
 	slog.Info("Starting server", "port", cfg.ServerPort)
 	if err := app.Listen(":" + cfg.ServerPort); err != nil {

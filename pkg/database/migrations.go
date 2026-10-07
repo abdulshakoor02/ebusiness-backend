@@ -27,6 +27,16 @@ func RunMigrations(ctx context.Context, db *mongo.Database, cfg *config.Config) 
 		return err
 	}
 
+	if err := ensureFacebookConnectionIndexes(ctx, db.Collection("facebook_connections")); err != nil {
+		slog.Error("Failed to apply facebook connection indexes", "error", err)
+		return err
+	}
+
+	if err := ensureFacebookAssignmentIndexes(ctx, db.Collection("facebook_campaign_assignments")); err != nil {
+		slog.Error("Failed to apply facebook assignment indexes", "error", err)
+		return err
+	}
+
 	if err := seedPermissionRules(ctx, db.Collection("permission_rules")); err != nil {
 		slog.Error("Failed to seed permission rules", "error", err)
 		return err
@@ -281,6 +291,16 @@ func seedPermissionRules(ctx context.Context, collection *mongo.Collection) erro
 
 		// AI
 		*domain.NewPermissionRule("ai", "AI Services", "chat", "Use AI Chat", "/api/v1/ai/chat", "POST", "Allow using the AI Chat with tool calling", true),
+
+		// Facebook Integration
+		*domain.NewPermissionRule("facebook", "Facebook Integration", "manage", "Manage Facebook Integration", "/api/v1/facebook", "*", "Connect, view and disconnect the tenant's Facebook account", true),
+		*domain.NewPermissionRule("facebook", "Facebook Integration", "auth-url", "Get Facebook Auth URL", "/api/v1/facebook/auth-url", "GET", "Start Facebook OAuth flow", true),
+		*domain.NewPermissionRule("facebook", "Facebook Integration", "status", "View Facebook Connection Status", "/api/v1/facebook/status", "GET", "View Facebook connection status", true),
+		*domain.NewPermissionRule("facebook", "Facebook Integration", "disconnect", "Disconnect Facebook", "/api/v1/facebook/disconnect", "DELETE", "Disconnect Facebook account", true),
+		*domain.NewPermissionRule("facebook", "Facebook Integration", "auth-start", "Start Facebook Auth (popup)", "/api/v1/facebook/auth/start", "POST", "Start Facebook OAuth flow in a popup", true),
+		*domain.NewPermissionRule("facebook", "Facebook Integration", "campaigns", "List Facebook Campaigns", "/api/v1/facebook/campaigns", "GET", "List running Facebook ad campaigns", true),
+		*domain.NewPermissionRule("facebook", "Facebook Integration", "assign", "Assign Campaign User", "/api/v1/facebook/campaigns/assign", "POST", "Assign a user to a Facebook campaign", true),
+		*domain.NewPermissionRule("facebook", "Facebook Integration", "unassign", "Unassign Campaign User", "/api/v1/facebook/campaigns/:campaign_id/assign", "DELETE", "Remove the user assigned to a Facebook campaign", true),
 	}
 
 	// Use upsert to incrementally add new rules (won't duplicate existing ones)
@@ -468,6 +488,16 @@ func seedRolePermissions(ctx context.Context, rolePermsCollection, permRulesColl
 
 		// AI
 		{role: "admin", resource: "ai", action: "chat"},
+
+		// Facebook Integration (admin only)
+		{role: "admin", resource: "facebook", action: "manage"},
+		{role: "admin", resource: "facebook", action: "auth-url"},
+		{role: "admin", resource: "facebook", action: "status"},
+		{role: "admin", resource: "facebook", action: "disconnect"},
+		{role: "admin", resource: "facebook", action: "auth-start"},
+		{role: "admin", resource: "facebook", action: "campaigns"},
+		{role: "admin", resource: "facebook", action: "assign"},
+		{role: "admin", resource: "facebook", action: "unassign"},
 	}
 
 	// Insert incrementally - check if role permission already exists before inserting
@@ -885,4 +915,25 @@ func seedCountries(ctx context.Context, collection *mongo.Collection) error {
 
 	slog.Info("Countries seeded successfully", "count", len(countries))
 	return nil
+}
+func ensureFacebookConnectionIndexes(ctx context.Context, collection *mongo.Collection) error {
+	indexes := []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "tenant_id", Value: 1}},
+			Options: options.Index().SetUnique(true).SetName("unique_tenant_id"),
+		},
+	}
+	_, err := collection.Indexes().CreateMany(ctx, indexes)
+	return err
+}
+
+func ensureFacebookAssignmentIndexes(ctx context.Context, collection *mongo.Collection) error {
+	indexes := []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "tenant_id", Value: 1}, {Key: "campaign_id", Value: 1}},
+			Options: options.Index().SetUnique(true).SetName("unique_tenant_campaign"),
+		},
+	}
+	_, err := collection.Indexes().CreateMany(ctx, indexes)
+	return err
 }

@@ -3276,7 +3276,46 @@ Returns data for the current month of the current year.
 
 ---
 
-## 18. AI Chat
+## 18. Dashboard Summary
+
+### Get Live Role-Specific Dashboard Data
+**Endpoint:** `GET /dashboard/summary?timezone=Asia%2FDubai`
+**Auth Required:** JWT + RBAC `dashboard:view` (seeded for admin/user; superadmin inherits admin)
+
+Only `timezone` is accepted. It must be an IANA time zone and defaults to `UTC`. Invalid zones or extra parameters (including role, tenant, and user filters) return 400. Identity and data scope always come from verified JWT claims, independently of the client or list-filter middleware. Unknown roles return 403; missing/zero identity claims return 401. Query failures return 500 without exposing database details. Successful and handler-generated error responses use `Cache-Control: private, no-store`. Queries have an eight-second deadline.
+
+| Role | Scope | Available data |
+|------|-------|----------------|
+| `superadmin` | `platform` | Tenant/user/lead totals and month-to-date additions, six-month growth, lead status, six most recently onboarded tenants with all-time lead/user counts. The service-provider tenant is included. No combined currency or claimed uptime. |
+| `admin` | `tenant` | Only the JWT tenant: leads, active lead statuses, team size, receipts, invoices, outstanding balance, appointments, follow-ups, comments and recent leads. |
+| `user` | `personal` | Only the JWT tenant and user: `leads.assigned_to`, `lead_appointments.organizer_id`, `lead_follow_ups.creator_id`, `lead_comments.author_id`. No team, tenant financial, or other-tenant metrics. |
+
+**Response fields:**
+
+- `data.generated_at`, `role`, `scope`, optional `tenant_name` and `currency`.
+- `period`: `start`, `end_exclusive`, `comparison_start`, `comparison_end_exclusive`, `timezone`. Monthly figures are month-to-date. Comparison ends at the same local day/time last month, clamped to the previous month's end. Ranges are half-open; future transactions are excluded.
+- `metrics`: keyed objects `{value, previous?, format, period}`. `format` is `number` or `currency`; `period` is `all_time`, `month`, `today`, or `current`. Snapshot metrics do not contain `previous`. A previous value of zero does not imply a percentage change.
+- `trend`: six zero-filled calendar-month buckets with `label`, `start` (local `YYYY-MM-01`), `leads`, `tenants`, `users`, `appointments`, `follow_ups`, `comments`, and admin-only `revenue`. The current bucket ends at the response time. Leads/users/tenants/comments use `created_at`; work uses `start_time`; receipts use `payment_date`.
+- `lead_status`: current `{label,value}` distribution, stably sorted by count then label.
+- `upcoming`: up to six `{id,lead_id?,kind,title,start_time,end_time,status,overdue}` records. Includes scheduled/rescheduled appointments not yet ended and active follow-ups due before 30 days from now, including overdue follow-ups. Overdue means the follow-up's `end_time` has passed. Completed/cancelled appointments and closed follow-ups are excluded. The list is ordered by start time, then kind/ID.
+- `recent_leads`: up to six scoped `{id,name,status,created_at}` records, newest first.
+- `tenant_highlights`: platform-only `{id,name,created_at,leads,users}` records, newest tenants first. Other roles receive `[]`.
+
+**Metric keys:**
+
+- Platform: `tenants`, `new_tenants`, `users`, `new_users`, `leads`, `new_leads`.
+- Tenant admin: `leads`, `active_leads`, `new_leads`, `users`, `new_users`, `revenue`, `invoiced`, `outstanding`, `open_invoices`, `appointments_today`, `appointments_completed_today`, `open_follow_ups`, `overdue_follow_ups`, `comments_month`.
+- User: `leads`, `active_leads`, `new_leads`, `appointments_today`, `appointments_completed_today`, `open_follow_ups`, `overdue_follow_ups`, `comments_month`.
+
+`revenue` is collected **before tax** (`receipts.amount_paid`), `invoiced` is gross (`invoices.total_amount`), and `outstanding` is the sum of `max(total_amount - paid_amount_vat, 0)`. Money is rounded to two decimals. Currency is derived from the tenant's currently configured country; it is omitted if unknown. Historical currency is not stored on transactions, so currency changes are not converted and cross-tenant monetary sums are intentionally unavailable. Active leads reflect the stored `active` status, not an inferred conversion rate.
+
+All list fields are arrays even when empty; supported zero metrics are numeric zero, not fabricated demonstration data. The client polls once per minute while visible and supports manual refresh; it does not require a streaming connection. The six-month series uses one grouped query per collection, not per-month requests. Startup migrations add supporting indexes and seed the dashboard permission idempotently. Deploy the backend and run its startup migrations before deploying the frontend.
+
+`dashboard:view` grants the role-specific summary described here; it does not inherit custom per-widget resource restrictions. Revoke this permission to disable that dashboard. Existing unrelated role-management policies are unchanged.
+
+---
+
+## 19. AI Chat
 
 ### Chat with AI Assistant
 **Endpoint:** `POST /ai/chat`

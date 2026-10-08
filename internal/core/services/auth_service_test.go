@@ -15,8 +15,10 @@ import (
 
 func TestLogin_Success(t *testing.T) {
 	mockUserRepo := new(MockUserRepo)
+	mockTenantRepo := new(MockTenantRepo)
+	mockTenantRepo.On("GetByID", mock.Anything, mock.Anything).Return(&domain.Tenant{}, nil)
 	cfg := &config.Config{JWTSecret: "test_secret", JWTExpiration: "1h"}
-	service := NewAuthService(mockUserRepo, cfg)
+	service := NewAuthService(mockUserRepo, mockTenantRepo, nil, cfg)
 
 	password := "password123"
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -43,7 +45,7 @@ func TestLogin_Success(t *testing.T) {
 func TestLogin_InvalidPassword(t *testing.T) {
 	mockUserRepo := new(MockUserRepo)
 	cfg := &config.Config{JWTSecret: "test_secret", JWTExpiration: "1h"}
-	service := NewAuthService(mockUserRepo, cfg)
+	service := NewAuthService(mockUserRepo, new(MockTenantRepo), nil, cfg)
 
 	password := "password123"
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -69,7 +71,7 @@ func TestLogin_InvalidPassword(t *testing.T) {
 func TestLogin_UserNotFound(t *testing.T) {
 	mockUserRepo := new(MockUserRepo)
 	cfg := &config.Config{JWTSecret: "test_secret", JWTExpiration: "1h"}
-	service := NewAuthService(mockUserRepo, cfg)
+	service := NewAuthService(mockUserRepo, new(MockTenantRepo), nil, cfg)
 
 	req := ports.LoginRequest{
 		Email:    "unknown@example.com",

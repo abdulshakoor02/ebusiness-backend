@@ -91,6 +91,8 @@ func main() {
 	receiptService := services.NewReceiptService(receiptRepo, invoiceRepo, tenantRepo, leadRepo)
 
 	chartService := services.NewChartService(leadAppointmentRepo, leadCommentRepo)
+	dashboardRepo := storage.NewMongoDashboardRepository(db)
+	dashboardService := services.NewDashboardService(dashboardRepo)
 
 	aiChatService := services.NewAIChatService(chatClient, leadRepo, invoiceRepo, receiptRepo, leadAppointmentRepo, leadFollowUpRepo)
 
@@ -244,6 +246,9 @@ func main() {
 
 	chartHandler := handler.NewChartHandler(chartService)
 	protected.Get("/charts/monthly-summary", authz, chartHandler.GetMonthlySummary)
+
+	dashboardHandler := handler.NewDashboardHandler(dashboardService)
+	protected.Get("/dashboard/summary", authz, dashboardHandler.GetSummary)
 
 	aiChatHandler := handler.NewAIChatHandler(aiChatService)
 	protected.Post("/ai/chat", authz, aiChatHandler.Chat)

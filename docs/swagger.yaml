@@ -642,6 +642,48 @@ paths:
       summary: List countries
       tags:
       - countries
+  /dashboard/summary:
+    get:
+      description: Server-scoped platform, tenant, or personal metrics. No identity
+        filters are accepted.
+      parameters:
+      - description: IANA time zone (default UTC)
+        in: query
+        name: timezone
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - Bearer: []
+      summary: Get the authenticated role's live dashboard
+      tags:
+      - dashboard
   /lead-categories:
     post:
       consumes:

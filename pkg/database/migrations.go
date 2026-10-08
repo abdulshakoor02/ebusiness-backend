@@ -27,6 +27,11 @@ func RunMigrations(ctx context.Context, db *mongo.Database, cfg *config.Config) 
 		return err
 	}
 
+	if err := ensureDashboardIndexes(ctx, db); err != nil {
+		slog.Error("Failed to apply dashboard indexes", "error", err)
+		return err
+	}
+
 	if err := seedPermissionRules(ctx, db.Collection("permission_rules")); err != nil {
 		slog.Error("Failed to seed permission rules", "error", err)
 		return err
@@ -279,6 +284,9 @@ func seedPermissionRules(ctx context.Context, collection *mongo.Collection) erro
 		// Charts
 		*domain.NewPermissionRule("charts", "Charts", "view", "View Monthly Chart Summary", "/api/v1/charts/monthly-summary", "GET", "View monthly chart data for appointments and comments", true),
 
+		// Role-specific live dashboard
+		*domain.NewPermissionRule("dashboard", "Dashboard", "view", "View Dashboard Summary", "/api/v1/dashboard/summary", "GET", "View role-scoped live dashboard metrics", true),
+
 		// AI
 		*domain.NewPermissionRule("ai", "AI Services", "chat", "Use AI Chat", "/api/v1/ai/chat", "POST", "Allow using the AI Chat with tool calling", true),
 	}
@@ -465,6 +473,10 @@ func seedRolePermissions(ctx context.Context, rolePermsCollection, permRulesColl
 		// Charts (admin and user)
 		{role: "admin", resource: "charts", action: "view"},
 		{role: "user", resource: "charts", action: "view"},
+
+		// Live dashboard (all supported roles; superadmin inherits admin)
+		{role: "admin", resource: "dashboard", action: "view"},
+		{role: "user", resource: "dashboard", action: "view"},
 
 		// AI
 		{role: "admin", resource: "ai", action: "chat"},
